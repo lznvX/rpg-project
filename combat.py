@@ -45,7 +45,7 @@ class Stats(NamedTuple):
         """
         new_stats = []
         for old, new in zip(self, changes):
-            if new == None:
+            if new is None:
                 new_stats.append(old)
             else:
                 new_stats.append(new)
@@ -147,7 +147,7 @@ class Character(NamedTuple):
         """
         new_char = []
         for old, new in zip(self, changes):
-            if new == None:
+            if new is None:
                 new_char.append(old)
             else:
                 new_char.append(new)
@@ -390,7 +390,7 @@ def list_choices(choices: list | tuple, text: str="", start_from_1: bool=True,
 
 	print(text)
 	for i, choice in enumerate(choices):
-		if choice == None:
+		if choice is None:
 			continue
 		print(template.format(i + start_from_1, choice))
 

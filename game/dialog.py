@@ -43,116 +43,94 @@ class Rectangle(NamedTuple):
 
 
 class TextBox(NamedTuple):
-    rectangle: Rectangle
+    y: int
+    x: int
+    height: int
+    width: int
     text: str = None
-    y: int = 0
-    x: int = 0
     
     def draw(self, buffer: list[list[tuple[str, int]]]) -> None:
-        if self.y == 0 and self.x == 0:
-            self.rectangle.draw(buffer)
-        else:
-            Rectangle(
-                self.rectangle.y + self.y,
-                self.rectangle.x + self.x,
-                self.rectangle.height,
-                self.rectangle.width,
-                self.rectangle.color,
-            ).draw(buffer)
+        Rectangle(
+            self.y,
+            self.x,
+            self.height,
+            self.width,
+        ).draw(buffer)
         
         if self.text is None: return
         
-        text_y = self.rectangle.y + self.y + 2
-        text_x = self.rectangle.x + self.x + 3
-        wrap = self.rectangle.width - 5
+        text_y = self.y + 2
+        text_x = self.x + 3
+        wrap = self.width - 5
         
         for i in range(len(self.text)):
-            set_cell(buffer, text_y + i // wrap, text_x + i % wrap, self.current_text[i])
+            set_cell(buffer, text_y + i // wrap, text_x + i % wrap, self.text[i])
 
 
 class DialogBox(NamedTuple):
-    text_box: TextBox
-    y: int = 0
-    x: int = 0
-    text: str | tuple[str, ...] = None
+    y: int
+    x: int
+    height: int
+    width: int
+    text: tuple[str, ...]
+    start_time: float
     text_part: int = 0
-    start_time: float = None
     
-    @property
-    def current_text(self) -> str:
-        return self.text if isinstance(self.text, str) or self.text is None else self.text[self.text_part]
-    
-    def set_offset(self, y: int = 0, x: int = 0) -> "DialogBox":
-        return DialogBox(
-            self.rectangle,
+    @classmethod
+    def new(cls, y: int, x: int, height: int, width: int, text: str | tuple[str, ...]) -> "DialogBox":
+        return cls(
             y,
             x,
-            self.text,
-            self.text_part,
-            self.start_time,
-        )
-    
-    def start(self, text: str | tuple[str, ...] = None) -> "DialogBox":
-        if text is None and self.text is None:
-            return self
-        return DialogBox(
-            self.rectangle,
-            self.y_offset,
-            self.x_offset,
-            self.text if text is None else text,
-            0,
+            height,
+            width,
+            (text,) if isinstance(text, str) else text,
             time.time(),
         )
     
+    def set_geometry(self, **kwargs) -> "DialogBox":
+        return DialogBox(
+            kwargs["y"] if "y" in kwargs else self.y,
+            kwargs["x"] if "x" in kwargs else self.x,
+            kwargs["height"] if "height" in kwargs else self.height,
+            kwargs["width"] if "width" in kwargs else self.width,
+            self.text,
+            self.start_time,
+            self.text_part,
+        )
+    
     def next(self) -> "DialogBox":
-        if self.start_time is None:
-            return self
-        if math.floor((time.time() - self.start_time) / CHARACTER_TIME) <= len(self.current_text):
+        if math.floor((time.time() - self.start_time) / CHARACTER_TIME) <= len(self.text[self.text_part]):
             return DialogBox(
-                self.rectangle,
-                self.y_offset,
-                self.x_offset,
+                self.y,
+                self.x,
+                self.height,
+                self.width,
                 self.text,
-                self.text_part,
                 0,
+                self.text_part,
             )
-        elif isinstance(self.text, str) or self.text_part + 1 >= len(self.text):
-            return DialogBox(
-                self.rectangle,
-                self.y_offset,
-                self.x_offset,
-            )
+        elif self.text_part + 1 >= len(self.text):
+            return self
         else:
             return DialogBox(
-                self.rectangle,
-                self.y_offset,
-                self.x_offset,
+                self.y,
+                self.x,
+                self.height,
+                self.width,
                 self.text,
-                self.text_part + 1,
                 time.time(),
+                self.text_part + 1,
             )
     
     def draw(self, buffer: list[list[tuple[str, int]]]) -> None:
-        if self.y_offset == 0 and self.x_offset == 0:
-            self.rectangle.draw(buffer)
-        else:
-            Rectangle(
-                self.rectangle.y + self.y_offset,
-                self.rectangle.x + self.x_offset,
-                self.rectangle.height,
-                self.rectangle.width,
-                self.rectangle.color,
-            ).draw(buffer)
-        
-        if self.start_time is None: return
-        
-        text_y = self.rectangle.y + self.y_offset + 2
-        text_x = self.rectangle.x + self.x_offset + 3
-        wrap = self.rectangle.width - 5
-        length_to_draw = min(math.floor((time.time() - self.start_time) / CHARACTER_TIME), len(self.current_text))
-        
-        for i in range(length_to_draw):
-            set_cell(buffer, text_y + i // wrap, text_x + i % wrap, self.current_text[i])
+        length_to_draw = min(math.floor((time.time() - self.start_time) / CHARACTER_TIME), len(self.text[self.text_part]))
+        TextBox(
+            self.y,
+            self.x,
+            self.height,
+            self.width,
+            self.text[self.text_part][:length_to_draw]
+        ).draw(buffer) 
 
 
 def move_toward(a: int | float, b: int | float, step: int | float = 1) -> int | float:
@@ -221,21 +199,21 @@ def main(stdscr) -> None:
     frame_count = 0
     average_fps = 0
     
-    dialog_rectangle = Rectangle(
-        screen_height - 12,
-        50,
-        10,
-        screen_width - 100,
-    )
     text = (
         "LELOLELOELOLEOLEOLEOLEOLEOLOLEOLOEELOmmmmmmmmmmmmmmmmmm    yeseiurrrrrhjsdhdjhsdjhsdhjsdhjdshjsdjhsdjhdsjhdshjsdhjsdhjsdhjdshjdshdsdssjhgfqwè¨qè¨¨èwq¨qwèwq",
         "bruh",
         "AAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
         "We're no strangers to love You know the rules and so do I A full commitment's what I'm thinkin' of You wouldn't get this from any other guy I just wanna tell you how I'm feeling Gotta make you understand Never gonna give you up, never gonna let you down Never gonna run around and desert you Never gonna make you cry, never gonna say goodbye Never gonna tell a lie and hurt you We've known each other for so long Your heart's been aching, but you're too shy to say it Inside, we both know what's been going on We know the game and we're gonna play it And if you ask me how I'm feeling Don't tell me you're too blind to see Never gonna give you up, never gonna let you down Never gonna run around and desert you Never gonna make you cry, never gonna say goodbye Never gonna tell a lie and hurt you Never gonna give you up, never gonna let you down Never gonna run around and desert you Never gonna make you cry, never gonna say goodbye Never gonna tell a lie and hurt you We've known each other for so long Your heart's been aching, but you're too shy to say it Inside, we both know what's been going on We know the game and we're gonna play it I just wanna tell you how I'm feeling Gotta make you understand Never gonna give you up, never gonna let you down Never gonna run around and desert you Never gonna make you cry, never gonna say goodbye Never gonna tell a lie and hurt you Never gonna give you up, never gonna let you down Never gonna run around and desert you Never gonna make you cry, never gonna say goodbye Never gonna tell a lie and hurt you Never gonna give you up, never gonna let you down Never gonna run around and desert you Never gonna make you cry, never gonna say goodbye Never gonna tell a lie and hurt you",
     )
-    dialog_box = DialogBox(dialog_rectangle, 12).start(text)
+    dialog_box = DialogBox.new(
+        screen_height,
+        50,
+        10,
+        screen_width - 100,
+        text,
+    )
     
-    float_dialog_y = float(dialog_box.y_offset)
+    float_dialog_y = float(dialog_box.y)
 
     while 1:
         current_time = time.time()
@@ -258,10 +236,10 @@ def main(stdscr) -> None:
 
         buffer = copy.deepcopy(empty_buffer)
         
-        dialog_target_y = dialog_box.rectangle.height + 2 if dialog_box.start_time is None else 0
-        if dialog_box.y_offset != dialog_target_y:
+        dialog_target_y = screen_height if dialog_box.start_time is None else screen_height - 12
+        if dialog_box.y != dialog_target_y:
             float_dialog_y = move_toward(float_dialog_y, dialog_target_y, delta_time * 100)
-            dialog_box = dialog_box.set_offset(round(float_dialog_y))
+            dialog_box = dialog_box.set_geometry(y=round(float_dialog_y))
         dialog_box.draw(buffer)
         
         display_buffer(stdscr, buffer)

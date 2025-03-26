@@ -15,17 +15,18 @@ CHARACTER_TIME = 0.025 # Délai d'affichage de chaque caractère dans les textes
 
 
 class Rectangle(NamedTuple):
-    y1: int
-    x1: int
-    y2: int
-    x2: int
+    y: int
+    x: int
+    height: int
+    width: int
     color: int = 255
     
     def draw(self, buffer: list[list[tuple[str, int]]]) -> None:
-        """Ajoute le rectangle dans le buffer."""
-        if self.y1 == self.y2 or self.x1 == self.x2: return
-        y1, y2 = min(self.y1, self.y2), max(self.y1, self.y2)
-        x1, x2 = min(self.x1, self.x2), max(self.x1, self.x2)
+        if self.height <= 0 or self.width <= 0:
+            return
+        
+        y1, y2 = self.y, self.y + self.height
+        x1, x2 = self.x, self.x + self.width
         
         set_cell(buffer, y1, x1, "┌", self.color)
         set_cell(buffer, y1, x2, "┐", self.color)
@@ -35,18 +36,44 @@ class Rectangle(NamedTuple):
         for y in range(y1 + 1, y2):
             set_cell(buffer, y, x1, "│", self.color)
             set_cell(buffer, y, x2, "│", self.color)
-            for x in range(x1 + 1, x2):
-                set_cell(buffer, y, x, None)
         
         for x in range(x1 + 1, x2):
             set_cell(buffer, y1, x, "─", self.color)
             set_cell(buffer, y2, x, "─", self.color)
 
 
-class Dialog_box(NamedTuple):
+class TextBox(NamedTuple):
     rectangle: Rectangle
-    y_offset: int = 0
-    x_offset: int = 0
+    text: str = None
+    y: int = 0
+    x: int = 0
+    
+    def draw(self, buffer: list[list[tuple[str, int]]]) -> None:
+        if self.y == 0 and self.x == 0:
+            self.rectangle.draw(buffer)
+        else:
+            Rectangle(
+                self.rectangle.y + self.y,
+                self.rectangle.x + self.x,
+                self.rectangle.height,
+                self.rectangle.width,
+                self.rectangle.color,
+            ).draw(buffer)
+        
+        if self.text is None: return
+        
+        text_y = self.rectangle.y + self.y + 2
+        text_x = self.rectangle.x + self.x + 3
+        wrap = self.rectangle.width - 5
+        
+        for i in range(len(self.text)):
+            set_cell(buffer, text_y + i // wrap, text_x + i % wrap, self.current_text[i])
+
+
+class DialogBox(NamedTuple):
+    text_box: TextBox
+    y: int = 0
+    x: int = 0
     text: str | tuple[str, ...] = None
     text_part: int = 0
     start_time: float = None
@@ -55,8 +82,8 @@ class Dialog_box(NamedTuple):
     def current_text(self) -> str:
         return self.text if isinstance(self.text, str) or self.text is None else self.text[self.text_part]
     
-    def set_offset(self, y: int = 0, x: int = 0) -> "Dialog_box":
-        return Dialog_box(
+    def set_offset(self, y: int = 0, x: int = 0) -> "DialogBox":
+        return DialogBox(
             self.rectangle,
             y,
             x,
@@ -65,9 +92,10 @@ class Dialog_box(NamedTuple):
             self.start_time,
         )
     
-    def start(self, text: str | tuple[str, ...] = None) -> "Dialog_box":
-        if text is None and self.text in None: return self
-        return Dialog_box(
+    def start(self, text: str | tuple[str, ...] = None) -> "DialogBox":
+        if text is None and self.text is None:
+            return self
+        return DialogBox(
             self.rectangle,
             self.y_offset,
             self.x_offset,
@@ -76,14 +104,11 @@ class Dialog_box(NamedTuple):
             time.time(),
         )
     
-    def next(self) -> "Dialog_box":
-        """
-        Met à jour tout le texte d'un coup ou passe à la partie d'après si le
-        texte est déjà fini.
-        """
-        if self.start_time is None: return self
+    def next(self) -> "DialogBox":
+        if self.start_time is None:
+            return self
         if math.floor((time.time() - self.start_time) / CHARACTER_TIME) <= len(self.current_text):
-            return Dialog_box(
+            return DialogBox(
                 self.rectangle,
                 self.y_offset,
                 self.x_offset,
@@ -92,13 +117,13 @@ class Dialog_box(NamedTuple):
                 0,
             )
         elif isinstance(self.text, str) or self.text_part + 1 >= len(self.text):
-            return Dialog_box(
+            return DialogBox(
                 self.rectangle,
                 self.y_offset,
                 self.x_offset,
             )
         else:
-            return Dialog_box(
+            return DialogBox(
                 self.rectangle,
                 self.y_offset,
                 self.x_offset,
@@ -108,29 +133,22 @@ class Dialog_box(NamedTuple):
             )
     
     def draw(self, buffer: list[list[tuple[str, int]]]) -> None:
-        """
-        Ajoute le rectangle de la boîte de dialogue et le texte
-        (progressivement) dans le buffer.
-        """
         if self.y_offset == 0 and self.x_offset == 0:
             self.rectangle.draw(buffer)
         else:
             Rectangle(
-                self.rectangle.y1 + self.y_offset,
-                self.rectangle.x1 + self.x_offset,
-                self.rectangle.y2 + self.y_offset,
-                self.rectangle.x2 + self.x_offset,
+                self.rectangle.y + self.y_offset,
+                self.rectangle.x + self.x_offset,
+                self.rectangle.height,
+                self.rectangle.width,
                 self.rectangle.color,
             ).draw(buffer)
         
         if self.start_time is None: return
         
-        y1, y2 = min(self.rectangle.y1, self.rectangle.y2), max(self.rectangle.y1, self.rectangle.y2)
-        x1, x2 = min(self.rectangle.x1, self.rectangle.x2), max(self.rectangle.x1, self.rectangle.x2)
-        
-        text_y = y1 + self.y_offset + 2
-        text_x = x1 + self.x_offset + 3
-        wrap = x2 - x1 - 5
+        text_y = self.rectangle.y + self.y_offset + 2
+        text_x = self.rectangle.x + self.x_offset + 3
+        wrap = self.rectangle.width - 5
         length_to_draw = min(math.floor((time.time() - self.start_time) / CHARACTER_TIME), len(self.current_text))
         
         for i in range(length_to_draw):
@@ -206,8 +224,8 @@ def main(stdscr) -> None:
     dialog_rectangle = Rectangle(
         screen_height - 12,
         50,
-        screen_height - 2,
-        screen_width - 50,
+        10,
+        screen_width - 100,
     )
     text = (
         "LELOLELOELOLEOLEOLEOLEOLEOLOLEOLOEELOmmmmmmmmmmmmmmmmmm    yeseiurrrrrhjsdhdjhsdjhsdhjsdhjdshjsdjhsdjhdsjhdshjsdhjsdhjsdhjdshjdshdsdssjhgfqwè¨qè¨¨èwq¨qwèwq",
@@ -215,7 +233,7 @@ def main(stdscr) -> None:
         "AAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
         "We're no strangers to love You know the rules and so do I A full commitment's what I'm thinkin' of You wouldn't get this from any other guy I just wanna tell you how I'm feeling Gotta make you understand Never gonna give you up, never gonna let you down Never gonna run around and desert you Never gonna make you cry, never gonna say goodbye Never gonna tell a lie and hurt you We've known each other for so long Your heart's been aching, but you're too shy to say it Inside, we both know what's been going on We know the game and we're gonna play it And if you ask me how I'm feeling Don't tell me you're too blind to see Never gonna give you up, never gonna let you down Never gonna run around and desert you Never gonna make you cry, never gonna say goodbye Never gonna tell a lie and hurt you Never gonna give you up, never gonna let you down Never gonna run around and desert you Never gonna make you cry, never gonna say goodbye Never gonna tell a lie and hurt you We've known each other for so long Your heart's been aching, but you're too shy to say it Inside, we both know what's been going on We know the game and we're gonna play it I just wanna tell you how I'm feeling Gotta make you understand Never gonna give you up, never gonna let you down Never gonna run around and desert you Never gonna make you cry, never gonna say goodbye Never gonna tell a lie and hurt you Never gonna give you up, never gonna let you down Never gonna run around and desert you Never gonna make you cry, never gonna say goodbye Never gonna tell a lie and hurt you Never gonna give you up, never gonna let you down Never gonna run around and desert you Never gonna make you cry, never gonna say goodbye Never gonna tell a lie and hurt you",
     )
-    dialog_box = Dialog_box(dialog_rectangle, 12).start(text)
+    dialog_box = DialogBox(dialog_rectangle, 12).start(text)
     
     float_dialog_y = float(dialog_box.y_offset)
 
@@ -240,7 +258,7 @@ def main(stdscr) -> None:
 
         buffer = copy.deepcopy(empty_buffer)
         
-        dialog_target_y = abs(dialog_box.rectangle.y2 - dialog_box.rectangle.y1) + 2 if dialog_box.start_time is None else 0
+        dialog_target_y = dialog_box.rectangle.height + 2 if dialog_box.start_time is None else 0
         if dialog_box.y_offset != dialog_target_y:
             float_dialog_y = move_toward(float_dialog_y, dialog_target_y, delta_time * 100)
             dialog_box = dialog_box.set_offset(round(float_dialog_y))

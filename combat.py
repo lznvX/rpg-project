@@ -156,7 +156,6 @@ class Battle(NamedTuple):
                     enemies = self.team1_targets
 
 
-                # TODO: Implement player choice again
                 if fighter.is_player:
                     print()
                     attack, target_ref = self.get_player_action(fighter, allies, enemies)

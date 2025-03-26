@@ -3,10 +3,12 @@
 Created on 2025.03.20
 Contributors:
     Jakub
+    Adrien
 """
 
 
 from typing import NamedTuple, Self
+from uuid import UUID, uuid4
 
 
 class DamageInstance(NamedTuple):
@@ -26,16 +28,16 @@ class Stats(NamedTuple):
 	Use more than one instance per character to differentiate base and current
 	stats.
 	"""
-    max_health: int = None     # if it drops to 0, you die
-    max_stamina: int = None    # used as a resource for performing PHYSICAL actions
-    max_mana: int = None       # used as a resource for performing MAGICAL actions
+    max_health: int = None   # if it drops to 0, you die
+    max_stamina: int = None  # used as a resource for performing PHYSICAL actions
+    max_mana: int = None     # used as a resource for performing MAGICAL actions
 
-    strength: int = None       # increases damage of PHYSICAL attacks
-    agility: int = None        # determines turn order, flee chance, damage of some attacks
-    acumen: int = None         # determines damage of MAGICAL attacks
+    strength: int = None     # increases damage of PHYSICAL attacks
+    agility: int = None      # determines turn order, flee chance, damage of some attacks
+    acumen: int = None       # determines damage of MAGICAL attacks
 
-    armor: int = None              # decreases PHYSICAL damage taken
-    magical_resistance: int = None # decreases MAGICAL damage taken
+    armor: int = None                # decreases PHYSICAL damage taken
+    magical_resistance: int = None   # decreases MAGICAL damage taken
 
 
     def modify(self, changes: Self) -> Self:
@@ -52,8 +54,8 @@ class Stats(NamedTuple):
             else:
                 new_stats.append(new)
         return Stats(*new_stats)
-    
-    
+
+      
 class Action(NamedTuple):
     """Describes an action during combat."""
 
@@ -78,6 +80,28 @@ class Action(NamedTuple):
         return f"{self.name} (¤ {self.get_damage()})"
 
 
+class Item(NamedTuple):
+
+    name: str
+    description: str # will show up when inspecting the item (later)
+
+    tags: tuple[str]
+    #   weapon -> melee, bow, staff (magic), shield, etc.
+    #   armor -> or separate tags for slots, i.e. helmet, armor, boots, etc.
+    #   consumable (e.g. potions, arrows, etc.)
+    #   material (sellable stuff? maybe crafting)
+    #   currency (have gold as an item -> balance carrying items vs carrying money)
+
+    weight: int # -> limit for storage, heavy armor slows you down, +relevant in combat
+
+    max_durability: int
+    durability: int # do we want durability?
+
+    stat_bonus: Stats # added to the user's stats
+    actions: list[Action] # added to the user's actions
+    uuid: UUID # used to keep track of applied bonuses
+
+
 class Character(NamedTuple):
     """Holds data for a combat-capable character (Player, goblin, etc.).
 
@@ -88,7 +112,9 @@ class Character(NamedTuple):
     is_player: bool = None
     is_alive: bool = None
 
-    BASE: Stats = None
+    base: Stats = None
+    bonuses: dict[UUID: Stats] = None
+
     current: Stats = None
 
     health: int = None
@@ -111,6 +137,7 @@ class Character(NamedTuple):
                          True,
 
                          base_stats,
+                         dict(),
                          base_stats,
 
                          base_stats.max_health,
@@ -120,6 +147,7 @@ class Character(NamedTuple):
                          actions,
                          initial_effects)
 
+      
     def modify(self, changes: Self) -> Self:
         """Generate new character sheet based on an existing one.
 
@@ -134,6 +162,16 @@ class Character(NamedTuple):
             else:
                 new_char.append(new)
         return Character(*new_char)
+
+
+    def update_stats(self) -> Stats:
+        new_stats = []
+
+        for i, stat in enumerate(self.BASE):
+            for bonus in self.bonuses.values():
+                stat += bonus[i]
+            new_stats.append(stat)
+        return Stats(*new_stats)
 
 
     def hit(self, attack: DamageInstance) -> (Self, int):

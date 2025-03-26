@@ -8,9 +8,9 @@ from typing import NamedTuple
 
 class inventory(NamedTuple):
     """L'inventaire du personnage"""
-    armure : object | None
-    m_d : object | None 
-    m_g : object | None
+    armure : Items = None
+    m_d : Items = None 
+    m_g : Items = None
     bp : dict
     
     
@@ -22,7 +22,10 @@ class inventory(NamedTuple):
             pass
     
     
-    def take(obj1, bp):
+    def take(obj1, self.bp):
         """Prend un objet et le met dans l'inventaire"""
-        bp.append(obj1)
+        if len(bp) < 25:
+            bp.append(obj1)
+        else:
+            bp
 

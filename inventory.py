@@ -9,24 +9,24 @@ from typing import NamedTuple
 class inventory(NamedTuple):
     """L'inventaire du personnage"""
     armure : Items = None
-    m_d : Items = None 
-    m_g : Items = None
-    bp : dict
+    right_hand : Items = None 
+    left_hand : Items = None
+    backpack : dict
     
     
-    def equip(loc, obj1):
+    def equip(body_part, object):
         """equipe un objet sur une partie du corps """
-        if loc == None :
-            loc = obj1    
+        if body_part == None :
+            body_part = object    
         else:
             pass
     
     
-    def take(obj: Item, self.bp: Item):
+    def take(object_taken: Item, self.backpack):
         """Prend un objet et le met dans l'inventaire"""
-        for i in slef.bp:
+        for i in slef.backpack:
             if i == None:
-                self.bp[i] = obj
+                self.backpack[i] = object_taken
         else:
             pass
 

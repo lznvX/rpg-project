@@ -55,7 +55,7 @@ class Stats(NamedTuple):
                 new_stats.append(new)
         return Stats(*new_stats)
 
-
+      
 class Action(NamedTuple):
     """Describes an action during combat."""
 
@@ -114,6 +114,7 @@ class Character(NamedTuple):
 
     base: Stats = None
     bonuses: dict[UUID: Stats] = None
+
     current: Stats = None
 
     health: int = None
@@ -146,7 +147,7 @@ class Character(NamedTuple):
                          actions,
                          initial_effects)
 
-
+      
     def modify(self, changes: Self) -> Self:
         """Generate new character sheet based on an existing one.
 

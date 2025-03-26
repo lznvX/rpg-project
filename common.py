@@ -26,16 +26,16 @@ class Stats(NamedTuple):
 	Use more than one instance per character to differentiate base and current
 	stats.
 	"""
-    max_health: int=None     # if it drops to 0, you die
-    max_stamina: int=None    # used as a resource for performing PHYSICAL actions
-    max_mana: int=None       # used as a resource for performing MAGICAL actions
+    max_health: int = None     # if it drops to 0, you die
+    max_stamina: int = None    # used as a resource for performing PHYSICAL actions
+    max_mana: int = None       # used as a resource for performing MAGICAL actions
 
-    strength: int=None       # increases damage of PHYSICAL attacks
-    agility: int=None        # determines turn order, flee chance, damage of some attacks
-    acumen: int=None         # determines damage of MAGICAL attacks
+    strength: int = None       # increases damage of PHYSICAL attacks
+    agility: int = None        # determines turn order, flee chance, damage of some attacks
+    acumen: int = None         # determines damage of MAGICAL attacks
 
-    armor: int=None              # decreases PHYSICAL damage taken
-    magical_resistance: int=None # decreases MAGICAL damage taken
+    armor: int = None              # decreases PHYSICAL damage taken
+    magical_resistance: int = None # decreases MAGICAL damage taken
 
 
     def modify(self, changes: Self) -> Self:
@@ -84,19 +84,19 @@ class Character(NamedTuple):
     The default constructor should only be used as an argument of
     Character.modify(). For all other purposes use Character.new().
     """
-    name: str=None
-    is_player: bool=None
-    is_alive: bool=None
+    name: str = None
+    is_player: bool = None
+    is_alive: bool = None
 
-    BASE: Stats=None
-    current: Stats=None
+    BASE: Stats = None
+    current: Stats = None
 
-    health: int=None
-    stamina: int=None
-    mana: int=None
+    health: int = None
+    stamina: int = None
+    mana: int = None
 
-    actions: list[Action]=None
-    effects: dict=None
+    actions: list[Action] = None
+    effects: dict = None
 
 
     @staticmethod

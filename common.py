@@ -52,8 +52,8 @@ class Stats(NamedTuple):
             else:
                 new_stats.append(new)
         return Stats(*new_stats)
-    
-    
+
+
 class Action(NamedTuple):
     """Describes an action during combat."""
 
@@ -76,6 +76,28 @@ class Action(NamedTuple):
 
     def __repr__(self):
         return f"{self.name} (¤ {self.get_damage()})"
+
+
+class Item(NamedTuple):
+
+    name: str
+    description: str # will show up when inspecting the item (later)
+
+    item_type: str
+    # or a list -> tags
+    #   weapon -> melee, bow, staff (magic), shield, etc.
+    #   armor -> or separate tags for slots, i.e. helmet, armor, boots, etc.
+    #   consumable (e.g. potions, arrows, etc.)
+    #   material (sellable stuff? maybe crafting)
+    #   currency (have gold as an item -> balance carrying items vs carrying money)
+
+    weight: int # -> limit for storage, heavy armor slows you down, +relevant in combat
+
+    max_durability: int
+    durability: int # do we want durability?
+
+    stat_bonus: Stats # added to the user's stats
+    actions: list[Action] # added to the user's actions
 
 
 class Character(NamedTuple):

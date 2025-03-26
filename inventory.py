@@ -22,10 +22,11 @@ class inventory(NamedTuple):
             pass
     
     
-    def take(obj1, self.bp):
+    def take(obj: Item, self.bp: Item):
         """Prend un objet et le met dans l'inventaire"""
-        if len(bp) < 25:
-            bp.append(obj1)
+        for i in slef.bp:
+            if i == None:
+                self.bp[i] = obj
         else:
-            bp
+            pass
 

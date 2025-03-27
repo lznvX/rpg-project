@@ -11,7 +11,7 @@ import curses
 import ctypes
 import math
 import time
-from typing import NamedTuple, Self
+from typing import NamedTuple
 
 X_CORRECTION = 2.6 # Hauteur / largeur d'un caractère
 CHARACTER_TIME = 0.025 # Délai d'affichage de chaque caractère dans les textes
@@ -89,7 +89,7 @@ class DialogBox(NamedTuple):
         return self.dialog[self.line_index]
     
     @classmethod
-    def new(cls, y: int, x: int, height: int, width: int, dialog: tuple[DialogLine, ...]) -> Self:
+    def new(cls, y: int, x: int, height: int, width: int, dialog: tuple[DialogLine, ...]) -> "DialogBox":
         return cls(
             y,
             x,
@@ -99,7 +99,7 @@ class DialogBox(NamedTuple):
             time.time(),
         )
     
-    def set_geometry(self, **kwargs) -> Self:
+    def set_geometry(self, **kwargs) -> "DialogBox":
         return DialogBox(
             kwargs["y"] if "y" in kwargs else self.y,
             kwargs["x"] if "x" in kwargs else self.x,

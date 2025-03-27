@@ -7,7 +7,7 @@ Contributors:
 """
 
 
-from typing import NamedTuple, Self
+from typing import NamedTuple
 from uuid import UUID, uuid4
 
 
@@ -40,7 +40,7 @@ class Stats(NamedTuple):
     magical_resistance: int = None   # decreases MAGICAL damage taken
 
 
-    def modify(self, changes: Self) -> Self:
+    def modify(self, changes: "Stats") -> "Stats":
         """Generate new stat sheet based on an existing one.
 
         Changes are represented as another stat sheet. A value of None (default
@@ -127,7 +127,7 @@ class Character(NamedTuple):
 
     @staticmethod
     def new(name: str, is_player: bool, base_stats: Stats, actions: list[Action],
-            initial_effects: dict) -> Self:
+            initial_effects: dict) -> "Character":
         """Character constructor.
 
         Needed because NamedTuple.__init__ can't be modified.
@@ -148,7 +148,7 @@ class Character(NamedTuple):
                          initial_effects)
 
       
-    def modify(self, changes: Self) -> Self:
+    def modify(self, changes: "Character") -> "Character":
         """Generate new character sheet based on an existing one.
 
         Used to get around the un-mofifiablility of NamedTuple.
@@ -174,7 +174,7 @@ class Character(NamedTuple):
         return Stats(*new_stats)
 
 
-    def hit(self, attack: DamageInstance) -> (Self, int):
+    def hit(self, attack: DamageInstance) -> ("Character", int):
         """Calculate the effect of an attack.
 
         Returns a modified character sheet of the target and the damage taken.

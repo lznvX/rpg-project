@@ -9,6 +9,7 @@ from common import Stats, DamageInstance, Character, Action
 import copy
 import curses
 import ctypes
+import logging
 import math
 import time
 from typing import NamedTuple
@@ -28,6 +29,19 @@ class Rectangle(NamedTuple):
     height: int
     width: int
     color: int = 255
+    
+    @classmethod
+    def new(cls, y: int, x: int, height: int, width: int, color: int = 255) -> "Rectangle":
+        return cls(y, x, height, width, color)
+    
+    def config(self, **kwargs) -> "Rectangle":
+        return Rectangle(
+            kwargs.get("y", self.y),
+            kwargs.get("x", self.x),
+            kwargs.get("height", self.height),
+            kwargs.get("width", self.width),
+            kwargs.get("color", self.color),
+        )
     
     def draw(self, buffer: list[list[tuple[str, int]]]) -> None:
         if self.height <= 0 or self.width <= 0:
@@ -51,19 +65,40 @@ class Rectangle(NamedTuple):
 
 
 class TextBox(NamedTuple):
-    y: int
-    x: int
-    height: int
-    width: int
+    rectangle: Rectangle
     text: str = None
     
+    @property
+    def y(self) -> int:
+        return self.rectangle.y
+    
+    @property
+    def x(self) -> int:
+        return self.rectangle.x
+    
+    @property
+    def height(self) -> int:
+        return self.rectangle.height
+    
+    @property
+    def width(self) -> int:
+        return self.rectangle.width
+    
+    @classmethod
+    def new(cls, y: int, x: int, height: int, width: int, text: str = None) -> "TextBox":
+        return cls(
+            Rectangle(y, x, height, width),
+            text,
+        )
+    
+    def config(self, **kwargs) -> "TextBox":
+        return TextBox(
+            self.rectangle.config(**kwargs),
+            kwargs.get("text", self.text),
+        )
+    
     def draw(self, buffer: list[list[tuple[str, int]]]) -> None:
-        Rectangle(
-            self.y,
-            self.x,
-            self.height,
-            self.width,
-        ).draw(buffer)
+        self.rectangle.draw(buffer)
         
         if self.text is None: return
         
@@ -76,13 +111,26 @@ class TextBox(NamedTuple):
 
 
 class DialogBox(NamedTuple):
-    y: int
-    x: int
-    height: int
-    width: int
+    text_box: TextBox
     dialog: tuple[DialogLine, ...]
     start_time: float
     line_index: int = 0
+    
+    @property
+    def y(self) -> int:
+        return self.text_box.y
+    
+    @property
+    def x(self) -> int:
+        return self.text_box.x
+    
+    @property
+    def height(self) -> int:
+        return self.text_box.height
+    
+    @property
+    def width(self) -> int:
+        return self.text_box.width
     
     @property
     def dialog_line(self) -> DialogLine:
@@ -91,42 +139,31 @@ class DialogBox(NamedTuple):
     @classmethod
     def new(cls, y: int, x: int, height: int, width: int, dialog: tuple[DialogLine, ...]) -> "DialogBox":
         return cls(
-            y,
-            x,
-            height,
-            width,
+            TextBox.new(y, x, height, width),
             dialog,
             time.time(),
+            0,
         )
     
-    def set_geometry(self, **kwargs) -> "DialogBox":
+    def config(self, **kwargs) -> "DialogBox":
         return DialogBox(
-            kwargs["y"] if "y" in kwargs else self.y,
-            kwargs["x"] if "x" in kwargs else self.x,
-            kwargs["height"] if "height" in kwargs else self.height,
-            kwargs["width"] if "width" in kwargs else self.width,
-            self.dialog,
-            self.start_time,
-            self.line_index,
+            self.text_box.config(**kwargs),
+            kwargs.get("dialog", self.dialog),
+            kwargs.get("start_time", self.start_time),
+            kwargs.get("line_index", self.line_index),
         )
     
     def next(self) -> "DialogBox":
         if math.floor((time.time() - self.start_time) / CHARACTER_TIME) <= len(self.dialog[self.line_index].text):
             return DialogBox(
-                self.y,
-                self.x,
-                self.height,
-                self.width,
+                self.text_box,
                 self.dialog,
                 0,
                 self.line_index,
             )
         elif self.line_index + 1 < len(self.dialog):
             return DialogBox(
-                self.y,
-                self.x,
-                self.height,
-                self.width,
+                self.text_box,
                 self.dialog,
                 time.time(),
                 self.line_index + 1,
@@ -134,25 +171,82 @@ class DialogBox(NamedTuple):
         else:
             return None
     
-    def draw(self, buffer: list[list[tuple[str, int]]]) -> None:
+    def draw(self, buffer: list[list[tuple[str, int]]]) -> "DialogBox":
         length_to_draw = min(math.floor((time.time() - self.start_time) / CHARACTER_TIME), len(self.dialog[self.line_index].text))
-        dialog_line = self.dialog[self.line_index]
-        TextBox(
-            self.y,
-            self.x,
-            self.height,
-            self.width,
-            ((f"[{self.dialog_line.character.name}]: " if not self.dialog_line.character is None else "")
-            + self.dialog[self.line_index].text[:length_to_draw]),
-        ).draw(buffer)
+        formatted_text = ((f"[{self.dialog_line.character.name}]: " if not self.dialog_line.character is None else "")
+            + self.dialog[self.line_index].text[:length_to_draw])
+        
+        updated_self = self.config(text=formatted_text)
+        updated_self.text_box.draw(buffer)
+        return updated_self
 
 
 class ChoiceBox(NamedTuple):
-    y: int
-    x: int
-    height: int
-    width: int
+    text_box: TextBox
     options: tuple[str, ...]
+    selected_index: int = 0
+    
+    @property
+    def y(self) -> int:
+        return self.text_box.y
+    
+    @property
+    def x(self) -> int:
+        return self.text_box.x
+    
+    @property
+    def height(self) -> int:
+        return self.text_box.height
+    
+    @property
+    def width(self) -> int:
+        return self.text_box.width
+    
+    @property
+    def selected_option(self) -> str:
+        return self.options[self.selected_index]
+    
+    @classmethod
+    def new(cls, y: int, x: int, height: int, width: int, options: tuple[str, ...], selected_index: int = 0) -> "ChoiceBox":
+        return cls(
+            TextBox.new(y, x, height, width),
+            options,
+            selected_index,
+        )
+    
+    def config(self, **kwargs) -> "ChoiceBox":
+        return ChoiceBox(
+            self.text_box.config(**kwargs),
+            kwargs.get("options", self.options),
+            kwargs.get("selected_index", self.selected_index),
+        )
+    
+    def select_previous(self) -> "ChoiceBox":
+        return ChoiceBox(
+            self.text_box,
+            self.options,
+            move_toward(self.selected_index, 0),
+        )
+    
+    def select_next(self) -> "ChoiceBox":
+        return ChoiceBox(
+            self.text_box,
+            self.options,
+            move_toward(self.selected_index, len(self.options) - 1),
+        )
+    
+    def confirm(self) -> int:
+        return self.selected_option
+    
+    def draw(self, buffer: list[list[tuple[str, int]]]) -> "ChoiceBox":
+        formatted_text = ""
+        for i, option in enumerate(self.options):
+            formatted_line = ("> " if i == self.selected_index else "  ") + option
+            formatted_text += formatted_line.ljust((self.width - 5) * 2)
+        
+        updated_self = self.config(text=formatted_text)
+        updated_self.text_box.draw(buffer)
+        return updated_self
 
 
 def move_toward(a: int | float, b: int | float, step: int | float = 1) -> int | float:
@@ -235,6 +329,14 @@ def main(stdscr) -> None:
         dialog,
     )
     
+    options = (
+        "haram",
+        "harambe",
+        "PETAH",
+        "The honse is here.",
+    )
+    choice_box = None
+    
     float_dialog_y = float(dialog_box.y)
 
     while 1:
@@ -250,20 +352,38 @@ def main(stdscr) -> None:
 
         key = stdscr.getch()
         if key == ord(" ") or key == ord("\n"):
-            if not dialog_box is None: dialog_box = dialog_box.next()
+            if not dialog_box is None:
+                dialog_box = dialog_box.next()
+                if dialog_box is None:
+                    choice_box = ChoiceBox.new(
+                        screen_height - 12,
+                        50,
+                        10,
+                        screen_width - 100,
+                        options,
+                    )
+        elif key == curses.KEY_UP:
+            if not choice_box is None:
+                choice_box = choice_box.select_previous()
+        elif key == curses.KEY_DOWN:
+            if not choice_box is None:
+                choice_box = choice_box.select_next()
         elif key == ord("q"):
             break
 
         stdscr.clear()
-
+        
         buffer = copy.deepcopy(empty_buffer)
         
         if not dialog_box is None:
             dialog_target_y = screen_height if dialog_box.start_time is None else screen_height - 12
             if dialog_box.y != dialog_target_y:
                 float_dialog_y = move_toward(float_dialog_y, dialog_target_y, delta_time * 100)
-                dialog_box = dialog_box.set_geometry(y=round(float_dialog_y))
-            dialog_box.draw(buffer)
+                dialog_box = dialog_box.config(y=round(float_dialog_y))
+            dialog_box = dialog_box.draw(buffer)
+        
+        if not choice_box is None:
+            choice_box = choice_box.draw(buffer)
         
         display_buffer(stdscr, buffer)
         stdscr.addstr(0, 0, f"FPS : {round(average_fps)}")
@@ -274,4 +394,6 @@ def main(stdscr) -> None:
 time.sleep(0.5)
 fullscreen()
 time.sleep(0.5)
+logger = logging.getLogger(__name__)
+logging.basicConfig(filename='dialog.log', encoding='utf-8', level=logging.DEBUG)
 curses.wrapper(main)

@@ -1,5 +1,5 @@
 """
-Système d'affichage d'interface.
+Système d'affichage d'interface OUTDATED.
 
 Contributors:
     Romain
@@ -12,6 +12,9 @@ import logging
 import math
 import time
 from typing import NamedTuple
+
+logger = logging.getLogger(__name__)
+logging.basicConfig(filename='display.log', encoding='utf-8', level=logging.DEBUG)
 
 
 def main(stdscr) -> None:
@@ -110,9 +113,4 @@ def main(stdscr) -> None:
         stdscr.refresh()
 
 
-time.sleep(0.5)
-fullscreen()
-time.sleep(0.5)
-logger = logging.getLogger(__name__)
-logging.basicConfig(filename='display.log', encoding='utf-8', level=logging.DEBUG)
-curses.wrapper(main)
+cuinter.start()

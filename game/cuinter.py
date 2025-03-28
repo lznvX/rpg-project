@@ -9,14 +9,13 @@ from common import DialogLine, move_toward
 import copy
 import ctypes
 import curses
-import logger
+import logging
 import math
 import time
 from typing import NamedTuple
 
 X_CORRECTION = 2.6 # Hauteur / largeur d'un caractère
 CHARACTER_TIME = 0.025 # Délai d'affichage de chaque caractère dans les textes
-EMPTY_BUFFER = [[None for _ in range(screen_width)] for _ in range(screen_height)]
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(filename='cuinter.log', encoding='utf-8', level=logging.DEBUG)
@@ -24,6 +23,42 @@ logging.basicConfig(filename='cuinter.log', encoding='utf-8', level=logging.DEBU
 stdscr = None
 screen_height = None
 screen_width = None
+empty_buffer = None
+
+ui_elements = []
+
+class Label(NamedTuple):
+    y: int
+    x: int
+    text: str = None
+    color: int = 255
+    
+    @classmethod
+    def new(cls, y: int, x: int, text: str = None, color: int = 255, is_top_level: bool = True) -> "Rectangle":
+        label = cls(y, x, text, color)
+        
+        if is_top_level:
+            ui_elements.append(label)
+            logger.debug("Created new Label")
+        
+        return label
+    
+    def config(self, **kwargs) -> "Label":
+        return Label(
+            kwargs.get("y", self.y),
+            kwargs.get("x", self.x),
+            kwargs.get("text", self.text),
+            kwargs.get("color", self.color),
+        )
+    
+    def draw(self, buffer: list[list[tuple[str, int]]]) -> "Label":
+        if self.text is None: return self
+        
+        for i, char in enumerate(self.text):
+            _set_cell(buffer, self.y, text_x + i, char)
+        
+        return self
+
 
 class Rectangle(NamedTuple):
     y: int
@@ -33,9 +68,14 @@ class Rectangle(NamedTuple):
     color: int = 255
     
     @classmethod
-    def new(cls, y: int, x: int, height: int, width: int, color: int = 255) -> "Rectangle":
-        logger.debug("Created new Rectangle")
-        return cls(y, x, height, width, color)
+    def new(cls, y: int, x: int, height: int, width: int, color: int = 255, is_top_level: bool = True) -> "Rectangle":
+        rectangle = cls(y, x, height, width, color)
+        
+        if is_top_level:
+            ui_elements.append(rectangle)
+            logger.debug("Created new Rectangle")
+        
+        return rectangle
     
     def config(self, **kwargs) -> "Rectangle":
         return Rectangle(
@@ -46,26 +86,26 @@ class Rectangle(NamedTuple):
             kwargs.get("color", self.color),
         )
     
-    def draw(self, buffer: list[list[tuple[str, int]]]) -> None:
-        if self.height <= 0 or self.width <= 0:
-            return
+    def draw(self, buffer: list[list[tuple[str, int]]]) -> "Rectangle":
+        if self.height <= 0 or self.width <= 0: return self
         
         y1, y2 = self.y, self.y + self.height
         x1, x2 = self.x, self.x + self.width
         
-        set_cell(buffer, y1, x1, "┌", self.color)
-        set_cell(buffer, y1, x2, "┐", self.color)
-        set_cell(buffer, y2, x1, "└", self.color)
-        set_cell(buffer, y2, x2, "┘", self.color)
+        _set_cell(buffer, y1, x1, "┌", self.color)
+        _set_cell(buffer, y1, x2, "┐", self.color)
+        _set_cell(buffer, y2, x1, "└", self.color)
+        _set_cell(buffer, y2, x2, "┘", self.color)
         
         for y in range(y1 + 1, y2):
-            set_cell(buffer, y, x1, "│", self.color)
-            set_cell(buffer, y, x2, "│", self.color)
+            _set_cell(buffer, y, x1, "│", self.color)
+            _set_cell(buffer, y, x2, "│", self.color)
         
         for x in range(x1 + 1, x2):
-            set_cell(buffer, y1, x, "─", self.color)
-            set_cell(buffer, y2, x, "─", self.color)
-
+            _set_cell(buffer, y1, x, "─", self.color)
+            _set_cell(buffer, y2, x, "─", self.color)
+        
+        return self
 
 class TextBox(NamedTuple):
     rectangle: Rectangle
@@ -88,12 +128,17 @@ class TextBox(NamedTuple):
         return self.rectangle.width
     
     @classmethod
-    def new(cls, y: int, x: int, height: int, width: int, text: str = None) -> "TextBox":
-        logger.debug("Created new TextBox")
-        return cls(
-            Rectangle(y, x, height, width),
+    def new(cls, y: int, x: int, height: int, width: int, text: str = None, is_top_level: bool = True) -> "TextBox":
+        text_box = cls(
+            Rectangle.new(y, x, height, width, 255, False),
             text,
         )
+        
+        if is_top_level:
+            ui_elements.append(text_box)
+            logger.debug("Created new TextBox")
+        
+        return text_box
     
     def config(self, **kwargs) -> "TextBox":
         return TextBox(
@@ -101,17 +146,19 @@ class TextBox(NamedTuple):
             kwargs.get("text", self.text),
         )
     
-    def draw(self, buffer: list[list[tuple[str, int]]]) -> None:
+    def draw(self, buffer: list[list[tuple[str, int]]]) -> "TextBox":
         self.rectangle.draw(buffer)
         
-        if self.text is None: return
+        if self.text is None: return self
         
         text_y = self.y + 2
         text_x = self.x + 3
         wrap = self.width - 5
         
-        for i in range(len(self.text)):
-            set_cell(buffer, text_y + i // wrap, text_x + i % wrap, self.text[i])
+        for i, char in enumerate(self.text):
+            _set_cell(buffer, text_y + i // wrap, text_x + i % wrap, char)
+        
+        return self
 
 
 class DialogBox(NamedTuple):
@@ -141,14 +188,19 @@ class DialogBox(NamedTuple):
         return self.dialog[self.line_index]
     
     @classmethod
-    def new(cls, y: int, x: int, height: int, width: int, dialog: tuple[DialogLine, ...]) -> "DialogBox":
-        return cls(
-            logger.debug("Created new DialogBox")
-            TextBox.new(y, x, height, width),
+    def new(cls, y: int, x: int, height: int, width: int, dialog: tuple[DialogLine, ...], is_top_level: bool = True) -> "DialogBox":
+        dialog_box = cls(
+            TextBox.new(y, x, height, width, None, False),
             dialog,
             time.time(),
             0,
         )
+        
+        if is_top_level:
+            ui_elements.append(dialog_box)
+            logger.debug("Created new DialogBox")
+        
+        return dialog_box
     
     def config(self, **kwargs) -> "DialogBox":
         return DialogBox(
@@ -212,13 +264,18 @@ class ChoiceBox(NamedTuple):
         return self.options[self.selected_index]
     
     @classmethod
-    def new(cls, y: int, x: int, height: int, width: int, options: tuple[str, ...], selected_index: int = 0) -> "ChoiceBox":
-        logger.debug("Created new ChoiceBox")
-        return cls(
-            TextBox.new(y, x, height, width),
+    def new(cls, y: int, x: int, height: int, width: int, options: tuple[str, ...], selected_index: int = 0, is_top_level: bool = True) -> "ChoiceBox":
+        choice_box = cls(
+            TextBox.new(y, x, height, width, None, False),
             options,
             selected_index,
         )
+        
+        if is_top_level:
+            ui_elements.append(choice_box)
+            logger.debug("Created new ChoiceBox")
+        
+        return choice_box
     
     def config(self, **kwargs) -> "ChoiceBox":
         return ChoiceBox(
@@ -255,20 +312,20 @@ class ChoiceBox(NamedTuple):
         return updated_self
 
 
-def set_cell(buffer: list[list[tuple[str, int]]], y: int, x: int, char: str = "█", color: int = 255) -> None:
+def _set_cell(buffer: list[list[tuple[str, int]]], y: int, x: int, char: str = "█", color: int = 255) -> None:
     """Remplace la cellule à la position y x du buffer sans erreurs d'index."""
     if 0 <= y < len(buffer) and 0 <= x < len(buffer[0]):
         buffer[y][x] = (char, color) if not char is None else None
 
 
-def fullscreen() -> None:
+def _fullscreen() -> None:
     """Simule la pression de la touche F11."""
     user32 = ctypes.windll.user32
     user32.keybd_event(0x7A, 0, 0, 0)
     user32.keybd_event(0x7A, 0, 0x0002, 0)
 
 
-def display_buffer(stdscr, buffer: tuple[tuple[tuple[str, int]]]) -> None:
+def _display_buffer(stdscr, buffer: tuple[tuple[tuple[str, int]]]) -> None:
     """
     Affiche le buffer par lignes au lieu de caractères individuels pour
     améliorer les performances.
@@ -298,18 +355,34 @@ def display_buffer(stdscr, buffer: tuple[tuple[tuple[str, int]]]) -> None:
 
 
 def start() -> None:
+    global stdscr, screen_height, screen_width, empty_buffer
+    
     time.sleep(0.5)
-    fullscreen()
+    _fullscreen()
     time.sleep(0.5)
-    curses.wrapper(_main)
-
-
-def update(delta_time: float) -> None:
     
+    stdscr = curses.initscr()
+    
+    curses.start_color()
+    curses.use_default_colors()
+    for i in range(curses.COLOR_PAIRS - 1):
+        curses.init_pair(i + 1, i, -1)
+    
+    curses.curs_set(0) # Cache le curseur
+    stdscr.nodelay(1) # Pas de blocage d'entrées
+    stdscr.timeout(0) # Délai de vérification d'entrée
+    
+    screen_height, screen_width = stdscr.getmaxyx()
+    empty_buffer = [[None for _ in range(screen_width)] for _ in range(screen_height)]
 
 
-def _main(stdscr_instance) -> None:
-    global stdscr
-    stdscr = stdscr_instance
+def update() -> None:
+    stdscr.clear()
+    buffer = copy.deepcopy(empty_buffer)
     
+    for i in range(len(ui_elements)):
+        ui_elements[i] = ui_elements[i].draw(buffer)
     
+    logger.debug(ui_elements)
+    _display_buffer(stdscr, buffer)
+    stdscr.refresh()

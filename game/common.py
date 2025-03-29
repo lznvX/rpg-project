@@ -1,9 +1,10 @@
-"""Classes shared between several systems
+"""Classes and functions shared between several systems
 
 Created on 2025.03.20
 Contributors:
     Jakub
     Adrien
+    Romain (added 7 lines, totally deserves to be here)
 """
 
 

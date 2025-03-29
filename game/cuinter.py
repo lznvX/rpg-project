@@ -1,5 +1,6 @@
-"""
-Système de gestion d'interface pour curses.
+"""Interface and display for curses
+
+Basically a tkinter clone at this point.
 
 Contributors:
     Romain
@@ -13,6 +14,7 @@ import logging
 import math
 import time
 from typing import NamedTuple
+import uuid
 
 X_CORRECTION = 2.6 # Hauteur / largeur d'un caractère
 CHARACTER_TIME = 0.025 # Délai d'affichage de chaque caractère dans les textes
@@ -25,9 +27,11 @@ screen_height = None
 screen_width = None
 empty_buffer = None
 
-ui_elements = []
+ui_elements = {}
+
 
 class Label(NamedTuple):
+    pid: int # Persistent identifier, ask Romain
     y: int
     x: int
     text: str = None
@@ -35,32 +39,41 @@ class Label(NamedTuple):
     
     @classmethod
     def new(cls, y: int, x: int, text: str = None, color: int = 255, is_top_level: bool = True) -> "Rectangle":
-        label = cls(y, x, text, color)
+        pid = int(uuid.uuid4())
+        label = cls(pid, y, x, text, color)
         
         if is_top_level:
-            ui_elements.append(label)
+            ui_elements[pid] = label
             logger.debug("Created new Label")
         
         return label
     
-    def config(self, **kwargs) -> "Label":
-        return Label(
+    def config(self, is_top_level: bool = True, **kwargs) -> "Label":
+        label = Label(
+            self.pid,
             kwargs.get("y", self.y),
             kwargs.get("x", self.x),
             kwargs.get("text", self.text),
             kwargs.get("color", self.color),
         )
+        
+        if is_top_level: ui_elements[self.pid] = label
+        return label
+    
+    def delete(self) -> None:
+        del ui_elements[self.pid]
     
     def draw(self, buffer: list[list[tuple[str, int]]]) -> "Label":
         if self.text is None: return self
         
         for i, char in enumerate(self.text):
-            _set_cell(buffer, self.y, text_x + i, char)
+            _set_cell(buffer, self.y, self.x + i, char)
         
         return self
 
 
 class Rectangle(NamedTuple):
+    pid: int
     y: int
     x: int
     height: int
@@ -69,22 +82,30 @@ class Rectangle(NamedTuple):
     
     @classmethod
     def new(cls, y: int, x: int, height: int, width: int, color: int = 255, is_top_level: bool = True) -> "Rectangle":
-        rectangle = cls(y, x, height, width, color)
+        pid = int(uuid.uuid4())
+        rectangle = cls(pid, y, x, height, width, color)
         
         if is_top_level:
-            ui_elements.append(rectangle)
+            ui_elements[pid] = rectangle
             logger.debug("Created new Rectangle")
         
         return rectangle
     
-    def config(self, **kwargs) -> "Rectangle":
-        return Rectangle(
+    def config(self, is_top_level: bool = True, **kwargs) -> "Rectangle":
+        rectangle = Rectangle(
+            self.pid,
             kwargs.get("y", self.y),
             kwargs.get("x", self.x),
             kwargs.get("height", self.height),
             kwargs.get("width", self.width),
             kwargs.get("color", self.color),
         )
+        
+        if is_top_level: ui_elements[self.pid] = rectangle
+        return rectangle
+    
+    def delete(self) -> None:
+        del ui_elements[self.pid]
     
     def draw(self, buffer: list[list[tuple[str, int]]]) -> "Rectangle":
         if self.height <= 0 or self.width <= 0: return self
@@ -100,6 +121,8 @@ class Rectangle(NamedTuple):
         for y in range(y1 + 1, y2):
             _set_cell(buffer, y, x1, "│", self.color)
             _set_cell(buffer, y, x2, "│", self.color)
+            for x in range(x1 + 1, x2):
+                _set_cell(buffer, y, x, None)
         
         for x in range(x1 + 1, x2):
             _set_cell(buffer, y1, x, "─", self.color)
@@ -107,7 +130,9 @@ class Rectangle(NamedTuple):
         
         return self
 
+
 class TextBox(NamedTuple):
+    pid: int
     rectangle: Rectangle
     text: str = None
     
@@ -129,22 +154,31 @@ class TextBox(NamedTuple):
     
     @classmethod
     def new(cls, y: int, x: int, height: int, width: int, text: str = None, is_top_level: bool = True) -> "TextBox":
+        pid = int(uuid.uuid4())
         text_box = cls(
+            pid,
             Rectangle.new(y, x, height, width, 255, False),
             text,
         )
         
         if is_top_level:
-            ui_elements.append(text_box)
+            ui_elements[pid] = text_box
             logger.debug("Created new TextBox")
         
         return text_box
     
-    def config(self, **kwargs) -> "TextBox":
-        return TextBox(
-            self.rectangle.config(**kwargs),
+    def config(self, is_top_level: bool = True, **kwargs) -> "TextBox":
+        text_box = TextBox(
+            self.pid,
+            self.rectangle.config(False, **kwargs),
             kwargs.get("text", self.text),
         )
+        
+        if is_top_level: ui_elements[self.pid] = text_box
+        return text_box
+    
+    def delete(self) -> None:
+        del ui_elements[self.pid]
     
     def draw(self, buffer: list[list[tuple[str, int]]]) -> "TextBox":
         self.rectangle.draw(buffer)
@@ -162,6 +196,7 @@ class TextBox(NamedTuple):
 
 
 class DialogBox(NamedTuple):
+    pid: int
     text_box: TextBox
     dialog: tuple[DialogLine, ...]
     start_time: float
@@ -189,7 +224,9 @@ class DialogBox(NamedTuple):
     
     @classmethod
     def new(cls, y: int, x: int, height: int, width: int, dialog: tuple[DialogLine, ...], is_top_level: bool = True) -> "DialogBox":
+        pid = int(uuid.uuid4())
         dialog_box = cls(
+            pid,
             TextBox.new(y, x, height, width, None, False),
             dialog,
             time.time(),
@@ -197,41 +234,40 @@ class DialogBox(NamedTuple):
         )
         
         if is_top_level:
-            ui_elements.append(dialog_box)
+            ui_elements[pid] = dialog_box
             logger.debug("Created new DialogBox")
         
         return dialog_box
     
-    def config(self, **kwargs) -> "DialogBox":
-        return DialogBox(
-            self.text_box.config(**kwargs),
+    def config(self, is_top_level: bool = True, **kwargs) -> "DialogBox":
+        dialog_box = DialogBox(
+            self.pid,
+            self.text_box.config(False, **kwargs),
             kwargs.get("dialog", self.dialog),
             kwargs.get("start_time", self.start_time),
             kwargs.get("line_index", self.line_index),
         )
+        
+        if is_top_level: ui_elements[self.pid] = dialog_box
+        return dialog_box
+    
+    def delete(self) -> None:
+        del ui_elements[self.pid]
     
     def next(self) -> "DialogBox":
-        if math.floor((time.time() - self.start_time) / CHARACTER_TIME) <= len(self.dialog[self.line_index].text):
-            return DialogBox(
-                self.text_box,
-                self.dialog,
-                0,
-                self.line_index,
-            )
+        if math.floor((time.time() - self.start_time) / CHARACTER_TIME) <= len(self.dialog_line.text):
+            return self.config(start_time=0)
         elif self.line_index + 1 < len(self.dialog):
-            return DialogBox(
-                self.text_box,
-                self.dialog,
-                time.time(),
-                self.line_index + 1,
-            )
+            return self.config(start_time=time.time(), line_index=self.line_index + 1)
         else:
+            self.delete()
             return None
     
     def draw(self, buffer: list[list[tuple[str, int]]]) -> "DialogBox":
-        length_to_draw = min(math.floor((time.time() - self.start_time) / CHARACTER_TIME), len(self.dialog[self.line_index].text))
+        length_to_draw = min(math.floor((time.time() - self.start_time) / CHARACTER_TIME), len(self.dialog_line.text))
         formatted_text = ((f"[{self.dialog_line.character.name}]: " if not self.dialog_line.character is None else "")
-            + self.dialog[self.line_index].text[:length_to_draw])
+                          + self.dialog_line.text[:length_to_draw])
+        logger.debug(formatted_text)
         
         updated_self = self.config(text=formatted_text)
         updated_self.text_box.draw(buffer)
@@ -239,6 +275,7 @@ class DialogBox(NamedTuple):
 
 
 class ChoiceBox(NamedTuple):
+    pid: int
     text_box: TextBox
     options: tuple[str, ...]
     selected_index: int = 0
@@ -265,41 +302,44 @@ class ChoiceBox(NamedTuple):
     
     @classmethod
     def new(cls, y: int, x: int, height: int, width: int, options: tuple[str, ...], selected_index: int = 0, is_top_level: bool = True) -> "ChoiceBox":
+        pid = int(uuid.uuid4())
         choice_box = cls(
+            pid,
             TextBox.new(y, x, height, width, None, False),
             options,
             selected_index,
         )
         
         if is_top_level:
-            ui_elements.append(choice_box)
+            ui_elements[pid] = choice_box
             logger.debug("Created new ChoiceBox")
         
         return choice_box
     
-    def config(self, **kwargs) -> "ChoiceBox":
-        return ChoiceBox(
-            self.text_box.config(**kwargs),
+    def config(self, is_top_level: bool = True, **kwargs) -> "ChoiceBox":
+        choice_box = ChoiceBox(
+            self.pid,
+            self.text_box.config(False, **kwargs),
             kwargs.get("options", self.options),
             kwargs.get("selected_index", self.selected_index),
         )
+        
+        if is_top_level: ui_elements[self.pid] = choice_box
+        return choice_box
+    
+    def delete(self) -> None:
+        del ui_elements[self.pid]
     
     def select_previous(self) -> "ChoiceBox":
-        return ChoiceBox(
-            self.text_box,
-            self.options,
-            move_toward(self.selected_index, 0),
-        )
+        return self.config(selected_index=move_toward(self.selected_index, 0))
     
     def select_next(self) -> "ChoiceBox":
-        return ChoiceBox(
-            self.text_box,
-            self.options,
-            move_toward(self.selected_index, len(self.options) - 1),
-        )
+        return self.config(selected_index=move_toward(self.selected_index, len(self.options) - 1))
     
     def confirm(self) -> int:
-        return self.selected_option
+        selected_option = self.selected_option
+        self.delete()
+        return selected_option
     
     def draw(self, buffer: list[list[tuple[str, int]]]) -> "ChoiceBox":
         formatted_text = ""
@@ -354,6 +394,10 @@ def _display_buffer(stdscr, buffer: tuple[tuple[tuple[str, int]]]) -> None:
         stdscr.addstr(row_str)
 
 
+def get_key() -> int:
+    return stdscr.getch()
+
+
 def start() -> None:
     global stdscr, screen_height, screen_width, empty_buffer
     
@@ -377,12 +421,19 @@ def start() -> None:
 
 
 def update() -> None:
+    global ui_elements
+    
     stdscr.clear()
     buffer = copy.deepcopy(empty_buffer)
     
-    for i in range(len(ui_elements)):
-        ui_elements[i] = ui_elements[i].draw(buffer)
+    updated_elements = {}
+
+    for pid, element in tuple(ui_elements.items()):
+        updated_element = element.draw(buffer)
+        if updated_element is not None:
+            updated_elements[pid] = updated_element
     
-    logger.debug(ui_elements)
+    ui_elements = updated_elements
+    
     _display_buffer(stdscr, buffer)
     stdscr.refresh()

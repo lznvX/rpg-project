@@ -1,5 +1,10 @@
-"""
-Système d'affichage d'interface OUTDATED.
+"""Système d'affichage d'interface
+
+OUTDATED
+OUTDATED
+OUTDATED
+OUTDATED
+OUTDATED
 
 Contributors:
     Romain

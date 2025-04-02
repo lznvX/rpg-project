@@ -1,7 +1,7 @@
 """
 Fait ...
 
-auteur : Adrien Buschbeck
+auteur : Adrien Buschbeck, Jakub Mann
 """
 
 from typing import NamedTuple
@@ -18,19 +18,20 @@ class Inventory(NamedTuple):
     backpack: dict[Item: int]
     slots = ("mainhand", "offhand", "head", "body", "feet")
     
-    
     def equip(self, slot, object):
         """equipe un objet sur une partie du corps """
-        if not object.is_equippable:
+        if not object.is_equippable: #error
             raise ValueError((f"Item {object_used} not equippable"))
-        if not slot in self.slots:
+        if not slot in self.slots: 
             raise ValueError((f"Slot {slot} does not exist"))
-        if equipment[slot] not is None:
-            # TODO: implement equipment swapping
-            raise ValueError(f"Slot {slot} is occupied")
+            
+        if equipment[slot] not is None: #if already a equipment
+            current_item = equipment[slot]
+            equipment[slot] = None
+            self.equip(slot, object)
+            self.add(current_item)
         equipment[slot] = object
         self.use(object)
-        
 
     def unequip(self, slot):
         """equipe un objet sur une partie du corps """
@@ -41,7 +42,6 @@ class Inventory(NamedTuple):
         equipment[slot] = None
         self.add(object)
 
-    
     def add(self, object_taken: Item):
         """Prend un objet et le met dans l'inventaire"""
         if backpack[object_taken] is None:
@@ -53,8 +53,13 @@ class Inventory(NamedTuple):
         if backpack[object_taken] is None:
             raise ValueError(f"Item {object_used} not found")
         elif backpack[object_taken] <= 0:
-            raise ValueError(f"Not enough of {object_used}")     
+            raise ValueError(f"Not enough of {object_used}")   
         else:
             self.backpack[object_taken] -= 1
             if self.backpack[object_taken] <= 0:
                 self.backpack[object_taken] = None
+    def _test():
+        Inventory_test = Inventory(mainhand, ofthand, feet, body, head, equipment, backpack, slots = ("mainhand", "offhand", "head", "body", "feet"))
+
+if __name__ == "__main__":
+    

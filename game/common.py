@@ -55,7 +55,7 @@ class Stats(NamedTuple):
                 new_stats.append(new)
         return Stats(*new_stats)
 
-      
+
 class Action(NamedTuple):
     """Describes an action during combat."""
 
@@ -98,8 +98,11 @@ class Item(NamedTuple):
     durability: int # do we want durability?
 
     stat_bonus: Stats # added to the user's stats
-    actions: list[Action] # added to the user's actions
+    actions: tuple[Action] # added to the user's actions
     uuid: UUID # used to keep track of applied bonuses
+
+    def __repr__(self):
+        return f"item {self.name}"
 
 
 class Character(NamedTuple):
@@ -147,7 +150,7 @@ class Character(NamedTuple):
                          actions,
                          initial_effects)
 
-      
+
     def modify(self, changes: Self) -> Self:
         """Generate new character sheet based on an existing one.
 

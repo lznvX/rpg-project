@@ -21,15 +21,13 @@ FPS_COUNTER_REFRESH = 1 # Time between each FPS counter update
 logger = logging.getLogger(__name__)
 logging.basicConfig(filename='main.log', encoding='utf-8', level=logging.DEBUG)
 
-cuinter.start()
-
 last_time = time.time()
 fps_timer = last_time  # Time of the last FPS update
 frame_count = 0
 
 fps_label = cuinter.Label.new(0, 0)
 
-############ Game constants and variables go here
+############ Game constants and variables
 
 dialog = (
     DialogLine("LELOLELOELOLEOLEOLEOLEOLEOLOLEOLOEELOmmmmmmmmmmmmmmmmmm    yeseiurrrrrhjsdhdjhsdjhsdhjsdhjdshjsdjhsdjhdsjhdshjsdhjsdhjsdhjdshjdshdsdssjhgfqwè¨qè¨¨èwq¨qwèwq", Character("Idris")),
@@ -45,7 +43,7 @@ options = (
     "The honse is here.",
 )
 
-############ Code to run on startup goes here
+############ Code to run on startup
 
 for i in range(8):
     cuinter.DialogBox.new(
@@ -82,11 +80,12 @@ while 1:
     
     ############ Cuinter event handling, code to run every frame
     
-    events = cuinter.process()
+    events = cuinter.mainloop()
     
-    for event_type, value in events.items():
+    for event_type, value in events:
         match event_type:
-            case "key":
+            case "key_pressed":
+                # Match case for the key doesn't work, don't waste your time
                 if value in (cuinter.curses.KEY_UP, ord("w")):
                     pass
                 

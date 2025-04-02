@@ -6,7 +6,7 @@ Contributors:
     Romain
 """
 
-from common import DialogLine, move_toward
+from common import DialogLine, UIEvent, move_toward
 import copy
 import ctypes
 import curses
@@ -22,13 +22,6 @@ CHARACTER_TIME = 0.025 # Délai d'affichage de chaque caractère dans les textes
 logger = logging.getLogger(__name__)
 logging.basicConfig(filename='cuinter.log', encoding='utf-8', level=logging.DEBUG)
 
-stdscr = None
-screen_height = None
-screen_width = None
-empty_buffer = None
-
-ui_elements = {}
-
 
 class Label(NamedTuple):
     pid: int # Persistent identifier, ask Romain
@@ -38,14 +31,13 @@ class Label(NamedTuple):
     color: int = 255
     
     @classmethod
-    def new(cls, y: int, x: int, text: str = None, color: int = 255, is_top_level: bool = True) -> "Rectangle":
+    def new(cls, y: int, x: int, text: str = None, color: int = 255, is_top_level: bool = True) -> "Label":
         pid = int(uuid.uuid4())
         label = cls(pid, y, x, text, color)
         
         if is_top_level:
-            ui_elements[pid] = label
+            set_element(pid, label)
             logger.debug("Created new Label")
-        
         return label
     
     def config(self, is_top_level: bool = True, **kwargs) -> "Label":
@@ -57,19 +49,17 @@ class Label(NamedTuple):
             kwargs.get("color", self.color),
         )
         
-        if is_top_level: ui_elements[self.pid] = label
+        if is_top_level: set_element(self.pid, label)
         return label
     
     def delete(self) -> None:
-        del ui_elements[self.pid]
+        remove_element(self.pid)
     
-    def draw(self, buffer: list[list[tuple[str, int]]]) -> "Label":
-        if self.text is None: return self
+    def draw(self, buffer: list[list[tuple[str, int]]]) -> None:
+        if self.text is None: return
         
         for i, char in enumerate(self.text):
             _set_cell(buffer, self.y, self.x + i, char)
-        
-        return self
 
 
 class Rectangle(NamedTuple):
@@ -86,9 +76,8 @@ class Rectangle(NamedTuple):
         rectangle = cls(pid, y, x, height, width, color)
         
         if is_top_level:
-            ui_elements[pid] = rectangle
+            set_element(pid, rectangle)
             logger.debug("Created new Rectangle")
-        
         return rectangle
     
     def config(self, is_top_level: bool = True, **kwargs) -> "Rectangle":
@@ -101,14 +90,14 @@ class Rectangle(NamedTuple):
             kwargs.get("color", self.color),
         )
         
-        if is_top_level: ui_elements[self.pid] = rectangle
+        if is_top_level: set_element(self.pid, rectangle)
         return rectangle
     
     def delete(self) -> None:
-        del ui_elements[self.pid]
+        remove_element(self.pid)
     
-    def draw(self, buffer: list[list[tuple[str, int]]]) -> "Rectangle":
-        if self.height <= 0 or self.width <= 0: return self
+    def draw(self, buffer: list[list[tuple[str, int]]]) -> None:
+        if self.height <= 0 or self.width <= 0: return
         
         y1, y2 = self.y, self.y + self.height
         x1, x2 = self.x, self.x + self.width
@@ -127,8 +116,6 @@ class Rectangle(NamedTuple):
         for x in range(x1 + 1, x2):
             _set_cell(buffer, y1, x, "─", self.color)
             _set_cell(buffer, y2, x, "─", self.color)
-        
-        return self
 
 
 class TextBox(NamedTuple):
@@ -162,9 +149,8 @@ class TextBox(NamedTuple):
         )
         
         if is_top_level:
-            ui_elements[pid] = text_box
+            set_element(pid, text_box)
             logger.debug("Created new TextBox")
-        
         return text_box
     
     def config(self, is_top_level: bool = True, **kwargs) -> "TextBox":
@@ -174,16 +160,16 @@ class TextBox(NamedTuple):
             kwargs.get("text", self.text),
         )
         
-        if is_top_level: ui_elements[self.pid] = text_box
+        if is_top_level: set_element(self.pid, text_box)
         return text_box
     
     def delete(self) -> None:
-        del ui_elements[self.pid]
+        remove_element(self.pid)
     
-    def draw(self, buffer: list[list[tuple[str, int]]]) -> "TextBox":
+    def draw(self, buffer: list[list[tuple[str, int]]]) -> None:
         self.rectangle.draw(buffer)
         
-        if self.text is None: return self
+        if self.text is None: return
         
         text_y = self.y + 2
         text_x = self.x + 3
@@ -191,8 +177,6 @@ class TextBox(NamedTuple):
         
         for i, char in enumerate(self.text):
             _set_cell(buffer, text_y + i // wrap, text_x + i % wrap, char)
-        
-        return self
 
 
 class DialogBox(NamedTuple):
@@ -234,9 +218,8 @@ class DialogBox(NamedTuple):
         )
         
         if is_top_level:
-            ui_elements[pid] = dialog_box
+            set_element(pid, dialog_box)
             logger.debug("Created new DialogBox")
-        
         return dialog_box
     
     def config(self, is_top_level: bool = True, **kwargs) -> "DialogBox":
@@ -248,30 +231,27 @@ class DialogBox(NamedTuple):
             kwargs.get("line_index", self.line_index),
         )
         
-        if is_top_level: ui_elements[self.pid] = dialog_box
+        if is_top_level: set_element(self.pid, dialog_box)
         return dialog_box
     
     def delete(self) -> None:
-        del ui_elements[self.pid]
+        remove_element(self.pid)
     
-    def next(self) -> "DialogBox":
+    def next(self) -> None:
         if math.floor((time.time() - self.start_time) / CHARACTER_TIME) <= len(self.dialog_line.text):
-            return self.config(start_time=0)
+            self.config(start_time=0)
         elif self.line_index + 1 < len(self.dialog):
-            return self.config(start_time=time.time(), line_index=self.line_index + 1)
+            self.config(start_time=time.time(), line_index=self.line_index + 1)
         else:
             self.delete()
-            return None
     
-    def draw(self, buffer: list[list[tuple[str, int]]]) -> "DialogBox":
+    def draw(self, buffer: list[list[tuple[str, int]]]) -> None:
         length_to_draw = min(math.floor((time.time() - self.start_time) / CHARACTER_TIME), len(self.dialog_line.text))
         formatted_text = ((f"[{self.dialog_line.character.name}]: " if not self.dialog_line.character is None else "")
                           + self.dialog_line.text[:length_to_draw])
-        logger.debug(formatted_text)
         
-        updated_self = self.config(text=formatted_text)
-        updated_self.text_box.draw(buffer)
-        return updated_self
+        self.config(text=formatted_text)
+        get_elements()[self.pid].text_box.draw(buffer)
 
 
 class ChoiceBox(NamedTuple):
@@ -311,9 +291,8 @@ class ChoiceBox(NamedTuple):
         )
         
         if is_top_level:
-            ui_elements[pid] = choice_box
+            set_element(pid, choice_box)
             logger.debug("Created new ChoiceBox")
-        
         return choice_box
     
     def config(self, is_top_level: bool = True, **kwargs) -> "ChoiceBox":
@@ -324,32 +303,29 @@ class ChoiceBox(NamedTuple):
             kwargs.get("selected_index", self.selected_index),
         )
         
-        if is_top_level: ui_elements[self.pid] = choice_box
+        if is_top_level: set_element(self.pid, choice_box)
         return choice_box
     
     def delete(self) -> None:
-        del ui_elements[self.pid]
+        remove_element(self.pid)
     
-    def select_previous(self) -> "ChoiceBox":
-        return self.config(selected_index=move_toward(self.selected_index, 0))
+    def select_previous(self) -> None:
+        self.config(selected_index=move_toward(self.selected_index, 0))
     
-    def select_next(self) -> "ChoiceBox":
-        return self.config(selected_index=move_toward(self.selected_index, len(self.options) - 1))
+    def select_next(self) -> None:
+        self.config(selected_index=move_toward(self.selected_index, len(self.options) - 1))
     
-    def confirm(self) -> int:
-        selected_option = self.selected_option
+    def confirm(self) -> None:
         self.delete()
-        return selected_option
     
-    def draw(self, buffer: list[list[tuple[str, int]]]) -> "ChoiceBox":
+    def draw(self, buffer: list[list[tuple[str, int]]]) -> None:
         formatted_text = ""
         for i, option in enumerate(self.options):
             formatted_line = ("> " if i == self.selected_index else "  ") + option
             formatted_text += formatted_line.ljust((self.width - 5) * 2)
         
-        updated_self = self.config(text=formatted_text)
-        updated_self.text_box.draw(buffer)
-        return updated_self
+        self.config(text=formatted_text)
+        get_elements()[self.pid].text_box.draw(buffer)
 
 
 def _set_cell(buffer: list[list[tuple[str, int]]], y: int, x: int, char: str = "█", color: int = 255) -> None:
@@ -396,65 +372,92 @@ def _display_buffer(stdscr, buffer: tuple[tuple[tuple[str, int]]]) -> None:
         stdscr.addstr(row_str)
 
 
-def start() -> None:
-    """Initializes the curses terminal, sets screen related variables."""
-    global stdscr, screen_height, screen_width, empty_buffer
+def _element_manager():
+    elements = {}
     
-    time.sleep(0.5)
-    _fullscreen()
-    time.sleep(0.5)
+    def get_elements() -> dict[int, object]:
+        return elements
     
-    stdscr = curses.initscr()
+    def set_element(pid: int, element: object) -> None:
+        nonlocal elements
+        elements[pid] = element
     
-    curses.start_color()
-    curses.use_default_colors()
-    for i in range(curses.COLOR_PAIRS - 1):
-        curses.init_pair(i + 1, i, -1)
+    def remove_element(pid: int) -> None:
+        nonlocal elements
+        del elements[pid]
     
-    curses.curs_set(0) # Cache le curseur
-    stdscr.nodelay(1) # Pas de blocage d'entrées
-    stdscr.timeout(0) # Délai de vérification d'entrée
-    
-    screen_height, screen_width = stdscr.getmaxyx()
-    empty_buffer = [[None for _ in range(screen_width)] for _ in range(screen_height)]
+    return get_elements, set_element, remove_element
 
 
-def process() -> dict:
+def _event_manager():
+    events = []
+    
+    def get_events() -> list[UIEvent]:
+        return events
+    
+    def add_event(event_type: str, value: object) -> None:
+        nonlocal events
+        events.append(UIEvent(event_type, value))
+    
+    def clear_events() -> None:
+        nonlocal events
+        events.clear()
+    
+    return get_events, add_event, clear_events
+
+
+def mainloop() -> dict[str, object]:
     """
     Draws the ui elements and processes inputs, returns a dictionary of events
     for main.py to handle.
     """
-    global ui_elements
     
     # Input updating
     
     key = stdscr.getch()
     
     if not key is None:
-        for pid, element in reversed(tuple(ui_elements.items())):
+        for element in reversed(get_elements().values()):
             try:
-                updated_element = element.key_pressed(key)
+                element.key_pressed(key)
+            except AttributeError:
+                continue
             else:
-                ui_elements[pid] = updated_element
                 break
-            except AttributeError, ValueError:
-                pass
         else:
-            pass
+            add_event("key_pressed", key)
     
     # Display updating
     
     buffer = copy.deepcopy(empty_buffer)
-    
-    updated_elements = {}
 
-    for pid, element in tuple(ui_elements.items()):
-        updated_element = element.draw(buffer)
-        if updated_element is not None:
-            updated_elements[pid] = updated_element
-    
-    ui_elements = updated_elements
+    for element in get_elements().values():
+        element.draw(buffer)
     
     stdscr.clear()
     _display_buffer(stdscr, buffer)
     stdscr.refresh()
+    
+    return get_events()
+
+
+time.sleep(0.5)
+_fullscreen()
+time.sleep(0.5)
+
+stdscr = curses.initscr()
+
+curses.start_color()
+curses.use_default_colors()
+for i in range(curses.COLOR_PAIRS - 1):
+    curses.init_pair(i + 1, i, -1)
+
+curses.curs_set(0) # Cache le curseur
+stdscr.nodelay(1) # Pas de blocage d'entrées
+stdscr.timeout(0) # Délai de vérification d'entrée
+
+screen_height, screen_width = stdscr.getmaxyx()
+empty_buffer = [[None for _ in range(screen_width)] for _ in range(screen_height)]
+
+get_elements, set_element, remove_element = _element_manager()
+get_events, add_event, clear_events = _event_manager()

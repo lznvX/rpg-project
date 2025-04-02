@@ -4,12 +4,14 @@ Run with CTRL+T (thonny), currently contains game loop setup, utility labels and
 interface tests. If _curses module missing, run pip install windows-curses in
 terminal.
 
+OUTDATED : contains input handling, will be put in cuinter
+
 Contributors:
     Romain
 """
 
 from common import Character, DialogLine, move_toward
-import cuinter
+import cuinter_old as cuinter
 import logging
 import random
 import time
@@ -47,16 +49,17 @@ options = (
 
 ############ Code to run on startup goes here
 
+dialog_boxes = []
 for i in range(8):
-    cuinter.DialogBox.new(
+    dialog_boxes.append(cuinter.DialogBox.new(
         random.randrange(0, cuinter.screen_height),
         random.randrange(0, cuinter.screen_width),
         random.randrange(10, 50),
         random.randrange(10, 50),
         dialog,
-    )
+    ))
 
-cuinter.ChoiceBox.new(
+choice_box = cuinter.ChoiceBox.new(
     cuinter.screen_height - 12,
     cuinter.screen_width // 4,
     10,
@@ -67,8 +70,6 @@ cuinter.ChoiceBox.new(
 ############
 
 while 1:
-    ############ Frame calculations
-    
     current_time = time.time()
     delta_time = current_time - last_time # Time since last frame
     last_time = current_time
@@ -80,24 +81,41 @@ while 1:
         fps_timer = current_time
         frame_count = 0
     
-    ############ Cuinter event handling, code to run every frame
+    ############ Input handling
     
-    events = cuinter.process()
+    # match statement no work and bad idea to put in a function
     
-    for event_type, value in events.items():
-        match event_type:
-            case "key":
-                if value in (cuinter.curses.KEY_UP, ord("w")):
-                    pass
-                
-                elif value in (cuinter.curses.KEY_DOWN, ord("s")):
-                    pass
-                
-                elif value in (cuinter.curses.KEY_LEFT, ord("a")):
-                    pass
-                
-                elif value in (cuinter.curses.KEY_RIGHT, ord("d")):
-                    pass
-                    
-                elif value == ord("q"):
-                    break
+    key = cuinter.get_key()
+    
+    if key in (ord(" "), ord("\n")):
+        if len(dialog_boxes) > 0 and not dialog_boxes[-1] is None:
+            dialog_boxes[-1] = dialog_boxes[-1].next()
+            if dialog_boxes[-1] is None: del dialog_boxes[-1]
+        elif not choice_box is None:
+            choice = choice_box.confirm()
+            choice_box = None
+    
+    elif key in (cuinter.curses.KEY_UP, ord("w")):
+        if not choice_box is None:
+            choice_box = choice_box.select_previous()
+    
+    elif key in (cuinter.curses.KEY_DOWN, ord("s")):
+        if not choice_box is None:
+            choice_box = choice_box.select_next()
+    
+    elif key in (cuinter.curses.KEY_LEFT, ord("a")):
+        pass
+    
+    elif key in (cuinter.curses.KEY_RIGHT, ord("d")):
+        pass
+        
+    elif key == ord("q"):
+        break
+    
+    ############ Code to run every frame goes here
+    
+    
+    
+    ############
+    
+    cuinter.update()

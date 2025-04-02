@@ -353,15 +353,13 @@ class ChoiceBox(NamedTuple):
 
 
 def _set_cell(buffer: list[list[tuple[str, int]]], y: int, x: int, char: str = "█", color: int = 255) -> None:
-    """
-    Sets the cell at position y x of the provided buffer without index errors.
-    """
+    """Remplace la cellule à la position y x du buffer sans erreurs d'index."""
     if 0 <= y < len(buffer) and 0 <= x < len(buffer[0]):
         buffer[y][x] = (char, color) if not char is None else None
 
 
 def _fullscreen() -> None:
-    """Simulates the F11 key being pressed."""
+    """Simule la pression de la touche F11."""
     user32 = ctypes.windll.user32
     user32.keybd_event(0x7A, 0, 0, 0)
     user32.keybd_event(0x7A, 0, 0x0002, 0)
@@ -369,8 +367,8 @@ def _fullscreen() -> None:
 
 def _display_buffer(stdscr, buffer: tuple[tuple[tuple[str, int]]]) -> None:
     """
-    Displays the buffer in rows instead of individual characters to improve
-    performance.
+    Affiche le buffer par lignes au lieu de caractères individuels pour
+    améliorer les performances.
     """
     for y, row in enumerate(buffer):
         row_str = ""
@@ -396,8 +394,11 @@ def _display_buffer(stdscr, buffer: tuple[tuple[tuple[str, int]]]) -> None:
         stdscr.addstr(row_str)
 
 
+def get_key() -> int:
+    return stdscr.getch()
+
+
 def start() -> None:
-    """Initializes the curses terminal, sets screen related variables."""
     global stdscr, screen_height, screen_width, empty_buffer
     
     time.sleep(0.5)
@@ -419,31 +420,10 @@ def start() -> None:
     empty_buffer = [[None for _ in range(screen_width)] for _ in range(screen_height)]
 
 
-def process() -> dict:
-    """
-    Draws the ui elements and processes inputs, returns a dictionary of events
-    for main.py to handle.
-    """
+def update() -> None:
     global ui_elements
     
-    # Input updating
-    
-    key = stdscr.getch()
-    
-    if not key is None:
-        for pid, element in reversed(tuple(ui_elements.items())):
-            try:
-                updated_element = element.key_pressed(key)
-            else:
-                ui_elements[pid] = updated_element
-                break
-            except AttributeError, ValueError:
-                pass
-        else:
-            pass
-    
-    # Display updating
-    
+    stdscr.clear()
     buffer = copy.deepcopy(empty_buffer)
     
     updated_elements = {}
@@ -455,6 +435,5 @@ def process() -> dict:
     
     ui_elements = updated_elements
     
-    stdscr.clear()
     _display_buffer(stdscr, buffer)
     stdscr.refresh()

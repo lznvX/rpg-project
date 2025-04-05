@@ -10,6 +10,7 @@ from common import DialogLine, UIEvent, move_toward
 import copy
 import ctypes
 import curses
+from curses import KEY_UP, KEY_DOWN, KEY_LEFT, KEY_RIGHT
 import logging
 import math
 import time
@@ -237,12 +238,17 @@ class DialogBox(NamedTuple):
     def delete(self) -> None:
         remove_element(self.pid)
     
+    def key_input(self, key: int) -> None:
+        if key in (ord(" "), ord("\n")):
+            self.next()
+    
     def next(self) -> None:
         if math.floor((time.time() - self.start_time) / CHARACTER_TIME) <= len(self.dialog_line.text):
             self.config(start_time=0)
         elif self.line_index + 1 < len(self.dialog):
             self.config(start_time=time.time(), line_index=self.line_index + 1)
         else:
+            add_event("finished_dialog", self)
             self.delete()
     
     def draw(self, buffer: list[list[tuple[str, int]]]) -> None:
@@ -309,6 +315,16 @@ class ChoiceBox(NamedTuple):
     def delete(self) -> None:
         remove_element(self.pid)
     
+    def key_input(self, key: int) -> None:
+        if key in (curses.KEY_UP, ord("w")):
+            self.select_previous()
+        
+        elif key in (curses.KEY_DOWN, ord("s")):
+            self.select_next()
+        
+        elif key in (ord(" "), ord("\n")):
+            self.confirm()
+    
     def select_previous(self) -> None:
         self.config(selected_index=move_toward(self.selected_index, 0))
     
@@ -316,6 +332,7 @@ class ChoiceBox(NamedTuple):
         self.config(selected_index=move_toward(self.selected_index, len(self.options) - 1))
     
     def confirm(self) -> None:
+        add_event("confirmed_choice", self)
         self.delete()
     
     def draw(self, buffer: list[list[tuple[str, int]]]) -> None:
@@ -412,6 +429,8 @@ def mainloop() -> dict[str, object]:
     for main.py to handle.
     """
     
+    clear_events()
+    
     # Input updating
     
     key = stdscr.getch()
@@ -419,13 +438,13 @@ def mainloop() -> dict[str, object]:
     if not key is None:
         for element in reversed(get_elements().values()):
             try:
-                element.key_pressed(key)
+                element.key_input(key)
             except AttributeError:
                 continue
             else:
                 break
         else:
-            add_event("key_pressed", key)
+            add_event("pressed_key", key)
     
     # Display updating
     

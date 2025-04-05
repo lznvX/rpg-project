@@ -84,19 +84,25 @@ while 1:
     
     for event_type, value in events:
         match event_type:
-            case "key_pressed":
+            case "pressed_key":
                 # Match case for the key doesn't work, don't waste your time
-                if value in (cuinter.curses.KEY_UP, ord("w")):
+                if value in (cuinter.KEY_UP, ord("w")):
                     pass
                 
-                elif value in (cuinter.curses.KEY_DOWN, ord("s")):
+                elif value in (cuinter.KEY_DOWN, ord("s")):
                     pass
                 
-                elif value in (cuinter.curses.KEY_LEFT, ord("a")):
+                elif value in (cuinter.KEY_LEFT, ord("a")):
                     pass
                 
-                elif value in (cuinter.curses.KEY_RIGHT, ord("d")):
+                elif value in (cuinter.KEY_RIGHT, ord("d")):
                     pass
                     
                 elif value == ord("q"):
                     break
+            
+            case "finished_dialog":
+                pass
+            
+            case "confirmed_choice":
+                pass

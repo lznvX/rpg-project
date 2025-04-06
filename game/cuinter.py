@@ -17,6 +17,10 @@ import time
 from typing import NamedTuple
 import uuid
 
+PRESSED_KEY = 0
+FINISHED_DIALOG = 1
+CONFIRMED_CHOICE = 2
+
 X_CORRECTION = 2.6 # Hauteur / largeur d'un caractère
 CHARACTER_TIME = 0.025 # Délai d'affichage de chaque caractère dans les textes
 
@@ -117,6 +121,55 @@ class Rectangle(NamedTuple):
         for x in range(x1 + 1, x2):
             _set_cell(buffer, y1, x, "─", self.color)
             _set_cell(buffer, y2, x, "─", self.color)
+
+
+class SpriteRenderer(NamedTuple):
+    pid: int
+    y: int
+    x: int
+    sprite: tuple[str, ...] = None
+    
+    @property
+    def height(self) -> int:
+        if self.sprite is None: return 0
+        return len(self.sprite)
+    
+    @property
+    def width(self) -> int:
+        if self.sprite is None: return 0
+        return max(len(row) for row in self.sprite)
+    
+    @classmethod
+    def new(cls, y: int, x: int, sprite: tuple[str, ...] = None, is_top_level: bool = True) -> "SpriteRenderer":
+        pid = int(uuid.uuid4())
+        sprite_renderer = cls(pid, y, x, sprite)
+        
+        if is_top_level:
+            set_element(pid, sprite_renderer)
+            logger.debug("Created new SpriteRenderer")
+        return sprite_renderer
+    
+    def config(self, is_top_level: bool = True, **kwargs) -> "SpriteRenderer":
+        sprite_renderer = SpriteRenderer(
+            self.pid,
+            kwargs.get("y", self.y),
+            kwargs.get("x", self.x),
+            kwargs.get("sprite", self.sprite),
+        )
+        
+        if is_top_level: set_element(self.pid, sprite_renderer)
+        return sprite_renderer
+    
+    def delete(self) -> None:
+        remove_element(self.pid)
+    
+    def draw(self, buffer: list[list[tuple[str, int]]]) -> None:
+        if self.sprite is None: return
+        
+        for y, row in enumerate(self.sprite):
+            for x, char in enumerate(row):
+                if char == " ": continue
+                _set_cell(buffer, self.y + y, self.x + x, char)
 
 
 class TextBox(NamedTuple):
@@ -248,7 +301,7 @@ class DialogBox(NamedTuple):
         elif self.line_index + 1 < len(self.dialog):
             self.config(start_time=time.time(), line_index=self.line_index + 1)
         else:
-            add_event("finished_dialog", self)
+            add_event(FINISHED_DIALOG, self)
             self.delete()
     
     def draw(self, buffer: list[list[tuple[str, int]]]) -> None:
@@ -332,7 +385,7 @@ class ChoiceBox(NamedTuple):
         self.config(selected_index=move_toward(self.selected_index, len(self.options) - 1))
     
     def confirm(self) -> None:
-        add_event("confirmed_choice", self)
+        add_event(CONFIRMED_CHOICE, self)
         self.delete()
     
     def draw(self, buffer: list[list[tuple[str, int]]]) -> None:
@@ -444,7 +497,7 @@ def mainloop() -> dict[str, object]:
             else:
                 break
         else:
-            add_event("pressed_key", key)
+            add_event(PRESSED_KEY, key)
     
     # Display updating
     

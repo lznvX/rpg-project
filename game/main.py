@@ -43,6 +43,31 @@ options = (
     "The honse is here.",
 )
 
+sprite = (
+    "                           XXXXXXXX                                     ",
+    "                        XXXX      XXXXXXX                               ",
+    "                       XX               XXXX                            ",
+    "                     XX                    XXX                          ",
+    "                    XX                        XX                        ",
+    "   XXX             XX      XXX       XXX       XX                 XXXXXX",
+    " XX  XX            X       XXXX     XXXX        X              XXXX    X",
+    " X    XX          X        XXXX     XXXX        X             XX       X",
+    "X      XX         X         XX       XX         X           XXX        X",
+    "X       XX        X     X                       X         XXX         XX",
+    " X        X       X     X                       X        XX          XX ",
+    " XX       XX       X    XX              XXX     X       XX         XX   ",
+    "  X         X      XX    XX            XX      XX      X          XX    ",
+    "  XX         X      XX    XX         XX       XX     XX         XX      ",
+    "   XX         X       XXX   XXXXXXXXX       XXX    XX          XX       ",
+    "    XX         XX       XXXXX             XXX    XX           XX        ",
+    "     XX         XX       X  XXXXXXX   XXXXX   XXX          XXX          ",
+    "      XX          XX     X         XXXX X    XX         XXXX            ",
+    "        XX         XXX  XX              X XXXX       XXXX               ",
+    "         XXX         XXXX               XXX        XXX                  ",
+    "           XXX                                    XX                    ",
+    "             XXX                                 XX                     ",
+)
+
 ############ Code to run on startup
 
 for i in range(8):
@@ -60,6 +85,12 @@ cuinter.ChoiceBox.new(
     10,
     cuinter.screen_width // 2,
     options,
+)
+
+cuinter.SpriteRenderer.new(
+    10,
+    10,
+    sprite,
 )
 
 ############
@@ -84,7 +115,9 @@ while 1:
     
     for event_type, value in events:
         match event_type:
-            case "pressed_key":
+            case cuinter.PRESSED_KEY:
+                # Key presses only passed to events if they weren't caught by
+                # an UI element
                 # Match case for the key doesn't work, don't waste your time
                 if value in (cuinter.KEY_UP, ord("w")):
                     pass
@@ -101,8 +134,8 @@ while 1:
                 elif value == ord("q"):
                     break
             
-            case "finished_dialog":
+            case cuinter.FINISHED_DIALOG:
                 pass
             
-            case "confirmed_choice":
+            case cuinter.CONFIRMED_CHOICE:
                 pass

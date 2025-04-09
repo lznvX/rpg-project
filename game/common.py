@@ -9,6 +9,7 @@ Contributors:
 
 from typing import NamedTuple, Self
 from uuid import UUID, uuid4
+from inventory import Inventory
 
 
 class DamageInstance(NamedTuple):
@@ -124,6 +125,7 @@ class Character(NamedTuple):
     stamina: int = None
     mana: int = None
 
+    inventory: Inventory=None
     actions: list[Action] = None
     effects: dict = None
 
@@ -147,6 +149,7 @@ class Character(NamedTuple):
                          base_stats.max_stamina,
                          base_stats.max_mana,
 
+                         Inventory.new(),
                          actions,
                          initial_effects)
 
@@ -207,3 +210,13 @@ class Character(NamedTuple):
             else:
                 continue
         return f"{self.name} (♥ {self.health})"
+
+
+    @staticmethod
+    def _test():
+        testchar = Character.new(
+            "John Halo",
+            True,
+            Stats(  8,  16,   4,   8,   6,   4,   2,   4),
+            [],
+            {})

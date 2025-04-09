@@ -3,7 +3,7 @@
 Created on 2025.03.19
 Contributors:
     Adrien
-        Jakub
+    Jakub
 """
 
 from collections import Counter

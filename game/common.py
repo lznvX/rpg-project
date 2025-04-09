@@ -102,7 +102,7 @@ class Item(NamedTuple):
     uuid: UUID # used to keep track of applied bonuses
 
     def __repr__(self):
-        return f"item {self.name}"
+        return f"{self.name}"
 
 
 class Character(NamedTuple):

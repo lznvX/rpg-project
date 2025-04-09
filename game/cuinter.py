@@ -33,12 +33,11 @@ class Label(NamedTuple):
     y: int
     x: int
     text: str = None
-    color: int = 255
     
     @classmethod
-    def new(cls, y: int, x: int, text: str = None, color: int = 255, is_top_level: bool = True) -> "Label":
+    def new(cls, y: int, x: int, text: str = None, is_top_level: bool = True) -> "Label":
         pid = int(uuid.uuid4())
-        label = cls(pid, y, x, text, color)
+        label = cls(pid, y, x, text)
         
         if is_top_level:
             set_element(pid, label)
@@ -51,7 +50,6 @@ class Label(NamedTuple):
             kwargs.get("y", self.y),
             kwargs.get("x", self.x),
             kwargs.get("text", self.text),
-            kwargs.get("color", self.color),
         )
         
         if is_top_level: set_element(self.pid, label)
@@ -60,11 +58,11 @@ class Label(NamedTuple):
     def delete(self) -> None:
         remove_element(self.pid)
     
-    def draw(self, buffer: list[list[tuple[str, int]]]) -> None:
+    def draw(self) -> None:
         if self.text is None: return
         
         for i, char in enumerate(self.text):
-            _set_cell(buffer, self.y, self.x + i, char)
+            set_cell(self.y, self.x + i, char)
 
 
 class Rectangle(NamedTuple):
@@ -73,12 +71,11 @@ class Rectangle(NamedTuple):
     x: int
     height: int
     width: int
-    color: int = 255
     
     @classmethod
-    def new(cls, y: int, x: int, height: int, width: int, color: int = 255, is_top_level: bool = True) -> "Rectangle":
+    def new(cls, y: int, x: int, height: int, width: int, is_top_level: bool = True) -> "Rectangle":
         pid = int(uuid.uuid4())
-        rectangle = cls(pid, y, x, height, width, color)
+        rectangle = cls(pid, y, x, height, width)
         
         if is_top_level:
             set_element(pid, rectangle)
@@ -92,7 +89,6 @@ class Rectangle(NamedTuple):
             kwargs.get("x", self.x),
             kwargs.get("height", self.height),
             kwargs.get("width", self.width),
-            kwargs.get("color", self.color),
         )
         
         if is_top_level: set_element(self.pid, rectangle)
@@ -101,33 +97,33 @@ class Rectangle(NamedTuple):
     def delete(self) -> None:
         remove_element(self.pid)
     
-    def draw(self, buffer: list[list[tuple[str, int]]]) -> None:
+    def draw(self) -> None:
         if self.height <= 0 or self.width <= 0: return
         
         y1, y2 = self.y, self.y + self.height
         x1, x2 = self.x, self.x + self.width
         
-        _set_cell(buffer, y1, x1, "┌", self.color)
-        _set_cell(buffer, y1, x2, "┐", self.color)
-        _set_cell(buffer, y2, x1, "└", self.color)
-        _set_cell(buffer, y2, x2, "┘", self.color)
+        set_cell(y1, x1, "┌")
+        set_cell(y1, x2, "┐")
+        set_cell(y2, x1, "└")
+        set_cell(y2, x2, "┘")
         
         for y in range(y1 + 1, y2):
-            _set_cell(buffer, y, x1, "│", self.color)
-            _set_cell(buffer, y, x2, "│", self.color)
+            set_cell(y, x1, "│")
+            set_cell(y, x2, "│")
             for x in range(x1 + 1, x2):
-                _set_cell(buffer, y, x, None)
+                set_cell(y, x, " ")
         
         for x in range(x1 + 1, x2):
-            _set_cell(buffer, y1, x, "─", self.color)
-            _set_cell(buffer, y2, x, "─", self.color)
+            set_cell(y1, x, "─")
+            set_cell(y2, x, "─")
 
 
 class SpriteRenderer(NamedTuple):
     pid: int
     y: int
     x: int
-    sprite: tuple[str, ...] = None
+    sprite: str = None
     
     @property
     def height(self) -> int:
@@ -163,13 +159,13 @@ class SpriteRenderer(NamedTuple):
     def delete(self) -> None:
         remove_element(self.pid)
     
-    def draw(self, buffer: list[list[tuple[str, int]]]) -> None:
+    def draw(self) -> None:
         if self.sprite is None: return
         
-        for y, row in enumerate(self.sprite):
+        for y, row in enumerate(self.sprite.split("\n")):
             for x, char in enumerate(row):
                 if char == " ": continue
-                _set_cell(buffer, self.y + y, self.x + x, char)
+                set_cell(self.y + y, self.x + x, char)
 
 
 class TextBox(NamedTuple):
@@ -198,7 +194,7 @@ class TextBox(NamedTuple):
         pid = int(uuid.uuid4())
         text_box = cls(
             pid,
-            Rectangle.new(y, x, height, width, 255, False),
+            Rectangle.new(y, x, height, width, False),
             text,
         )
         
@@ -220,8 +216,8 @@ class TextBox(NamedTuple):
     def delete(self) -> None:
         remove_element(self.pid)
     
-    def draw(self, buffer: list[list[tuple[str, int]]]) -> None:
-        self.rectangle.draw(buffer)
+    def draw(self) -> None:
+        self.rectangle.draw()
         
         if self.text is None: return
         
@@ -230,7 +226,7 @@ class TextBox(NamedTuple):
         wrap = self.width - 5
         
         for i, char in enumerate(self.text):
-            _set_cell(buffer, text_y + i // wrap, text_x + i % wrap, char)
+            set_cell(text_y + i // wrap, text_x + i % wrap, char)
 
 
 class DialogBox(NamedTuple):
@@ -304,13 +300,13 @@ class DialogBox(NamedTuple):
             add_event(FINISHED_DIALOG, self)
             self.delete()
     
-    def draw(self, buffer: list[list[tuple[str, int]]]) -> None:
+    def draw(self) -> None:
         length_to_draw = min(math.floor((time.time() - self.start_time) / CHARACTER_TIME), len(self.dialog_line.text))
         formatted_text = ((f"[{self.dialog_line.character.name}]: " if not self.dialog_line.character is None else "")
                           + self.dialog_line.text[:length_to_draw])
         
         self.config(text=formatted_text)
-        get_elements()[self.pid].text_box.draw(buffer)
+        get_elements()[self.pid].text_box.draw()
 
 
 class ChoiceBox(NamedTuple):
@@ -388,22 +384,14 @@ class ChoiceBox(NamedTuple):
         add_event(CONFIRMED_CHOICE, self)
         self.delete()
     
-    def draw(self, buffer: list[list[tuple[str, int]]]) -> None:
+    def draw(self) -> None:
         formatted_text = ""
         for i, option in enumerate(self.options):
             formatted_line = ("> " if i == self.selected_index else "  ") + option
             formatted_text += formatted_line.ljust((self.width - 5) * 2)
         
         self.config(text=formatted_text)
-        get_elements()[self.pid].text_box.draw(buffer)
-
-
-def _set_cell(buffer: list[list[tuple[str, int]]], y: int, x: int, char: str = "█", color: int = 255) -> None:
-    """
-    Sets the cell at position y x of the provided buffer without index errors.
-    """
-    if 0 <= y < len(buffer) and 0 <= x < len(buffer[0]):
-        buffer[y][x] = (char, color) if not char is None else None
+        get_elements()[self.pid].text_box.draw()
 
 
 def _fullscreen() -> None:
@@ -413,19 +401,18 @@ def _fullscreen() -> None:
     user32.keybd_event(0x7A, 0, 0x0002, 0)
 
 
-def _display_buffer(stdscr, buffer: tuple[tuple[tuple[str, int]]]) -> None:
+def _display_buffer(stdscr) -> None:
     """
     Displays the buffer in rows instead of individual characters to improve
     performance.
     """
-    for y, row in enumerate(buffer):
+    for y, row in enumerate(get_buffer()):
         row_str = ""
         prev_x = 0
         first_x = None
 
-        for x, cell in enumerate(row):
-            if cell is None: continue
-            char, color = cell
+        for x, char in enumerate(row):
+            if char == " ": continue
             
             if first_x is None:
                 row_str += char
@@ -436,10 +423,29 @@ def _display_buffer(stdscr, buffer: tuple[tuple[tuple[str, int]]]) -> None:
             prev_x = x
         
         if first_x is None: continue
-        if y == len(buffer) - 1 and first_x + len(row_str) == len(buffer[0]):
+        if y == screen_height - 1 and first_x + len(row_str) == screen_width:
             row_str = row_str[:-1]
+        
         stdscr.move(y, first_x)
         stdscr.addstr(row_str)
+
+
+def _buffer_manager():
+    buffer = copy.deepcopy(empty_buffer)
+    
+    def get_buffer() -> list[list[str]]:
+        return buffer
+    
+    def set_cell(y: int, x: int, char: str = " ") -> None:
+        nonlocal buffer
+        if 0 <= y < screen_height and 0 <= x < screen_width:
+            buffer[y][x] = char
+    
+    def clear_buffer() -> None:
+        nonlocal buffer
+        buffer = copy.deepcopy(empty_buffer)
+    
+    return get_buffer, set_cell, clear_buffer
 
 
 def _element_manager():
@@ -480,6 +486,8 @@ def mainloop() -> dict[str, object]:
     """
     Draws the ui elements and processes inputs, returns a dictionary of events
     for main.py to handle.
+    
+    Doesn't behave like tkinter's mainloop, has to be called within a loop.
     """
     
     clear_events()
@@ -501,13 +509,13 @@ def mainloop() -> dict[str, object]:
     
     # Display updating
     
-    buffer = copy.deepcopy(empty_buffer)
+    clear_buffer()
+    stdscr.clear()
 
     for element in get_elements().values():
-        element.draw(buffer)
+        element.draw()
     
-    stdscr.clear()
-    _display_buffer(stdscr, buffer)
+    _display_buffer(stdscr)
     stdscr.refresh()
     
     return get_events()
@@ -519,17 +527,13 @@ time.sleep(0.5)
 
 stdscr = curses.initscr()
 
-curses.start_color()
-curses.use_default_colors()
-for i in range(curses.COLOR_PAIRS - 1):
-    curses.init_pair(i + 1, i, -1)
-
 curses.curs_set(0) # Cache le curseur
 stdscr.nodelay(1) # Pas de blocage d'entrées
 stdscr.timeout(0) # Délai de vérification d'entrée
 
 screen_height, screen_width = stdscr.getmaxyx()
-empty_buffer = [[None for _ in range(screen_width)] for _ in range(screen_height)]
+empty_buffer = [[" " for _ in range(screen_width)] for _ in range(screen_height)]
 
+get_buffer, set_cell, clear_buffer = _buffer_manager()
 get_elements, set_element, remove_element = _element_manager()
 get_events, add_event, clear_events = _event_manager()

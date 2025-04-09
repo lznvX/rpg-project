@@ -29,6 +29,29 @@ fps_label = cuinter.Label.new(0, 0)
 
 ############ Game constants and variables
 
+sprite = """                           XXXXXXXX                                     
+                        XXXX      XXXXXXX                               
+                       XX               XXXX                            
+                     XX                    XXX                          
+                    XX                        XX                        
+   XXX             XX      XXX       XXX       XX                 XXXXXX
+ XX  XX            X       XXXX     XXXX        X              XXXX    X
+ X    XX          X        XXXX     XXXX        X             XX       X
+X      XX         X         XX       XX         X           XXX        X
+X       XX        X     X                       X         XXX         XX
+ X        X       X     X                       X        XX          XX 
+ XX       XX       X    XX              XXX     X       XX         XX   
+  X         X      XX    XX            XX      XX      X          XX    
+  XX         X      XX    XX         XX       XX     XX         XX      
+   XX         X       XXX   XXXXXXXXX       XXX    XX          XX       
+    XX         XX       XXXXX             XXX    XX           XX        
+     XX         XX       X  XXXXXXX   XXXXX   XXX          XXX          
+      XX          XX     X         XXXX X    XX         XXXX            
+        XX         XXX  XX              X XXXX       XXXX               
+         XXX         XXXX               XXX        XXX                  
+           XXX                                    XX                    
+             XXX                                 XX                     """
+
 dialog = (
     DialogLine("LELOLELOELOLEOLEOLEOLEOLEOLOLEOLOEELOmmmmmmmmmmmmmmmmmm    yeseiurrrrrhjsdhdjhsdjhsdhjsdhjdshjsdjhsdjhdsjhdshjsdhjsdhjsdhjdshjdshdsdssjhgfqwè¨qè¨¨èwq¨qwèwq", Character("Idris")),
     DialogLine("bruh"),
@@ -43,32 +66,13 @@ options = (
     "The honse is here.",
 )
 
-sprite = (
-    "                           XXXXXXXX                                     ",
-    "                        XXXX      XXXXXXX                               ",
-    "                       XX               XXXX                            ",
-    "                     XX                    XXX                          ",
-    "                    XX                        XX                        ",
-    "   XXX             XX      XXX       XXX       XX                 XXXXXX",
-    " XX  XX            X       XXXX     XXXX        X              XXXX    X",
-    " X    XX          X        XXXX     XXXX        X             XX       X",
-    "X      XX         X         XX       XX         X           XXX        X",
-    "X       XX        X     X                       X         XXX         XX",
-    " X        X       X     X                       X        XX          XX ",
-    " XX       XX       X    XX              XXX     X       XX         XX   ",
-    "  X         X      XX    XX            XX      XX      X          XX    ",
-    "  XX         X      XX    XX         XX       XX     XX         XX      ",
-    "   XX         X       XXX   XXXXXXXXX       XXX    XX          XX       ",
-    "    XX         XX       XXXXX             XXX    XX           XX        ",
-    "     XX         XX       X  XXXXXXX   XXXXX   XXX          XXX          ",
-    "      XX          XX     X         XXXX X    XX         XXXX            ",
-    "        XX         XXX  XX              X XXXX       XXXX               ",
-    "         XXX         XXXX               XXX        XXX                  ",
-    "           XXX                                    XX                    ",
-    "             XXX                                 XX                     ",
-)
-
 ############ Code to run on startup
+
+cuinter.SpriteRenderer.new(
+    0,
+    0,
+    sprite,
+)
 
 for i in range(8):
     cuinter.DialogBox.new(
@@ -85,12 +89,6 @@ cuinter.ChoiceBox.new(
     10,
     cuinter.screen_width // 2,
     options,
-)
-
-cuinter.SpriteRenderer.new(
-    10,
-    10,
-    sprite,
 )
 
 ############

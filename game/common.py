@@ -4,11 +4,13 @@ Created on 2025.03.20
 Contributors:
     Jakub
     Adrien
-    Romain (added 7 lines, totally deserves to be here)
+    Romain
 """
 
 
+from __future__ import annotations
 from typing import NamedTuple
+from collections import Counter
 from uuid import UUID, uuid4
 
 
@@ -41,7 +43,7 @@ class Stats(NamedTuple):
     magical_resistance: int = None   # decreases MAGICAL damage taken
 
 
-    def modify(self, changes: "Stats") -> "Stats":
+    def modify(self, changes: Stats) -> Stats:
         """Generate new stat sheet based on an existing one.
 
         Changes are represented as another stat sheet. A value of None (default
@@ -106,6 +108,112 @@ class Item(NamedTuple):
         return f"{self.name}"
 
 
+class Inventory(NamedTuple):
+    """The inventory of a character.
+
+    Not necessarily the player.
+    """
+    equipment: dict[str: Item]
+    backpack: Counter[Item: int]
+    slots = ("mainhand", "offhand", "head", "body", "feet")
+
+
+    @classmethod
+    def new(self) -> Inventory:
+        """Create a new empty inventory."""
+        equipment = dict()
+        for slot in self.slots:
+            equipment[slot] = None
+
+        return Inventory(equipment, Counter())
+
+
+    def equip(self, slot: str, item: Item):
+        """Equip an item from the backpack in the given slot.
+
+        Supports hot-swapping.
+        """
+        if not "equippable" in item.tags:
+            raise ValueError(f"Item {item} not equippable")
+        if not slot in self.slots:
+            raise ValueError(f"Slot {slot} does not exist")
+
+        if self.equipment[slot] is not None:
+            # slot already occupied
+            self.unequip(slot)
+
+        self.remove(item)
+        self.equipment[slot] = item
+
+
+    def unequip(self, slot: str):
+        """Remove an item from the given slot and add it back to the backpack."""
+        if not slot in self.slots:
+            raise ValueError(f"Slot {slot} does not exist")
+        if self.equipment[slot] is None:
+            raise ValueError(f"Slot {slot} is empty")
+
+        item = self.equipment[slot]
+        self.equipment[slot] = None
+        self.add(item)
+
+
+    def add(self, item: Item, count: int=1):
+        """Add an item to the backpack."""
+        assert count >= 0
+
+        self.backpack[item] += count
+
+
+    def remove(self, item: Item, count: int=1):
+        """Remove an item from the backpack."""
+        assert count >= 0
+
+        if self.backpack[item] < count:
+            raise ValueError(f"Inventory does not contain enough {item} to remove {count}")
+        else:
+            self.backpack[item] -= count
+
+
+    def use(self, item: Item):
+        """Use an item from the backpack.
+
+        The item is consumed.
+        """
+        if self.backpack[item] > 0:
+            self.remove(item)
+            #TODO: implement item using
+        else:
+            raise ValueError(f"Inventory does not contain any {item}")
+
+
+    @staticmethod
+    def _test():
+        item1 = Item("item1", "lorem ipsum", ("item", "equippable"), 1, 100, 100, Stats(), tuple(), "UUID")
+        item2 = Item("item2", "Poland", ("item",), 1, 100, 100, Stats(), tuple(), "UUID")
+        item3 = Item("item3", "Ave Caesar", ("item", "equippable"), 1, 100, 100, Stats(), tuple(), "UUID")
+
+        ti = Inventory.new()
+        ti.add(item1)
+        ti.add(item2, 10)
+        ti.add(item1, 0)
+        ti.remove(item2, 3)
+        assert ti.backpack[item1] == 1
+        assert ti.backpack[item2] == 7
+
+        ti.equip("head", item1)
+        assert ti.backpack[item1] == 0
+        assert ti.equipment["head"] == item1
+
+        ti.add(item3, 2)
+        ti.equip("head", item3)
+        assert ti.backpack[item1] == 1
+        assert ti.backpack[item3] == 1
+        assert ti.equipment["head"] == item3
+
+        print("Inventory tests passed")
+
+
 class Character(NamedTuple):
     """Holds data for a combat-capable character (Player, goblin, etc.).
 
@@ -125,13 +233,14 @@ class Character(NamedTuple):
     stamina: int = None
     mana: int = None
 
+    inventory: Inventory=None
     actions: list[Action] = None
     effects: dict = None
 
 
     @staticmethod
     def new(name: str, is_player: bool, base_stats: Stats, actions: list[Action],
-            initial_effects: dict) -> "Character":
+            initial_effects: dict) -> Character:
         """Character constructor.
 
         Needed because NamedTuple.__init__ can't be modified.
@@ -148,11 +257,12 @@ class Character(NamedTuple):
                          base_stats.max_stamina,
                          base_stats.max_mana,
 
+                         Inventory.new(),
                          actions,
                          initial_effects)
 
 
-    def modify(self, changes: Self) -> Self:
+    def modify(self, changes: Character) -> Character:
         """Generate new character sheet based on an existing one.
 
         Used to get around the un-mofifiablility of NamedTuple.
@@ -178,7 +288,7 @@ class Character(NamedTuple):
         return Stats(*new_stats)
 
 
-    def hit(self, attack: DamageInstance) -> ("Character", int):
+    def hit(self, attack: DamageInstance) -> (Character, int):
         """Calculate the effect of an attack.
 
         Returns a modified character sheet of the target and the damage taken.
@@ -208,6 +318,16 @@ class Character(NamedTuple):
             else:
                 continue
         return f"{self.name} (♥ {self.health})"
+    
+    
+    @staticmethod
+    def _test():
+        testchar = Character.new(
+            "John Halo",
+            True,
+            Stats(  8,  16,   4,   8,   6,   4,   2,   4),
+            [],
+            {})
 
 
 class DialogLine(NamedTuple):

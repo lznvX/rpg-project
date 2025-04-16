@@ -32,7 +32,7 @@ class Player(NamedTuple):
         return self.sprite_renderer.x
     
     @classmethod
-    def new(cls, character: Character, y: int, x: int) -> Player:
+    def new(cls, y: int, x: int, character: Character) -> Player:
         return cls(
             character,
             cuinter.SpriteRenderer.new(y, x, character.sprite_sheet["base"]),
@@ -40,8 +40,8 @@ class Player(NamedTuple):
     
     def config(self, **kwargs) -> Player:
         return Player(
+            self.character, # TODO allow cross Romain-Jakub config
             self.sprite_renderer.config(**kwargs),
-            self.character.config(**kwargs),
         )
     
     def move(self, y: int, x: int) -> Player:
@@ -137,16 +137,16 @@ while 1:
                 # an UI element
                 # Match case for the key doesn't work, don't waste your time
                 if value in (cuinter.KEY_UP, ord("w")):
-                    pass
+                    player = player.move(-1, 0)
                 
                 elif value in (cuinter.KEY_DOWN, ord("s")):
-                    pass
+                    player = player.move(1, 0)
                 
                 elif value in (cuinter.KEY_LEFT, ord("a")):
-                    pass
+                    player = player.move(0, -1)
                 
                 elif value in (cuinter.KEY_RIGHT, ord("d")):
-                    pass
+                    player = player.move(0, 1)
                     
                 elif value == ord("q"):
                     break

@@ -221,6 +221,7 @@ class Character(NamedTuple):
     Character.modify(). For all other purposes use Character.new().
     """
     name: str = None
+    sprite_sheet: dict[str, str] = None
     is_player: bool = None
     is_alive: bool = None
 
@@ -239,13 +240,14 @@ class Character(NamedTuple):
 
 
     @staticmethod
-    def new(name: str, is_player: bool, base_stats: Stats, actions: list[Action],
+    def new(name: str, sprite_sheet: dict[str, str], is_player: bool, base_stats: Stats, actions: list[Action],
             initial_effects: dict) -> Character:
         """Character constructor.
 
         Needed because NamedTuple.__init__ can't be modified.
         """
         return Character(name,
+                         sprite_sheet,
                          is_player,
                          True,
 
@@ -338,6 +340,11 @@ class DialogLine(NamedTuple):
 class UIEvent(NamedTuple):
     event_type: str
     value: object
+
+
+def load_text(path: str) -> str:
+    with open(path, "r", encoding="utf-8") as file:
+        return file.read()
 
 
 def move_toward(a: int | float, b: int | float, step: int | float = 1) -> int | float:

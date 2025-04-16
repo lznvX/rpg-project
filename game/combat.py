@@ -6,7 +6,7 @@ Contributors:
 """
 
 
-from typing import NamedTuple, Self
+from typing import NamedTuple
 from get_input import get_input
 import random as r
 import time
@@ -46,7 +46,7 @@ class Battle(NamedTuple):
 
     @staticmethod
     def new(team1: list[Character], team1_name: str,
-            team2: list[Character], team2_name: str) -> Self:
+            team2: list[Character], team2_name: str) -> "Battle":
         """Initialize a new Battle instance.
 
         Custom constructor to properly initialize the necessary variables.

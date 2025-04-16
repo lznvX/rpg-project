@@ -1,4 +1,4 @@
-"""Classes shared between several systems
+"""Classes and functions shared between several systems
 
 Created on 2025.03.20
 Contributors:
@@ -28,9 +28,9 @@ class DamageInstance(NamedTuple):
 class Stats(NamedTuple):
     """Stores the stats of a charcter.
 
-	Use more than one instance per character to differentiate base and current
-	stats.
-	"""
+    Use more than one instance per character to differentiate base and current
+    stats.
+    """
     max_health: int = None   # if it drops to 0, you die
     max_stamina: int = None  # used as a resource for performing PHYSICAL actions
     max_mana: int = None     # used as a resource for performing MAGICAL actions
@@ -318,8 +318,8 @@ class Character(NamedTuple):
             else:
                 continue
         return f"{self.name} (♥ {self.health})"
-
-
+    
+    
     @staticmethod
     def _test():
         testchar = Character.new(
@@ -328,3 +328,18 @@ class Character(NamedTuple):
             Stats(  8,  16,   4,   8,   6,   4,   2,   4),
             [],
             {})
+
+
+class DialogLine(NamedTuple):
+    text: str
+    character: Character = None
+
+
+class UIEvent(NamedTuple):
+    event_type: str
+    value: object
+
+
+def move_toward(a: int | float, b: int | float, step: int | float = 1) -> int | float:
+    """Returns a moved by step towards b without overshooting."""
+    return min(a + step, b) if b >= a else max(a - step, b)

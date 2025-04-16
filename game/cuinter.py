@@ -6,6 +6,7 @@ Contributors:
     Romain
 """
 
+from __future__ import annotations
 from common import DialogLine, UIEvent, move_toward
 import copy
 import ctypes
@@ -35,7 +36,7 @@ class Label(NamedTuple):
     text: str = None
     
     @classmethod
-    def new(cls, y: int, x: int, text: str = None, is_top_level: bool = True) -> "Label":
+    def new(cls, y: int, x: int, text: str = None, is_top_level: bool = True) -> Label:
         pid = int(uuid.uuid4())
         label = cls(pid, y, x, text)
         
@@ -44,7 +45,7 @@ class Label(NamedTuple):
             logger.debug("Created new Label")
         return label
     
-    def config(self, is_top_level: bool = True, **kwargs) -> "Label":
+    def config(self, is_top_level: bool = True, **kwargs) -> Label:
         label = Label(
             self.pid,
             kwargs.get("y", self.y),
@@ -73,7 +74,7 @@ class Rectangle(NamedTuple):
     width: int
     
     @classmethod
-    def new(cls, y: int, x: int, height: int, width: int, is_top_level: bool = True) -> "Rectangle":
+    def new(cls, y: int, x: int, height: int, width: int, is_top_level: bool = True) -> Rectangle:
         pid = int(uuid.uuid4())
         rectangle = cls(pid, y, x, height, width)
         
@@ -82,7 +83,7 @@ class Rectangle(NamedTuple):
             logger.debug("Created new Rectangle")
         return rectangle
     
-    def config(self, is_top_level: bool = True, **kwargs) -> "Rectangle":
+    def config(self, is_top_level: bool = True, **kwargs) -> Rectangle:
         rectangle = Rectangle(
             self.pid,
             kwargs.get("y", self.y),
@@ -136,7 +137,7 @@ class SpriteRenderer(NamedTuple):
         return max(len(row) for row in self.sprite)
     
     @classmethod
-    def new(cls, y: int, x: int, sprite: tuple[str, ...] = None, is_top_level: bool = True) -> "SpriteRenderer":
+    def new(cls, y: int, x: int, sprite: str = None, is_top_level: bool = True) -> SpriteRenderer:
         pid = int(uuid.uuid4())
         sprite_renderer = cls(pid, y, x, sprite)
         
@@ -145,7 +146,7 @@ class SpriteRenderer(NamedTuple):
             logger.debug("Created new SpriteRenderer")
         return sprite_renderer
     
-    def config(self, is_top_level: bool = True, **kwargs) -> "SpriteRenderer":
+    def config(self, is_top_level: bool = True, **kwargs) -> SpriteRenderer:
         sprite_renderer = SpriteRenderer(
             self.pid,
             kwargs.get("y", self.y),
@@ -190,7 +191,7 @@ class TextBox(NamedTuple):
         return self.rectangle.width
     
     @classmethod
-    def new(cls, y: int, x: int, height: int, width: int, text: str = None, is_top_level: bool = True) -> "TextBox":
+    def new(cls, y: int, x: int, height: int, width: int, text: str = None, is_top_level: bool = True) -> TextBox:
         pid = int(uuid.uuid4())
         text_box = cls(
             pid,
@@ -203,7 +204,7 @@ class TextBox(NamedTuple):
             logger.debug("Created new TextBox")
         return text_box
     
-    def config(self, is_top_level: bool = True, **kwargs) -> "TextBox":
+    def config(self, is_top_level: bool = True, **kwargs) -> TextBox:
         text_box = TextBox(
             self.pid,
             self.rectangle.config(False, **kwargs),
@@ -257,7 +258,7 @@ class DialogBox(NamedTuple):
         return self.dialog[self.line_index]
     
     @classmethod
-    def new(cls, y: int, x: int, height: int, width: int, dialog: tuple[DialogLine, ...], is_top_level: bool = True) -> "DialogBox":
+    def new(cls, y: int, x: int, height: int, width: int, dialog: tuple[DialogLine, ...], is_top_level: bool = True) -> DialogBox:
         pid = int(uuid.uuid4())
         dialog_box = cls(
             pid,
@@ -272,7 +273,7 @@ class DialogBox(NamedTuple):
             logger.debug("Created new DialogBox")
         return dialog_box
     
-    def config(self, is_top_level: bool = True, **kwargs) -> "DialogBox":
+    def config(self, is_top_level: bool = True, **kwargs) -> DialogBox:
         dialog_box = DialogBox(
             self.pid,
             self.text_box.config(False, **kwargs),
@@ -336,7 +337,7 @@ class ChoiceBox(NamedTuple):
         return self.options[self.selected_index]
     
     @classmethod
-    def new(cls, y: int, x: int, height: int, width: int, options: tuple[str, ...], selected_index: int = 0, is_top_level: bool = True) -> "ChoiceBox":
+    def new(cls, y: int, x: int, height: int, width: int, options: tuple[str, ...], selected_index: int = 0, is_top_level: bool = True) -> ChoiceBox:
         pid = int(uuid.uuid4())
         choice_box = cls(
             pid,
@@ -350,7 +351,7 @@ class ChoiceBox(NamedTuple):
             logger.debug("Created new ChoiceBox")
         return choice_box
     
-    def config(self, is_top_level: bool = True, **kwargs) -> "ChoiceBox":
+    def config(self, is_top_level: bool = True, **kwargs) -> ChoiceBox:
         choice_box = ChoiceBox(
             self.pid,
             self.text_box.config(False, **kwargs),

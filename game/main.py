@@ -8,13 +8,45 @@ Contributors:
     Romain
 """
 
-from common import Character, DialogLine, move_toward
+from __future__ import annotations
+from common import Character, DialogLine, load_text, move_toward
 import cuinter
 import logging
 import random
 import time
+from typing import NamedTuple
 
 FPS_COUNTER_REFRESH = 1 # Time between each FPS counter update
+
+
+class Player(NamedTuple):
+    character: Character
+    sprite_renderer: cuinter.SpriteRenderer
+    
+    @property
+    def y(self) -> int:
+        return self.sprite_renderer.y
+    
+    @property
+    def x(self) -> int:
+        return self.sprite_renderer.x
+    
+    @classmethod
+    def new(cls, character: Character, y: int, x: int) -> Player:
+        return cls(
+            character,
+            cuinter.SpriteRenderer.new(y, x, character.sprite_sheet["base"]),
+        )
+    
+    def config(self, **kwargs) -> Player:
+        return Player(
+            self.sprite_renderer.config(**kwargs),
+            self.character.config(**kwargs),
+        )
+    
+    def move(self, y: int, x: int) -> Player:
+        return self.config(y=self.y + y, x=self.x + x)
+
 
 ############ System init
 
@@ -27,51 +59,31 @@ frame_count = 0
 
 fps_label = cuinter.Label.new(0, 0)
 
-############ Game constants and variables
+############ Code to run on startup
 
-sprite = """                           XXXXXXXX                                     
-                        XXXX      XXXXXXX                               
-                       XX               XXXX                            
-                     XX                    XXX                          
-                    XX                        XX                        
-   XXX             XX      XXX       XXX       XX                 XXXXXX
- XX  XX            X       XXXX     XXXX        X              XXXX    X
- X    XX          X        XXXX     XXXX        X             XX       X
-X      XX         X         XX       XX         X           XXX        X
-X       XX        X     X                       X         XXX         XX
- X        X       X     X                       X        XX          XX 
- XX       XX       X    XX              XXX     X       XX         XX   
-  X         X      XX    XX            XX      XX      X          XX    
-  XX         X      XX    XX         XX       XX     XX         XX      
-   XX         X       XXX   XXXXXXXXX       XXX    XX          XX       
-    XX         XX       XXXXX             XXX    XX           XX        
-     XX         XX       X  XXXXXXX   XXXXX   XXX          XXX          
-      XX          XX     X         XXXX X    XX         XXXX            
-        XX         XXX  XX              X XXXX       XXXX               
-         XXX         XXXX               XXX        XXX                  
-           XXX                                    XX                    
-             XXX                                 XX                     """
+player_sprite_sheet = {
+    "base": load_text("sprites\guy.txt"),
+}
+
+player = Player.new(
+    0,
+    0,
+    Character("Player", player_sprite_sheet),
+)
+
+happy_sprite = load_text("sprites\happyhappyhappy.txt")
+
+cuinter.SpriteRenderer.new(
+    0,
+    0,
+    happy_sprite,
+)
 
 dialog = (
     DialogLine("LELOLELOELOLEOLEOLEOLEOLEOLOLEOLOEELOmmmmmmmmmmmmmmmmmm    yeseiurrrrrhjsdhdjhsdjhsdhjsdhjdshjsdjhsdjhdsjhdshjsdhjsdhjsdhjdshjdshdsdssjhgfqwè¨qè¨¨èwq¨qwèwq", Character("Idris")),
     DialogLine("bruh"),
     DialogLine("AAAAAAAAAAAAAAAAAAAAAAAAAAAAA"),
     DialogLine("We're no strangers to love You know the rules and so do I A full commitment's what I'm thinkin' of You wouldn't get this from any other guy I just wanna tell you how I'm feeling Gotta make you understand Never gonna give you up, never gonna let you down Never gonna run around and desert you Never gonna make you cry, never gonna say goodbye Never gonna tell a lie and hurt you We've known each other for so long Your heart's been aching, but you're too shy to say it Inside, we both know what's been going on We know the game and we're gonna play it And if you ask me how I'm feeling Don't tell me you're too blind to see Never gonna give you up, never gonna let you down Never gonna run around and desert you Never gonna make you cry, never gonna say goodbye Never gonna tell a lie and hurt you Never gonna give you up, never gonna let you down Never gonna run around and desert you Never gonna make you cry, never gonna say goodbye Never gonna tell a lie and hurt you We've known each other for so long Your heart's been aching, but you're too shy to say it Inside, we both know what's been going on We know the game and we're gonna play it I just wanna tell you how I'm feeling Gotta make you understand Never gonna give you up, never gonna let you down Never gonna run around and desert you Never gonna make you cry, never gonna say goodbye Never gonna tell a lie and hurt you Never gonna give you up, never gonna let you down Never gonna run around and desert you Never gonna make you cry, never gonna say goodbye Never gonna tell a lie and hurt you Never gonna give you up, never gonna let you down Never gonna run around and desert you Never gonna make you cry, never gonna say goodbye Never gonna tell a lie and hurt you", Character("Rick Astley")),
-)
-
-options = (
-    "haram",
-    "harambe",
-    "PETAH",
-    "The honse is here.",
-)
-
-############ Code to run on startup
-
-cuinter.SpriteRenderer.new(
-    0,
-    0,
-    sprite,
 )
 
 for i in range(8):
@@ -82,6 +94,13 @@ for i in range(8):
         random.randrange(10, 50),
         dialog,
     )
+
+options = (
+    "haram",
+    "harambe",
+    "PETAH",
+    "The honse is here.",
+)
 
 cuinter.ChoiceBox.new(
     cuinter.screen_height - 12,

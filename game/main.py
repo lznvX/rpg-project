@@ -9,12 +9,12 @@ Contributors:
 """
 
 from __future__ import annotations
-from common import Character, DialogLine, load_text, move_toward
-import cuinter
 import logging
 import random
 import time
 from typing import NamedTuple
+from common import Character, DialogLine, load_text, move_toward
+import cuinter
 
 FPS_COUNTER_REFRESH = 1 # Time between each FPS counter update
 
@@ -62,7 +62,7 @@ fps_label = cuinter.Label.new(0, 0)
 ############ Code to run on startup
 
 player_sprite_sheet = {
-    "base": load_text("sprites\guy.txt"),
+    "base": load_text("sprites\\guy.txt"),
 }
 
 player = Player.new(
@@ -71,7 +71,7 @@ player = Player.new(
     Character("Player", player_sprite_sheet),
 )
 
-happy_sprite = load_text("sprites\happyhappyhappy.txt")
+happy_sprite = load_text("sprites\\happyhappyhappy.txt")
 
 cuinter.SpriteRenderer.new(
     0,

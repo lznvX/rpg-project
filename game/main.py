@@ -13,11 +13,21 @@ import logging
 import random
 import time
 from typing import NamedTuple
-from common import Character, DialogLine, load_text, move_toward
+from common import Character, DialogLine, load_text, load_text_dir, move_toward, remap_dict
 import cuinter
 
 FPS_COUNTER_REFRESH = 1 # Time between each FPS counter update
-
+TILE_HEIGHT = 8
+TILE_WIDTH = 16
+TILE_NAME_TO_CHAR = {
+    "grass": " ",
+    "path_vertical": "│",
+    "path_horizontal": "─",
+    "path_up_left": "┘",
+    "path_up_right": "└",
+    "path_down_left": "┐",
+    "path_down_right": "┌",
+}
 
 class Player(NamedTuple):
     character: Character
@@ -45,13 +55,49 @@ class Player(NamedTuple):
         )
     
     def move(self, y: int, x: int) -> Player:
-        return self.config(y=self.y + y, x=self.x + x)
+        return self.config(y=self.y + y * TILE_HEIGHT, x=self.x + x * TILE_WIDTH)
+
+
+class Grid(NamedTuple):
+    sprite_renderer: cuinter.SpriteRenderer
+    tilemap: tuple[str] # Each str is a row and each char represents a tile
+    tileset: dict[str, str] # Maps the chars in tilemap to their text sprites
+    
+    @property
+    def y(self) -> int:
+        return self.sprite_renderer.y
+    
+    @property
+    def x(self) -> int:
+        return self.sprite_renderer.x
+    
+    @classmethod
+    def new(cls, y: int, x: int, tilemap: tuple[str] = None, tileset: dict[str, str] = None) -> Grid:
+        full_sprite = ""
+        for row in tile_map:
+            for sprite_y in range(TILE_HEIGHT):
+                for char in row:
+                    full_sprite += tileset[char].split("\n")[sprite_y]
+                if sprite_y != TILE_HEIGHT - 1 or row != tile_map[-1]:
+                    full_sprite += "\n"
+        
+        return Grid(
+            cuinter.SpriteRenderer.new(y, x, full_sprite),
+            tilemap,
+            tileset,
+        )
+    
+    def grid_to_screen(self, y: int, x: int) -> tuple[int, int]:
+        return (
+            self.y + TILE_HEIGHT * y,
+            self.x + TILE_WIDTH * x,
+        )
 
 
 ############ System init
 
 logger = logging.getLogger(__name__)
-logging.basicConfig(filename='main.log', encoding='utf-8', level=logging.DEBUG)
+logging.basicConfig(filename="logs\\main.log", encoding="utf-8", level=logging.DEBUG)
 
 last_time = time.time()
 fps_timer = last_time  # Time of the last FPS update
@@ -61,39 +107,43 @@ fps_label = cuinter.Label.new(0, 0)
 
 ############ Code to run on startup
 
-player_sprite_sheet = {
-    "base": load_text("sprites\\guy.txt"),
-}
+tile_map = tuple(load_text("assets\\sprites\\tilemaps\\test_tilemap.txt").split("\n"))
+grid = Grid.new(
+    round((cuinter.screen_height - len(tile_map) * TILE_HEIGHT) / 2),
+    round((cuinter.screen_width - len(tile_map[0]) * TILE_WIDTH) / 2),
+    tile_map,
+    remap_dict(load_text_dir("assets\\sprites\\tiles"), TILE_NAME_TO_CHAR),
+)
 
 player = Player.new(
-    0,
-    0,
-    Character("Player", player_sprite_sheet),
+    grid.y,
+    grid.x,
+    Character("Player", load_text_dir("assets\\sprites\\characters\\player")),
 )
 
-happy_sprite = load_text("sprites\\happyhappyhappy.txt")
+# happy_sprite = load_text("assets\\sprites\\happyhappyhappy.txt")
+# 
+# cuinter.SpriteRenderer.new(
+#     0,
+#     0,
+#     happy_sprite,
+# )
 
-cuinter.SpriteRenderer.new(
-    0,
-    0,
-    happy_sprite,
-)
-
-dialog = (
-    DialogLine("LELOLELOELOLEOLEOLEOLEOLEOLOLEOLOEELOmmmmmmmmmmmmmmmmmm    yeseiurrrrrhjsdhdjhsdjhsdhjsdhjdshjsdjhsdjhdsjhdshjsdhjsdhjsdhjdshjdshdsdssjhgfqwè¨qè¨¨èwq¨qwèwq", Character("Idris")),
-    DialogLine("bruh"),
-    DialogLine("AAAAAAAAAAAAAAAAAAAAAAAAAAAAA"),
-    DialogLine("We're no strangers to love You know the rules and so do I A full commitment's what I'm thinkin' of You wouldn't get this from any other guy I just wanna tell you how I'm feeling Gotta make you understand Never gonna give you up, never gonna let you down Never gonna run around and desert you Never gonna make you cry, never gonna say goodbye Never gonna tell a lie and hurt you We've known each other for so long Your heart's been aching, but you're too shy to say it Inside, we both know what's been going on We know the game and we're gonna play it And if you ask me how I'm feeling Don't tell me you're too blind to see Never gonna give you up, never gonna let you down Never gonna run around and desert you Never gonna make you cry, never gonna say goodbye Never gonna tell a lie and hurt you Never gonna give you up, never gonna let you down Never gonna run around and desert you Never gonna make you cry, never gonna say goodbye Never gonna tell a lie and hurt you We've known each other for so long Your heart's been aching, but you're too shy to say it Inside, we both know what's been going on We know the game and we're gonna play it I just wanna tell you how I'm feeling Gotta make you understand Never gonna give you up, never gonna let you down Never gonna run around and desert you Never gonna make you cry, never gonna say goodbye Never gonna tell a lie and hurt you Never gonna give you up, never gonna let you down Never gonna run around and desert you Never gonna make you cry, never gonna say goodbye Never gonna tell a lie and hurt you Never gonna give you up, never gonna let you down Never gonna run around and desert you Never gonna make you cry, never gonna say goodbye Never gonna tell a lie and hurt you", Character("Rick Astley")),
-)
-
-for i in range(8):
-    cuinter.DialogBox.new(
-        random.randrange(0, cuinter.screen_height),
-        random.randrange(0, cuinter.screen_width),
-        random.randrange(10, 50),
-        random.randrange(10, 50),
-        dialog,
-    )
+# dialog = (
+#     DialogLine("LELOLELOELOLEOLEOLEOLEOLEOLOLEOLOEELOmmmmmmmmmmmmmmmmmm    yeseiurrrrrhjsdhdjhsdjhsdhjsdhjdshjsdjhsdjhdsjhdshjsdhjsdhjsdhjdshjdshdsdssjhgfqwè¨qè¨¨èwq¨qwèwq", Character("Idris")),
+#     DialogLine("bruh"),
+#     DialogLine("AAAAAAAAAAAAAAAAAAAAAAAAAAAAA"),
+#     DialogLine("We're no strangers to love You know the rules and so do I A full commitment's what I'm thinkin' of You wouldn't get this from any other guy I just wanna tell you how I'm feeling Gotta make you understand Never gonna give you up, never gonna let you down Never gonna run around and desert you Never gonna make you cry, never gonna say goodbye Never gonna tell a lie and hurt you We've known each other for so long Your heart's been aching, but you're too shy to say it Inside, we both know what's been going on We know the game and we're gonna play it And if you ask me how I'm feeling Don't tell me you're too blind to see Never gonna give you up, never gonna let you down Never gonna run around and desert you Never gonna make you cry, never gonna say goodbye Never gonna tell a lie and hurt you Never gonna give you up, never gonna let you down Never gonna run around and desert you Never gonna make you cry, never gonna say goodbye Never gonna tell a lie and hurt you We've known each other for so long Your heart's been aching, but you're too shy to say it Inside, we both know what's been going on We know the game and we're gonna play it I just wanna tell you how I'm feeling Gotta make you understand Never gonna give you up, never gonna let you down Never gonna run around and desert you Never gonna make you cry, never gonna say goodbye Never gonna tell a lie and hurt you Never gonna give you up, never gonna let you down Never gonna run around and desert you Never gonna make you cry, never gonna say goodbye Never gonna tell a lie and hurt you Never gonna give you up, never gonna let you down Never gonna run around and desert you Never gonna make you cry, never gonna say goodbye Never gonna tell a lie and hurt you", Character("Rick Astley")),
+# )
+# 
+# for i in range(8):
+#     cuinter.DialogBox.new(
+#         random.randrange(0, cuinter.screen_height),
+#         random.randrange(0, cuinter.screen_width),
+#         random.randrange(10, 50),
+#         random.randrange(10, 50),
+#         dialog,
+#     )
 
 options = (
     "haram",
@@ -104,9 +154,9 @@ options = (
 
 cuinter.ChoiceBox.new(
     cuinter.screen_height - 12,
-    cuinter.screen_width // 4,
+    round(cuinter.screen_width / 4),
     10,
-    cuinter.screen_width // 2,
+    round(cuinter.screen_width / 2),
     options,
 )
 

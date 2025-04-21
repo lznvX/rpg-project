@@ -11,7 +11,7 @@ from common import DialogLine, UIEvent, move_toward
 import copy
 import ctypes
 import curses
-from curses import KEY_UP, KEY_DOWN, KEY_LEFT, KEY_RIGHT
+from curses import KEY_UP, KEY_DOWN, KEY_LEFT, KEY_RIGHT # TODO this isn't great
 import logging
 import math
 import time
@@ -26,7 +26,7 @@ X_CORRECTION = 2.6 # Hauteur / largeur d'un caractère
 CHARACTER_TIME = 0.025 # Délai d'affichage de chaque caractère dans les textes
 
 logger = logging.getLogger(__name__)
-logging.basicConfig(filename='cuinter.log', encoding='utf-8', level=logging.DEBUG)
+logging.basicConfig(filename="logs\\cuinter.log", encoding="utf-8", level=logging.DEBUG)
 
 
 class Label(NamedTuple):
@@ -431,7 +431,7 @@ def _display_buffer(stdscr) -> None:
         stdscr.addstr(row_str)
 
 
-def _buffer_manager():
+def _make_buffer_manager():
     buffer = copy.deepcopy(empty_buffer)
     
     def get_buffer() -> list[list[str]]:
@@ -449,7 +449,7 @@ def _buffer_manager():
     return get_buffer, set_cell, clear_buffer
 
 
-def _element_manager():
+def _make_element_manager():
     elements = {}
     
     def get_elements() -> dict[int, object]:
@@ -466,7 +466,7 @@ def _element_manager():
     return get_elements, set_element, remove_element
 
 
-def _event_manager():
+def _make_event_manager():
     events = []
     
     def get_events() -> list[UIEvent]:
@@ -535,6 +535,6 @@ stdscr.timeout(0) # Délai de vérification d'entrée
 screen_height, screen_width = stdscr.getmaxyx()
 empty_buffer = [[" " for _ in range(screen_width)] for _ in range(screen_height)]
 
-get_buffer, set_cell, clear_buffer = _buffer_manager()
-get_elements, set_element, remove_element = _element_manager()
-get_events, add_event, clear_events = _event_manager()
+get_buffer, set_cell, clear_buffer = _make_buffer_manager()
+get_elements, set_element, remove_element = _make_element_manager()
+get_events, add_event, clear_events = _make_event_manager()

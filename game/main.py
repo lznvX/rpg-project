@@ -20,6 +20,7 @@ FPS_COUNTER_REFRESH = 1 # Time between each FPS counter update
 TILE_HEIGHT = 8
 TILE_WIDTH = 16
 TILE_NAME_TO_CHAR = {
+    "blank": "X",
     "grass": " ",
     "path_vertical": "│",
     "path_horizontal": "─",
@@ -27,7 +28,14 @@ TILE_NAME_TO_CHAR = {
     "path_up_right": "└",
     "path_down_left": "┐",
     "path_down_right": "┌",
+    "wall_vertical": "║",
+    "wall_horizontal": "═",
+    "wall_up_left": "╝",
+    "wall_up_right": "╚",
+    "wall_down_left": "╗",
+    "wall_down_right": "╔",
 }
+WALKABLE_TILE_CHARS = " │─┘└┐┌"
 
 class Player(NamedTuple):
     character: Character
@@ -40,6 +48,14 @@ class Player(NamedTuple):
     @property
     def x(self) -> int:
         return self.sprite_renderer.x
+    
+    @property
+    def grid_y(self) -> int:
+        return grid.screen_to_grid(self.y, self.x)[0]
+    
+    @property
+    def grid_x(self) -> int:
+        return grid.screen_to_grid(self.y, self.x)[1]
     
     @classmethod
     def new(cls, y: int, x: int, character: Character) -> Player:
@@ -55,7 +71,10 @@ class Player(NamedTuple):
         )
     
     def move(self, y: int, x: int) -> Player:
-        return self.config(y=self.y + y * TILE_HEIGHT, x=self.x + x * TILE_WIDTH)
+        new_grid_y, new_grid_x = self.grid_y + y, self.grid_x + x
+        if not grid.is_walkable(new_grid_y, new_grid_x): return self
+        new_y, new_x = grid.grid_to_screen(new_grid_y, new_grid_x)
+        return self.config(y=new_y, x=new_x)
 
 
 class Grid(NamedTuple):
@@ -87,14 +106,33 @@ class Grid(NamedTuple):
             tileset,
         )
     
+    def config(self, **kwargs) -> Grid:
+        return Grid(
+            self.sprite_renderer.config(**kwargs),
+            kwargs.get("tilemap", self.tilemap), # TODO should update sprite based on new tilemap and tileset
+            kwargs.get("tileset", self.tileset),
+        )
+    
     def grid_to_screen(self, y: int, x: int) -> tuple[int, int]:
         return (
             self.y + TILE_HEIGHT * y,
             self.x + TILE_WIDTH * x,
         )
+    
+    def screen_to_grid(self, y: int, x: int) -> tuple[int, int]:
+        return (
+            round((y - self.y) / TILE_HEIGHT),
+            round((x - self.x) / TILE_WIDTH),
+        )
+    
+    def is_walkable(self, y: int, x: int) -> bool:
+        try:
+            return self.tilemap[y][x] in WALKABLE_TILE_CHARS
+        except IndexError:
+            return False
 
 
-############ System init
+############ Code to run on startup
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(filename="logs\\main.log", encoding="utf-8", level=logging.DEBUG)
@@ -102,10 +140,6 @@ logging.basicConfig(filename="logs\\main.log", encoding="utf-8", level=logging.D
 last_time = time.time()
 fps_timer = last_time  # Time of the last FPS update
 frame_count = 0
-
-fps_label = cuinter.Label.new(0, 0)
-
-############ Code to run on startup
 
 tile_map = tuple(load_text("assets\\sprites\\tilemaps\\test_tilemap.txt").split("\n"))
 grid = Grid.new(
@@ -159,6 +193,8 @@ cuinter.ChoiceBox.new(
     round(cuinter.screen_width / 2),
     options,
 )
+
+fps_label = cuinter.Label.new(0, 0)
 
 ############
 

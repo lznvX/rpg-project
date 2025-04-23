@@ -37,9 +37,10 @@ TILE_NAME_TO_CHAR = {
 }
 WALKABLE_TILE_CHARS = " │─┘└┐┌"
 
-class Player(NamedTuple):
+class Player(NamedTuple): # Rename to WorldPlayer or smth if needed
     character: Character
     sprite_renderer: cuinter.SpriteRenderer
+    sprite_key: str = "down"
     
     @property
     def y(self) -> int:
@@ -58,16 +59,27 @@ class Player(NamedTuple):
         return grid.screen_to_grid(self.y, self.x)[1]
     
     @classmethod
-    def new(cls, y: int, x: int, character: Character) -> Player:
+    def new(cls, y: int, x: int, character: Character, sprite_key: str = "down") -> Player:
         return cls(
             character,
-            cuinter.SpriteRenderer.new(y, x, character.sprite_sheet["base"]),
+            cuinter.SpriteRenderer.new(y, x, character.sprite_sheet[sprite_key]),
+            sprite_key,
         )
     
     def config(self, **kwargs) -> Player:
+        character = kwargs.get("character", self.character)
+        sprite_key = kwargs.get("sprite_key", self.sprite_key)
+        
+        if (sprite_key is not self.sprite_key
+        or character.sprite_sheet is not self.character.sprite_sheet):
+            sprite = character.sprite_sheet[sprite_key]
+        else:
+            sprite = self.sprite_renderer.sprite
+        
         return Player(
-            self.character, # TODO allow cross Romain-Jakub config
-            self.sprite_renderer.config(**kwargs),
+            character, # TODO allow cross Romain-Jakub config
+            self.sprite_renderer.config(sprite=sprite, **kwargs),
+            sprite_key,
         )
     
     def move(self, y: int, x: int) -> Player:
@@ -90,27 +102,46 @@ class Grid(NamedTuple):
     def x(self) -> int:
         return self.sprite_renderer.x
     
-    @classmethod
-    def new(cls, y: int, x: int, tilemap: tuple[str] = None, tileset: dict[str, str] = None) -> Grid:
+    @staticmethod
+    def tilemap_to_sprite(tilemap: tuple[str], tileset: dict[str, str]) -> str:
+        """
+        Returns a text sprite of the tilemap with each char replaced by its
+        corresponding tile sprite given by the tileset.
+        """
         full_sprite = ""
-        for row in tile_map:
+        for row in tilemap:
             for sprite_y in range(TILE_HEIGHT):
                 for char in row:
                     full_sprite += tileset[char].split("\n")[sprite_y]
-                if sprite_y != TILE_HEIGHT - 1 or row != tile_map[-1]:
+                if sprite_y != TILE_HEIGHT - 1 or row != tilemap[-1]:
                     full_sprite += "\n"
-        
-        return Grid(
-            cuinter.SpriteRenderer.new(y, x, full_sprite),
+        return full_sprite
+    
+    @classmethod
+    def new(cls, y: int, x: int, tilemap: tuple[str] = None, tileset: dict[str, str] = None) -> Grid:
+        return cls(
+            cuinter.SpriteRenderer.new(
+                y,
+                x,
+                Grid.tilemap_to_sprite(tilemap, tileset),
+            ),
             tilemap,
             tileset,
         )
     
     def config(self, **kwargs) -> Grid:
+        tilemap = kwargs.get("tilemap", self.tilemap)
+        tileset = kwargs.get("tileset", self.tileset)
+        
+        if tilemap is not self.tilemap or tileset is not self.tileset:
+            sprite = Grid.tilemap_to_sprite(tilemap, tileset)
+        else:
+            sprite = self.sprite_renderer.sprite
+        
         return Grid(
-            self.sprite_renderer.config(**kwargs),
-            kwargs.get("tilemap", self.tilemap), # TODO should update sprite based on new tilemap and tileset
-            kwargs.get("tileset", self.tileset),
+            self.sprite_renderer.config(sprite=sprite, **kwargs),
+            tilemap, # TODO should update sprite based on new tilemap and tileset
+            tileset,
         )
     
     def grid_to_screen(self, y: int, x: int) -> tuple[int, int]:
@@ -126,10 +157,9 @@ class Grid(NamedTuple):
         )
     
     def is_walkable(self, y: int, x: int) -> bool:
-        try:
-            return self.tilemap[y][x] in WALKABLE_TILE_CHARS
-        except IndexError:
+        if not (0 <= y < len(self.tilemap) and 0 <= x < len(self.tilemap[y])):
             return False
+        return self.tilemap[y][x] in WALKABLE_TILE_CHARS
 
 
 ############ Code to run on startup
@@ -141,12 +171,13 @@ last_time = time.time()
 fps_timer = last_time  # Time of the last FPS update
 frame_count = 0
 
-tile_map = tuple(load_text("assets\\sprites\\tilemaps\\test_tilemap.txt").split("\n"))
+tilemap = tuple(load_text("assets\\sprites\\tilemaps\\test_tilemap.txt").split("\n"))
+tileset = remap_dict(load_text_dir("assets\\sprites\\tiles"), TILE_NAME_TO_CHAR)
 grid = Grid.new(
-    round((cuinter.screen_height - len(tile_map) * TILE_HEIGHT) / 2),
-    round((cuinter.screen_width - len(tile_map[0]) * TILE_WIDTH) / 2),
-    tile_map,
-    remap_dict(load_text_dir("assets\\sprites\\tiles"), TILE_NAME_TO_CHAR),
+    round((cuinter.screen_height - len(tilemap) * TILE_HEIGHT) / 2),
+    round((cuinter.screen_width - len(tilemap[0]) * TILE_WIDTH) / 2),
+    tilemap,
+    tileset,
 )
 
 player = Player.new(
@@ -220,19 +251,27 @@ while 1:
         match event_type:
             case cuinter.PRESSED_KEY:
                 # Key presses only passed to events if they weren't caught by
-                # an UI element
+                # a UI element
                 # Match case for the key doesn't work, don't waste your time
-                if value in (cuinter.KEY_UP, ord("w")):
+                if value == ord("w"):
                     player = player.move(-1, 0)
+                    if player.sprite_key != "up":
+                        player = player.config(sprite_key="up")
                 
-                elif value in (cuinter.KEY_DOWN, ord("s")):
+                elif value == ord("s"):
                     player = player.move(1, 0)
+                    if player.sprite_key != "down":
+                        player = player.config(sprite_key="down")
                 
-                elif value in (cuinter.KEY_LEFT, ord("a")):
+                elif value == ord("a"):
                     player = player.move(0, -1)
+                    if player.sprite_key != "left":
+                        player = player.config(sprite_key="left")
                 
-                elif value in (cuinter.KEY_RIGHT, ord("d")):
+                elif value == ord("d"):
                     player = player.move(0, 1)
+                    if player.sprite_key != "right":
+                        player = player.config(sprite_key="right")
                     
                 elif value == ord("q"):
                     break

@@ -11,7 +11,6 @@ from common import DialogLine, UIEvent, move_toward
 import copy
 import ctypes
 import curses
-from curses import KEY_UP, KEY_DOWN, KEY_LEFT, KEY_RIGHT # TODO this isn't great
 import logging
 import math
 import time

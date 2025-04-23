@@ -37,10 +37,12 @@ grid = world.Grid.new(tileset)
 grid = grid.load_zone(world.Zone(tilemap))
 grid = grid.center(cuinter.screen_height, cuinter.screen_width)
 
-player = world.Player.new(
-    grid.y,
-    grid.x,
+player = world.WorldCharacter.new(
+    grid,
+    round(len(grid.tilemap) / 2 - 0.5),
+    round(len(grid.tilemap[0]) / 2 - 0.5),
     Character("Player", load_text_dir("assets\\sprites\\characters\\player")),
+    "down",
 )
 
 # happy_sprite = load_text("assets\\sprites\\happyhappyhappy.txt")
@@ -111,23 +113,23 @@ while 1:
                 # a UI element
                 # Match case for the key doesn't work, don't waste your time
                 if value == ord("w"):
-                    player = player.move(grid, -1, 0)
-                    if player.sprite_key != "up":
+                    player = player.move(-1, 0)
+                    if player.grid_multi_sprite.sprite_key != "up":
                         player = player.config(sprite_key="up")
                 
                 elif value == ord("s"):
-                    player = player.move(grid, 1, 0)
-                    if player.sprite_key != "down":
+                    player = player.move(1, 0)
+                    if player.grid_multi_sprite.sprite_key != "down":
                         player = player.config(sprite_key="down")
                 
                 elif value == ord("a"):
-                    player = player.move(grid, 0, -1)
-                    if player.sprite_key != "left":
+                    player = player.move(0, -1)
+                    if player.grid_multi_sprite.sprite_key != "left":
                         player = player.config(sprite_key="left")
                 
                 elif value == ord("d"):
-                    player = player.move(grid, 0, 1)
-                    if player.sprite_key != "right":
+                    player = player.move(0, 1)
+                    if player.grid_multi_sprite.sprite_key != "right":
                         player = player.config(sprite_key="right")
                     
                 elif value == ord("q"):

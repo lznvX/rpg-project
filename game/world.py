@@ -1,4 +1,6 @@
-"""Classes for map navigation and structure
+"""Classes for map structure and navigation
+
+Builds on cuinter.SpriteRenderer to add grid-based game objects.
 
 Contributors:
     Romain
@@ -31,53 +33,8 @@ TILE_NAME_TO_CHAR = {
 WALKABLE_TILE_CHARS = " │─┘└┐┌"
 
 
-class Player(NamedTuple):
-    character: Character
-    sprite_renderer: SpriteRenderer
-    sprite_key: str = "down"
-    
-    @property
-    def y(self) -> int:
-        return self.sprite_renderer.y
-    
-    @property
-    def x(self) -> int:
-        return self.sprite_renderer.x
-    
-    @classmethod
-    def new(cls, y: int, x: int, character: Character, sprite_key: str = "down") -> Player:
-        return cls(
-            character,
-            SpriteRenderer.new(y, x, character.sprite_sheet[sprite_key]),
-            sprite_key,
-        )
-    
-    def config(self, **kwargs) -> Player:
-        character = kwargs.get("character", self.character)
-        sprite_key = kwargs.get("sprite_key", self.sprite_key)
-        
-        if (sprite_key is not self.sprite_key
-        or character.sprite_sheet is not self.character.sprite_sheet):
-            sprite = character.sprite_sheet[sprite_key]
-        else:
-            sprite = self.sprite_renderer.sprite
-        
-        return Player(
-            character, # TODO allow cross Romain-Jakub config
-            self.sprite_renderer.config(sprite=sprite, **kwargs),
-            sprite_key,
-        )
-    
-    def move(self, grid: Grid, y: int, x: int) -> Player:
-        new_grid_y = grid.screen_to_grid(y=self.y) + y
-        new_grid_x = grid.screen_to_grid(x=self.x) + x
-        if not grid.is_walkable(new_grid_y, new_grid_x): return self
-        new_y, new_x = grid.grid_to_screen(new_grid_y, new_grid_x)
-        return self.config(y=new_y, x=new_x)
-
-
 class Grid(NamedTuple):
-    # Could be called TilemapRenderer (more explicit) but Grid is more practical
+    # Could be called TilemapRenderer but Grid is more practical
     sprite_renderer: SpriteRenderer
     tilemap: tuple[str] = None # Each str is a row and each char represents a tile
     tileset: dict[str, str] = None # Maps the chars in tilemap to their text sprites
@@ -179,19 +136,139 @@ class Grid(NamedTuple):
 
 
 class GridSprite(NamedTuple):
-    grid_y: int
-    grid_x: int
+    grid: Grid
     sprite_renderer: SpriteRenderer
+    
+    @property
+    def grid_y(self) -> int:
+        return self.grid.screen_to_grid(y=self.sprite_renderer.y)
+    
+    @property
+    def grid_x(self) -> int:
+        return self.grid.screen_to_grid(x=self.sprite_renderer.x)
+    
+    @classmethod
+    def new(cls, grid: Grid, grid_y: int, grid_x: int, sprite: str = None) -> GridSprite:
+        return cls(
+            grid,
+            SpriteRenderer.new(
+                grid.grid_to_screen(y=grid_y),
+                grid.grid_to_screen(x=grid_x),
+                sprite,
+            ),
+        )
+    
+    def config(self, **kwargs) -> GridSprite:
+        grid_y = kwargs.get("grid_y", self.grid_y)
+        grid_x = kwargs.get("grid_x", self.grid_x)
+        
+        return GridSprite(
+            self.grid,
+            self.sprite_renderer.config(
+                y=self.grid.grid_to_screen(y=grid_y),
+                x=self.grid.grid_to_screen(x=grid_x),
+                **kwargs,
+            ),
+        )
 
 
-class Interactable(NamedTuple):
-    grid_y: int
-    grid_x: int
+class GridMultiSprite(NamedTuple):
+    grid_sprite: GridSprite
+    sprite_sheet: dict[str, str] = None
+    sprite_key: str = None
+    
+    @property
+    def grid(self) -> int:
+        return self.grid_sprite.grid
+    
+    @property
+    def grid_y(self) -> int:
+        return self.grid_sprite.grid_y
+    
+    @property
+    def grid_x(self) -> int:
+        return self.grid_sprite.grid_x
+    
+    @classmethod
+    def new(cls, grid: Grid, grid_y: int, grid_x: int,
+            sprite_sheet: dict[str, str] = None, sprite_key: str = None) -> GridMultiSprite:
+        if sprite_sheet:
+            if sprite_key is None:
+                sprite_key = sprite_sheet.keys()[0]
+            sprite = sprite_sheet[sprite_key]
+        else:
+            sprite = None
+        
+        return cls(
+            GridSprite.new(grid, grid_y, grid_x, sprite),
+            sprite_sheet,
+            sprite_key,
+        )
+    
+    def config(self, **kwargs) -> GridMultiSprite:
+        sprite_sheet = kwargs.get("sprite_sheet", self.sprite_sheet)
+        sprite_key = kwargs.get("sprite_key", self.sprite_key)
+        
+        return GridMultiSprite(
+            self.grid_sprite.config(sprite=sprite_sheet[sprite_key], **kwargs),
+            sprite_sheet,
+            sprite_key,
+        )
 
 
-class Portal(NamedTuple):
-    grid_y: int
-    grid_x: int
+class WorldCharacter(NamedTuple):
+    character: Character
+    grid_multi_sprite: GridMultiSprite
+    
+    @property
+    def grid(self) -> int:
+        return self.grid_multi_sprite.grid
+    
+    @property
+    def grid_y(self) -> int:
+        return self.grid_multi_sprite.grid_y
+    
+    @property
+    def grid_x(self) -> int:
+        return self.grid_multi_sprite.grid_x
+    
+    @classmethod
+    def new(cls, grid: Grid, grid_y: int, grid_x: int, character: Character, sprite_key: str = None) -> WorldCharacter:
+        return cls(
+            character,
+            GridMultiSprite.new(
+                grid,
+                grid_y,
+                grid_x,
+                character.sprite_sheet,
+                sprite_key,
+            ),
+        )
+    
+    def config(self, **kwargs) -> WorldCharacter:
+        character = kwargs.get("character", self.character)
+        
+        return WorldCharacter(
+            character,
+            self.grid_multi_sprite.config(
+                sprite_sheet=character.sprite_sheet,
+                **kwargs,
+            ),
+        )
+    
+    def move(self, grid_y: int, grid_x: int) -> WorldCharacter:
+        new_grid_y = self.grid_y + grid_y
+        new_grid_x = self.grid_x + grid_x
+        if not self.grid.is_walkable(new_grid_y, new_grid_x): return self
+        return self.config(grid_y=new_grid_y, grid_x=new_grid_x)
+
+
+class InteractTrigger(NamedTuple):
+    pass
+
+
+class WalkTrigger(NamedTuple):
+    pass
 
 
 class Zone(NamedTuple):

@@ -29,7 +29,7 @@ logging.basicConfig(filename="logs\\cuinter.log", encoding="utf-8", level=loggin
 
 
 class Label(NamedTuple):
-    pid: int # Persistent identifier, ask Romain
+    pid: int # Persistent identifier
     y: int
     x: int
     text: str = None

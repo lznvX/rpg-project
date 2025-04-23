@@ -113,8 +113,9 @@ class Inventory(NamedTuple):
 
     Not necessarily the player.
     """
-    equipment: dict[str: Item]
-    backpack: Counter[Item: int]
+    equipment : dict[str, Item]
+    tasklist : Counter[str]
+    backpack : Counter[Item]
     slots = ("mainhand", "offhand", "head", "body", "feet")
 
 
@@ -122,10 +123,11 @@ class Inventory(NamedTuple):
     def new(self) -> Inventory:
         """Create a new empty inventory."""
         equipment = dict()
+        tasklist = Counter()
         for slot in self.slots:
             equipment[slot] = None
 
-        return Inventory(equipment, Counter())
+        return Inventory(equipment, tasklist, Counter())
 
 
     def equip(self, slot: str, item: Item):
@@ -185,6 +187,33 @@ class Inventory(NamedTuple):
             #TODO: implement item using
         else:
             raise ValueError(f"Inventory does not contain any {item}")
+        
+        
+    def accept(self, task : Task):
+        """Add a task to the tasklist."""
+        self.tasklist[task.name] += 1
+    
+    
+    def finish(self, task : Task):
+        """Remove a task of the tasklist."""
+        if task.name not in self.tasklist:
+            raise KeyError(f"The task {task.name} is not in your task list.")
+        else:
+            self.tasklist[task.name] -= 1
+    
+    
+    def claim(self, task : Task):
+        """Try to see if you have the ressources to complete a task"""
+        if task.name not in self.tasklist:
+            raise KeyError(f"The task {task.name} is not in your task list.")
+        else:
+            for i in task.conditions:
+                self.remove(i, task.conditions[i])
+        
+            for i in task.Reward:
+                self.add(i, task.Reward[i])
+        
+            self.finish(task)
 
 
     @staticmethod
@@ -192,6 +221,8 @@ class Inventory(NamedTuple):
         item1 = Item("item1", "lorem ipsum", ("item", "equippable"), 1, 100, 100, Stats(), tuple(), "UUID")
         item2 = Item("item2", "Poland", ("item",), 1, 100, 100, Stats(), tuple(), "UUID")
         item3 = Item("item3", "Ave Caesar", ("item", "equippable"), 1, 100, 100, Stats(), tuple(), "UUID")
+        task1 = Task("task1", "Saiki", {item1 : 1}, {item2 : 3})
+        task2 = Task("task2", "construction", {item1 : 12}, {item2 : 43})
 
         ti = Inventory.new()
         ti.add(item1)
@@ -210,6 +241,19 @@ class Inventory(NamedTuple):
         assert ti.backpack[item1] == 1
         assert ti.backpack[item3] == 1
         assert ti.equipment["head"] == item3
+        
+        ti.accept(task1)
+        ti.accept(task2)
+        assert ti.tasklist[task1.name] == 1
+        assert ti.tasklist[task2.name] == 1
+        
+        ti.finish(task2)
+        assert ti.tasklist[task2.name] == 0
+        
+        ti.claim(task1)
+        assert ti.tasklist[task1.name] == 0
+        assert ti.backpack[item1] == 0
+        assert ti.backpack[item2] == 10
 
         print("Inventory tests passed")
 
@@ -225,7 +269,7 @@ class Character(NamedTuple):
     is_alive: bool = None
 
     base: Stats = None
-    bonuses: dict[UUID: Stats] = None
+    bonuses: dict[UUID, Stats] = None
 
     current: Stats = None
 
@@ -329,6 +373,16 @@ class Character(NamedTuple):
             [],
             {})
 
+
+class Task(NamedTuple):
+    """
+    A quest that if the condition is fulfild give a reward
+    """
+    name : str
+    description : str
+    conditions : Counter[str]
+    Reward : Counter[str]
+    
 
 class DialogLine(NamedTuple):
     text: str

@@ -15,9 +15,6 @@ from uuid import UUID, uuid4
 import os
 import logging
 
-logger = logging.getLogger(__name__)
-logging.basicConfig(filename="logs\\common.log", encoding="utf-8", level=logging.DEBUG)
-
 
 class DamageInstance(NamedTuple):
     """Holds information about a single instance of damage.
@@ -342,9 +339,18 @@ class DialogLine(NamedTuple):
     character: Character = None
 
 
-class UIEvent(NamedTuple):
-    event_type: str
+class Event(NamedTuple):
+    event_type: int
     value: object
+
+
+class _EventTypes(NamedTuple):
+    PRESS_KEY: int
+    LOAD_ZONE: int
+    
+    @classmethod
+    def new(cls) -> _EventTypes:
+        return cls(*range(2))
 
 
 def load_text(path: str) -> str:
@@ -390,3 +396,14 @@ def remap_dict(data: dict, key_map: dict) -> dict:
     unchanged.
     """
     return {key_map[k]: v for k, v in data.items() if k in key_map}
+
+
+def try_append(collection: list, item: object) -> None:
+    if item is not None:
+        collection.append(item)
+
+
+logger = logging.getLogger(__name__)
+logging.basicConfig(filename="logs\\common.log", encoding="utf-8", level=logging.DEBUG)
+
+EVENT_TYPES = _EventTypes.new()

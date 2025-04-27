@@ -7,8 +7,8 @@ Contributors:
 """
 
 from __future__ import annotations
-from typing import NamedTuple
-from common import Character
+from typing import NamedTuple, Callable
+from common import Character, Event
 from cuinter import SpriteRenderer
 
 TILE_HEIGHT = 8
@@ -259,16 +259,71 @@ class WorldCharacter(NamedTuple):
     def move(self, grid_y: int, grid_x: int) -> WorldCharacter:
         new_grid_y = self.grid_y + grid_y
         new_grid_x = self.grid_x + grid_x
-        if not self.grid.is_walkable(new_grid_y, new_grid_x): return self
+        if not self.grid.is_walkable(new_grid_y, new_grid_x):
+            return self
         return self.config(grid_y=new_grid_y, grid_x=new_grid_x)
 
 
-class InteractTrigger(NamedTuple):
-    pass
-
-
 class WalkTrigger(NamedTuple):
-    pass
+    grid_y: int
+    grid_x: int
+    on_trigger_event: Event = None
+    
+    @classmethod
+    def new(cls, grid_y: int, grid_x: int, on_trigger_event: Event = None) -> WalkTrigger:
+        return cls(
+            grid_y,
+            grid_x,
+            on_trigger_event,
+        )
+    
+    def config(self, **kwargs) -> WalkTrigger: 
+        return WalkTrigger(
+            kwargs.get("grid_y", self.grid_y),
+            kwargs.get("grid_x", self.grid_x),
+            kwargs.get("on_trigger_event", self.on_trigger_event),
+        )
+    
+    def on_walk(self, grid_y: int, grid_x: int):
+        if self.grid_y != grid_y or self.grid_x != grid_x:
+            return None
+        return self.on_trigger_event
+
+
+class InteractTrigger(NamedTuple):
+    grid_y: int
+    grid_x: int
+    on_trigger_event: Event = None
+    
+    @property
+    def grid_y(self) -> int:
+        return self.walk_trigger.grid_y
+    
+    @property
+    def grid_x(self) -> int:
+        return self.walk_trigger.grid_x
+    
+    @classmethod
+    def new(cls, grid_y: int, grid_x: int, on_trigger: Callable = None) -> InteractTrigger:
+        return cls(
+            WalkTrigger.new(grid_y, grid_x),
+            on_trigger,
+        )
+    
+    def config(self, **kwargs) -> InteractTrigger:
+        on_trigger = kwargs.pop("on_trigger", self.on_trigger)
+        
+        return WalkTrigger(
+            self.walk_trigger.config(**kwargs),
+            on_trigger,
+        )
+    
+    def on_interact(self, grid_y: int, grid_x: int):
+        if not self.walk_trigger.on_walk(grid_y, grid_x):
+            return False
+        if self.on_trigger is not None:
+            self.on_trigger()
+        return True
 
 
 class Zone(NamedTuple):

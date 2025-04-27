@@ -13,7 +13,7 @@ import logging
 import random
 import time
 from typing import NamedTuple
-from common import Character, DialogLine, load_text, load_text_dir, remap_dict
+from common import Character, DialogLine, EVENT_TYPES, load_text, load_text_dir, remap_dict
 import cuinter
 import world
 
@@ -102,13 +102,15 @@ while 1:
         fps_timer = current_time
         frame_count = 0
     
-    ############ Cuinter event handling, code to run every frame
+    ############ Event handling, code to run every frame
     
     events = cuinter.mainloop()
     
+    #for
+    
     for event_type, value in events:
         match event_type:
-            case cuinter.PRESSED_KEY:
+            case EVENT_TYPES.PRESS_KEY:
                 # Key presses only passed to events if they weren't caught by
                 # a UI element
                 # Match case for the key doesn't work, don't waste your time
@@ -135,8 +137,5 @@ while 1:
                 elif value == ord("q"):
                     break
             
-            case cuinter.FINISHED_DIALOG:
-                pass
-            
-            case cuinter.CONFIRMED_CHOICE:
+            case EVENT_TYPES.LOAD_ZONE:
                 pass

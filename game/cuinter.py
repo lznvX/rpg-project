@@ -7,7 +7,6 @@ Contributors:
 """
 
 from __future__ import annotations
-from common import DialogLine, UIEvent, move_toward
 import copy
 import ctypes
 import curses
@@ -16,10 +15,7 @@ import math
 import time
 from typing import NamedTuple
 import uuid
-
-PRESSED_KEY = 0
-FINISHED_DIALOG = 1
-CONFIRMED_CHOICE = 2
+from common import DialogLine, Event, EVENT_TYPES, move_toward
 
 X_CORRECTION = 2.6 # Hauteur / largeur d'un caractère
 CHARACTER_TIME = 0.025 # Délai d'affichage de chaque caractère dans les textes
@@ -233,7 +229,8 @@ class DialogBox(NamedTuple):
     pid: int
     text_box: TextBox
     dialog: tuple[DialogLine, ...]
-    start_time: float
+    on_finished_event: Event = None
+    start_time: float = 0
     line_index: int = 0
     
     @property
@@ -257,12 +254,15 @@ class DialogBox(NamedTuple):
         return self.dialog[self.line_index]
     
     @classmethod
-    def new(cls, y: int, x: int, height: int, width: int, dialog: tuple[DialogLine, ...], is_top_level: bool = True) -> DialogBox:
+    def new(cls, y: int, x: int, height: int, width: int,
+            dialog: tuple[DialogLine, ...], on_finished_event: Event = None,
+            is_top_level: bool = True) -> DialogBox:
         pid = int(uuid.uuid4())
         dialog_box = cls(
             pid,
             TextBox.new(y, x, height, width, None, False),
             dialog,
+            on_finished_event,
             time.time(),
             0,
         )
@@ -277,6 +277,7 @@ class DialogBox(NamedTuple):
             self.pid,
             self.text_box.config(False, **kwargs),
             kwargs.get("dialog", self.dialog),
+            kwargs.get("on_finished_event", self.on_finished_event),
             kwargs.get("start_time", self.start_time),
             kwargs.get("line_index", self.line_index),
         )
@@ -297,7 +298,8 @@ class DialogBox(NamedTuple):
         elif self.line_index + 1 < len(self.dialog):
             self.config(start_time=time.time(), line_index=self.line_index + 1)
         else:
-            add_event(FINISHED_DIALOG, self)
+            if self.on_finished_event is not None:
+                add_event(self.on_finished_event)
             self.delete()
     
     def draw(self) -> None:
@@ -313,6 +315,7 @@ class ChoiceBox(NamedTuple):
     pid: int
     text_box: TextBox
     options: tuple[str, ...]
+    on_confirm_events: dict[int, Event] = {}
     selected_index: int = 0
     
     @property
@@ -336,12 +339,15 @@ class ChoiceBox(NamedTuple):
         return self.options[self.selected_index]
     
     @classmethod
-    def new(cls, y: int, x: int, height: int, width: int, options: tuple[str, ...], selected_index: int = 0, is_top_level: bool = True) -> ChoiceBox:
+    def new(cls, y: int, x: int, height: int, width: int,
+            options: tuple[str, ...], on_confirm_events: dict[int, Event] = {},
+            selected_index: int = 0, is_top_level: bool = True) -> ChoiceBox:
         pid = int(uuid.uuid4())
         choice_box = cls(
             pid,
             TextBox.new(y, x, height, width, None, False),
             options,
+            on_confirm_events,
             selected_index,
         )
         
@@ -355,6 +361,7 @@ class ChoiceBox(NamedTuple):
             self.pid,
             self.text_box.config(False, **kwargs),
             kwargs.get("options", self.options),
+            kwargs.get("on_confirm_events", self.on_confirm_events),
             kwargs.get("selected_index", self.selected_index),
         )
         
@@ -365,10 +372,10 @@ class ChoiceBox(NamedTuple):
         remove_element(self.pid)
     
     def key_input(self, key: int) -> None:
-        if key in (curses.KEY_UP, ord("w")):
+        if key == ord("w"):
             self.select_previous()
         
-        elif key in (curses.KEY_DOWN, ord("s")):
+        elif key == ord("s"):
             self.select_next()
         
         elif key in (ord(" "), ord("\n")):
@@ -381,7 +388,10 @@ class ChoiceBox(NamedTuple):
         self.config(selected_index=move_toward(self.selected_index, len(self.options) - 1))
     
     def confirm(self) -> None:
-        add_event(CONFIRMED_CHOICE, self)
+        if (self.on_confirm_events is not None
+        and self.selected_index in self.on_confirm_events
+        and self.on_confirm_events[self.selected_index] is not None):
+            add_event(self.on_confirm_events[self.selected_index])
         self.delete()
     
     def draw(self) -> None:
@@ -468,12 +478,12 @@ def _make_element_manager():
 def _make_event_manager():
     events = []
     
-    def get_events() -> list[UIEvent]:
+    def get_events() -> list[Event]:
         return events
     
-    def add_event(event_type: str, value: object) -> None:
+    def add_event(event: Event) -> None:
         nonlocal events
-        events.append(UIEvent(event_type, value))
+        events.append(event)
     
     def clear_events() -> None:
         nonlocal events
@@ -505,7 +515,7 @@ def mainloop() -> dict[str, object]:
             else:
                 break
         else:
-            add_event(PRESSED_KEY, key)
+            add_event(Event(EVENT_TYPES.PRESS_KEY, key))
     
     # Display updating
     

@@ -6,36 +6,32 @@ Contributors:
     Romain
 """
 
-from common import DialogLine, UIEvent, move_toward
+from __future__ import annotations
 import copy
 import ctypes
 import curses
-from curses import KEY_UP, KEY_DOWN, KEY_LEFT, KEY_RIGHT
 import logging
 import math
 import time
 from typing import NamedTuple
 import uuid
-
-PRESSED_KEY = 0
-FINISHED_DIALOG = 1
-CONFIRMED_CHOICE = 2
+from common import DialogLine, Event, EVENT_TYPES, move_toward
 
 X_CORRECTION = 2.6 # Hauteur / largeur d'un caractère
 CHARACTER_TIME = 0.025 # Délai d'affichage de chaque caractère dans les textes
 
 logger = logging.getLogger(__name__)
-logging.basicConfig(filename='cuinter.log', encoding='utf-8', level=logging.DEBUG)
+logging.basicConfig(filename="logs\\cuinter.log", encoding="utf-8", level=logging.DEBUG)
 
 
 class Label(NamedTuple):
-    pid: int # Persistent identifier, ask Romain
+    pid: int # Persistent identifier
     y: int
     x: int
     text: str = None
     
     @classmethod
-    def new(cls, y: int, x: int, text: str = None, is_top_level: bool = True) -> "Label":
+    def new(cls, y: int, x: int, text: str = None, is_top_level: bool = True) -> Label:
         pid = int(uuid.uuid4())
         label = cls(pid, y, x, text)
         
@@ -44,7 +40,7 @@ class Label(NamedTuple):
             logger.debug("Created new Label")
         return label
     
-    def config(self, is_top_level: bool = True, **kwargs) -> "Label":
+    def config(self, is_top_level: bool = True, **kwargs) -> Label:
         label = Label(
             self.pid,
             kwargs.get("y", self.y),
@@ -73,7 +69,7 @@ class Rectangle(NamedTuple):
     width: int
     
     @classmethod
-    def new(cls, y: int, x: int, height: int, width: int, is_top_level: bool = True) -> "Rectangle":
+    def new(cls, y: int, x: int, height: int, width: int, is_top_level: bool = True) -> Rectangle:
         pid = int(uuid.uuid4())
         rectangle = cls(pid, y, x, height, width)
         
@@ -82,7 +78,7 @@ class Rectangle(NamedTuple):
             logger.debug("Created new Rectangle")
         return rectangle
     
-    def config(self, is_top_level: bool = True, **kwargs) -> "Rectangle":
+    def config(self, is_top_level: bool = True, **kwargs) -> Rectangle:
         rectangle = Rectangle(
             self.pid,
             kwargs.get("y", self.y),
@@ -136,7 +132,7 @@ class SpriteRenderer(NamedTuple):
         return max(len(row) for row in self.sprite)
     
     @classmethod
-    def new(cls, y: int, x: int, sprite: tuple[str, ...] = None, is_top_level: bool = True) -> "SpriteRenderer":
+    def new(cls, y: int, x: int, sprite: str = None, is_top_level: bool = True) -> SpriteRenderer:
         pid = int(uuid.uuid4())
         sprite_renderer = cls(pid, y, x, sprite)
         
@@ -145,7 +141,7 @@ class SpriteRenderer(NamedTuple):
             logger.debug("Created new SpriteRenderer")
         return sprite_renderer
     
-    def config(self, is_top_level: bool = True, **kwargs) -> "SpriteRenderer":
+    def config(self, is_top_level: bool = True, **kwargs) -> SpriteRenderer:
         sprite_renderer = SpriteRenderer(
             self.pid,
             kwargs.get("y", self.y),
@@ -190,7 +186,7 @@ class TextBox(NamedTuple):
         return self.rectangle.width
     
     @classmethod
-    def new(cls, y: int, x: int, height: int, width: int, text: str = None, is_top_level: bool = True) -> "TextBox":
+    def new(cls, y: int, x: int, height: int, width: int, text: str = None, is_top_level: bool = True) -> TextBox:
         pid = int(uuid.uuid4())
         text_box = cls(
             pid,
@@ -203,7 +199,7 @@ class TextBox(NamedTuple):
             logger.debug("Created new TextBox")
         return text_box
     
-    def config(self, is_top_level: bool = True, **kwargs) -> "TextBox":
+    def config(self, is_top_level: bool = True, **kwargs) -> TextBox:
         text_box = TextBox(
             self.pid,
             self.rectangle.config(False, **kwargs),
@@ -233,7 +229,8 @@ class DialogBox(NamedTuple):
     pid: int
     text_box: TextBox
     dialog: tuple[DialogLine, ...]
-    start_time: float
+    on_finished_event: Event = None
+    start_time: float = 0
     line_index: int = 0
     
     @property
@@ -257,12 +254,15 @@ class DialogBox(NamedTuple):
         return self.dialog[self.line_index]
     
     @classmethod
-    def new(cls, y: int, x: int, height: int, width: int, dialog: tuple[DialogLine, ...], is_top_level: bool = True) -> "DialogBox":
+    def new(cls, y: int, x: int, height: int, width: int,
+            dialog: tuple[DialogLine, ...], on_finished_event: Event = None,
+            is_top_level: bool = True) -> DialogBox:
         pid = int(uuid.uuid4())
         dialog_box = cls(
             pid,
             TextBox.new(y, x, height, width, None, False),
             dialog,
+            on_finished_event,
             time.time(),
             0,
         )
@@ -272,11 +272,12 @@ class DialogBox(NamedTuple):
             logger.debug("Created new DialogBox")
         return dialog_box
     
-    def config(self, is_top_level: bool = True, **kwargs) -> "DialogBox":
+    def config(self, is_top_level: bool = True, **kwargs) -> DialogBox:
         dialog_box = DialogBox(
             self.pid,
             self.text_box.config(False, **kwargs),
             kwargs.get("dialog", self.dialog),
+            kwargs.get("on_finished_event", self.on_finished_event),
             kwargs.get("start_time", self.start_time),
             kwargs.get("line_index", self.line_index),
         )
@@ -297,7 +298,8 @@ class DialogBox(NamedTuple):
         elif self.line_index + 1 < len(self.dialog):
             self.config(start_time=time.time(), line_index=self.line_index + 1)
         else:
-            add_event(FINISHED_DIALOG, self)
+            if self.on_finished_event is not None:
+                add_event(self.on_finished_event)
             self.delete()
     
     def draw(self) -> None:
@@ -313,6 +315,7 @@ class ChoiceBox(NamedTuple):
     pid: int
     text_box: TextBox
     options: tuple[str, ...]
+    on_confirm_events: dict[int, Event] = {}
     selected_index: int = 0
     
     @property
@@ -336,12 +339,15 @@ class ChoiceBox(NamedTuple):
         return self.options[self.selected_index]
     
     @classmethod
-    def new(cls, y: int, x: int, height: int, width: int, options: tuple[str, ...], selected_index: int = 0, is_top_level: bool = True) -> "ChoiceBox":
+    def new(cls, y: int, x: int, height: int, width: int,
+            options: tuple[str, ...], on_confirm_events: dict[int, Event] = {},
+            selected_index: int = 0, is_top_level: bool = True) -> ChoiceBox:
         pid = int(uuid.uuid4())
         choice_box = cls(
             pid,
             TextBox.new(y, x, height, width, None, False),
             options,
+            on_confirm_events,
             selected_index,
         )
         
@@ -350,11 +356,12 @@ class ChoiceBox(NamedTuple):
             logger.debug("Created new ChoiceBox")
         return choice_box
     
-    def config(self, is_top_level: bool = True, **kwargs) -> "ChoiceBox":
+    def config(self, is_top_level: bool = True, **kwargs) -> ChoiceBox:
         choice_box = ChoiceBox(
             self.pid,
             self.text_box.config(False, **kwargs),
             kwargs.get("options", self.options),
+            kwargs.get("on_confirm_events", self.on_confirm_events),
             kwargs.get("selected_index", self.selected_index),
         )
         
@@ -365,10 +372,10 @@ class ChoiceBox(NamedTuple):
         remove_element(self.pid)
     
     def key_input(self, key: int) -> None:
-        if key in (curses.KEY_UP, ord("w")):
+        if key == ord("w"):
             self.select_previous()
         
-        elif key in (curses.KEY_DOWN, ord("s")):
+        elif key == ord("s"):
             self.select_next()
         
         elif key in (ord(" "), ord("\n")):
@@ -381,7 +388,10 @@ class ChoiceBox(NamedTuple):
         self.config(selected_index=move_toward(self.selected_index, len(self.options) - 1))
     
     def confirm(self) -> None:
-        add_event(CONFIRMED_CHOICE, self)
+        if (self.on_confirm_events is not None
+        and self.selected_index in self.on_confirm_events
+        and self.on_confirm_events[self.selected_index] is not None):
+            add_event(self.on_confirm_events[self.selected_index])
         self.delete()
     
     def draw(self) -> None:
@@ -430,7 +440,7 @@ def _display_buffer(stdscr) -> None:
         stdscr.addstr(row_str)
 
 
-def _buffer_manager():
+def _make_buffer_manager():
     buffer = copy.deepcopy(empty_buffer)
     
     def get_buffer() -> list[list[str]]:
@@ -448,7 +458,7 @@ def _buffer_manager():
     return get_buffer, set_cell, clear_buffer
 
 
-def _element_manager():
+def _make_element_manager():
     elements = {}
     
     def get_elements() -> dict[int, object]:
@@ -465,15 +475,15 @@ def _element_manager():
     return get_elements, set_element, remove_element
 
 
-def _event_manager():
+def _make_event_manager():
     events = []
     
-    def get_events() -> list[UIEvent]:
+    def get_events() -> list[Event]:
         return events
     
-    def add_event(event_type: str, value: object) -> None:
+    def add_event(event: Event) -> None:
         nonlocal events
-        events.append(UIEvent(event_type, value))
+        events.append(event)
     
     def clear_events() -> None:
         nonlocal events
@@ -505,7 +515,7 @@ def mainloop() -> dict[str, object]:
             else:
                 break
         else:
-            add_event(PRESSED_KEY, key)
+            add_event(Event(EVENT_TYPES.PRESS_KEY, key))
     
     # Display updating
     
@@ -534,6 +544,6 @@ stdscr.timeout(0) # Délai de vérification d'entrée
 screen_height, screen_width = stdscr.getmaxyx()
 empty_buffer = [[" " for _ in range(screen_width)] for _ in range(screen_height)]
 
-get_buffer, set_cell, clear_buffer = _buffer_manager()
-get_elements, set_element, remove_element = _element_manager()
-get_events, add_event, clear_events = _event_manager()
+get_buffer, set_cell, clear_buffer = _make_buffer_manager()
+get_elements, set_element, remove_element = _make_element_manager()
+get_events, add_event, clear_events = _make_event_manager()

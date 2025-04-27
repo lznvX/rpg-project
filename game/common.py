@@ -12,6 +12,8 @@ from __future__ import annotations
 from typing import NamedTuple
 from collections import Counter
 from uuid import UUID, uuid4
+import os
+import logging
 
 
 class DamageInstance(NamedTuple):
@@ -221,6 +223,7 @@ class Character(NamedTuple):
     Character.modify(). For all other purposes use Character.new().
     """
     name: str = None
+    sprite_sheet: dict[str, str] = None
     is_player: bool = None
     is_alive: bool = None
 
@@ -239,13 +242,14 @@ class Character(NamedTuple):
 
 
     @staticmethod
-    def new(name: str, is_player: bool, base_stats: Stats, actions: list[Action],
+    def new(name: str, sprite_sheet: dict[str, str], is_player: bool, base_stats: Stats, actions: list[Action],
             initial_effects: dict) -> Character:
         """Character constructor.
 
         Needed because NamedTuple.__init__ can't be modified.
         """
         return Character(name,
+                         sprite_sheet,
                          is_player,
                          True,
 
@@ -335,11 +339,71 @@ class DialogLine(NamedTuple):
     character: Character = None
 
 
-class UIEvent(NamedTuple):
-    event_type: str
+class Event(NamedTuple):
+    event_type: int
     value: object
+
+
+class _EventTypes(NamedTuple):
+    PRESS_KEY: int
+    LOAD_ZONE: int
+    
+    @classmethod
+    def new(cls) -> _EventTypes:
+        return cls(*range(2))
+
+
+def load_text(path: str) -> str:
+    """Reads and returns the content of the text file at the provided path."""
+    try:
+        with open(path, "r", encoding="utf-8") as file:
+            return file.read()
+    
+    except FileNotFoundError:
+        error_msg = f"File missing: {path}"
+        logger.error(error_msg)
+        return error_msg
+
+
+def load_text_dir(path: str) -> dict[str, str]:
+    """
+    Returns a dict with keys being the filenames, values being the contents of
+    the files in the directory.
+    """
+    texts = {}
+    
+    for entry in os.listdir(path):
+        full_path = os.path.join(path, entry)
+        name, ext = os.path.splitext(entry)
+        
+        if ext != ".txt":
+            logger.warning(f"Expected txt file at path: {full_path}")
+            continue
+        
+        texts[name] = load_text(full_path)
+    
+    return texts
 
 
 def move_toward(a: int | float, b: int | float, step: int | float = 1) -> int | float:
     """Returns a moved by step towards b without overshooting."""
     return min(a + step, b) if b >= a else max(a - step, b)
+
+
+def remap_dict(data: dict, key_map: dict) -> dict:
+    """
+    Returns a new dict with keys of data remapped through key_map and values
+    unchanged.
+    """
+    return {key_map[k]: v for k, v in data.items() if k in key_map}
+
+
+def try_append(collection: list, item: object) -> None:
+    if item is not None:
+        collection.append(item)
+
+
+logger = logging.getLogger(__name__)
+logging.basicConfig(filename="logs\\common.log", encoding="utf-8", level=logging.DEBUG)
+
+EVENT_TYPES = _EventTypes.new()

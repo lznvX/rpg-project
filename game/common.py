@@ -9,11 +9,12 @@ Contributors:
 
 
 from __future__ import annotations
-from typing import NamedTuple
 from collections import Counter
-from uuid import UUID, uuid4
-import os
 import logging
+import os
+import pickle
+from typing import NamedTuple
+from uuid import UUID, uuid4
 
 
 class DamageInstance(NamedTuple):
@@ -339,8 +340,12 @@ class DialogLine(NamedTuple):
     character: Character = None
 
 
-class Event(NamedTuple):
-    event_type: int
+class EnumObject(NamedTuple):
+    """
+    Stores an object with an associated int. Usually used to define how the object is used, such as
+    in events and world objects.
+    """
+    enum: int
     value: object
 
 
@@ -351,6 +356,29 @@ class _EventTypes(NamedTuple):
     @classmethod
     def new(cls) -> _EventTypes:
         return cls(*range(2))
+
+
+class _WorldObjectTypes(NamedTuple):
+    GRID_SPRITE: int
+    GRID_MULTI_SPRITE: int
+    WORLD_CHARACTER: int
+    WALK_TRIGGER: int
+    
+    @classmethod
+    def new(cls) -> _WorldObjectTypes:
+        return cls(*range(4))
+
+
+def load_pickle(path: str) -> object:
+    """Reads and returns the pickle object at the provided path."""
+    try:
+        with open(path, "rb") as file:
+            return pickle.load(file)
+    
+    except FileNotFoundError:
+        error_msg = f"File missing: {path}"
+        logger.error(error_msg)
+        return None
 
 
 def load_text(path: str) -> str:
@@ -407,3 +435,4 @@ logger = logging.getLogger(__name__)
 logging.basicConfig(filename="logs\\common.log", encoding="utf-8", level=logging.DEBUG)
 
 EVENT_TYPES = _EventTypes.new()
+WORLD_OBJECT_TYPES = _WorldObjectTypes.new()

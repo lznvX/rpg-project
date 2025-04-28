@@ -1,6 +1,6 @@
 """Main game script
 
-Run with CTRL+T (thonny), currently contains game loop setup, utility labels and
+Run with CTRL+T (Thonny), currently contains game loop setup, utility labels and
 interface tests. If _curses module missing, run pip install windows-curses in
 terminal.
 
@@ -13,11 +13,17 @@ import logging
 import random
 import time
 from typing import NamedTuple
-from common import Character, DialogLine, EVENT_TYPES, load_text, load_text_dir, remap_dict
+from common import *
 import cuinter
 import world
 
 FPS_COUNTER_REFRESH = 1 # Time between each FPS counter update
+MOVE_MAP = {
+    ord("w"): (-1, 0, "up"),
+    ord("s"): (1, 0, "down"),
+    ord("a"): (0, -1, "left"),
+    ord("d"): (0, 1, "right"),
+}
 
 ############ Code to run on startup
 
@@ -30,20 +36,28 @@ frame_count = 0
 
 tiles = load_text_dir("assets\\sprites\\tiles")
 tileset = remap_dict(tiles, world.TILE_NAME_TO_CHAR)
-text_tilemap = load_text("assets\\sprites\\tilemaps\\test_tilemap.txt")
-tilemap = tuple(text_tilemap.split("\n"))
 
 grid = world.Grid.new(tileset)
-grid = grid.load_zone(world.Zone(tilemap))
-grid = grid.center(cuinter.screen_height, cuinter.screen_width)
 
 player = world.WorldCharacter.new(
     grid,
-    round(len(grid.tilemap) / 2 - 0.5),
-    round(len(grid.tilemap[0]) / 2 - 0.5),
+    0,
+    0,
     Character("Player", load_text_dir("assets\\sprites\\characters\\player")),
     "down",
 )
+
+world_objects = []
+new_events = [
+    EnumObject(
+        EVENT_TYPES.LOAD_ZONE,
+        (
+            "assets\\zones\\test_zone.pkl",
+            3,
+            5,
+        ),
+    ),
+]
 
 # happy_sprite = load_text("assets\\sprites\\happyhappyhappy.txt")
 # 
@@ -52,7 +66,7 @@ player = world.WorldCharacter.new(
 #     0,
 #     happy_sprite,
 # )
-
+# 
 # dialog = (
 #     DialogLine("LELOLELOELOLEOLEOLEOLEOLEOLOLEOLOEELOmmmmmmmmmmmmmmmmmm    yeseiurrrrrhjsdhdjhsdjhsdhjsdhjdshjsdjhsdjhdsjhdshjsdhjsdhjsdhjdshjdshdsdssjhgfqwè¨qè¨¨èwq¨qwèwq", Character("Idris")),
 #     DialogLine("bruh"),
@@ -104,38 +118,78 @@ while 1:
     
     ############ Event handling, code to run every frame
     
-    events = cuinter.mainloop()
-    
-    #for
+    events = cuinter.update()
+    events += new_events
+    new_events.clear()
     
     for event_type, value in events:
         match event_type:
             case EVENT_TYPES.PRESS_KEY:
-                # Key presses only passed to events if they weren't caught by
-                # a UI element
-                # Match case for the key doesn't work, don't waste your time
-                if value == ord("w"):
-                    player = player.move(-1, 0)
-                    if player.grid_multi_sprite.sprite_key != "up":
-                        player = player.config(sprite_key="up")
+                # Key presses only passed to events if they weren't caught by a UI element
+                if not isinstance(value, int):
+                    logger.error(f"Expected value of type int, got {value}")
+                    continue
                 
-                elif value == ord("s"):
-                    player = player.move(1, 0)
-                    if player.grid_multi_sprite.sprite_key != "down":
-                        player = player.config(sprite_key="down")
-                
-                elif value == ord("a"):
-                    player = player.move(0, -1)
-                    if player.grid_multi_sprite.sprite_key != "left":
-                        player = player.config(sprite_key="left")
-                
-                elif value == ord("d"):
-                    player = player.move(0, 1)
-                    if player.grid_multi_sprite.sprite_key != "right":
-                        player = player.config(sprite_key="right")
+                for world_object in world_objects:
+                    if (not isinstance(world_object, world.WalkTrigger)
+                    or value != world_object.key):
+                        continue
                     
+                    try_append(
+                        new_events,
+                        world_object.on_walk(player.grid_y, player.grid_x),
+                    )
+                
+                if value in MOVE_MAP:
+                    old_y, old_x = player.grid_y, player.grid_x
+                    move_y, move_x, direction = MOVE_MAP[value]
+                    player = player.move(move_y, move_x)
+                    
+                    if player.grid_multi_sprite.sprite_key != direction:
+                        player = player.config(sprite_key=direction)
+                    
+                    if old_y != player.grid_y or old_x != player.grid_x:
+                        for world_object in world_objects:
+                            if (not isinstance(world_object, world.WalkTrigger)
+                            or world_object.key is not None):
+                                continue
+                            
+                            try_append(
+                                new_events,
+                                world_object.on_walk(player.grid_y, player.grid_x),
+                            )
+                
                 elif value == ord("q"):
-                    break
+                    raise SystemExit
             
             case EVENT_TYPES.LOAD_ZONE:
-                pass
+                if (not isinstance(value, tuple) or len(value) != 3
+                or not isinstance(value[0], str)
+                or not isinstance(value[1], int)   
+                or not isinstance(value[2], int)):
+                    logger.error(f"Expected value of type (str, int, int), got {value}")
+                    continue
+                
+                world_objects.clear()
+                zone_path, player_grid_y, player_grid_x = value
+                zone: world.Zone = load_pickle(zone_path)
+                grid = grid.load_tilemap(zone.tilemap)
+                grid = grid.center(cuinter.screen_height, cuinter.screen_width)
+                player = player.config(grid=grid, grid_y=player_grid_y, grid_x=player_grid_x)
+                
+                for world_object_type, constructor_parameters in zone.world_objects:
+                    new_world_object = None
+                    match world_object_type:
+                        case WORLD_OBJECT_TYPES.GRID_SPRITE:
+                            new_world_object = world.GridSprite.new(*constructor_parameters)
+                        
+                        case WORLD_OBJECT_TYPES.GRID_MULTI_SPRITE:
+                            new_world_object = world.GridMultiSprite.new(*constructor_parameters)
+                        
+                        case WORLD_OBJECT_TYPES.WORLD_CHARACTER:
+                            new_world_object = world.WorldCharacter.new(*constructor_parameters)
+                        
+                        case WORLD_OBJECT_TYPES.WALK_TRIGGER:
+                            new_world_object = world.WalkTrigger.new(*constructor_parameters)
+                
+                    try_append(world_objects, new_world_object)

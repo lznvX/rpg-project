@@ -25,16 +25,25 @@ class _Lang(NamedTuple):
     battle_action_choice: str
     battle_target_choice: str
 
+    # Items
+    item_names: dict[str, str]
+    # item_names = {
+    #     "item_name": "Item Name"
+    # }
+    item_descriptions: dict[str, str]
+    # item_descriptions = {
+    #     "item_name": "Item Description"
+    # }
+
     # Actions
-    # attacks
-    light_stab_name: str
-    light_stab_desc: str
-
-    stab_name: str
-    stab_desc: str
-
-    slash_name: str
-    slash_desc: str
+    action_names: dict[str, str]
+    # action_names = {
+    #     "action_name": "Action Name"
+    # }
+    action_descriptions: dict[str, str]
+    # action_descriptions = {
+    #     "action_name": "Action Description"
+    # }
 
 
 English = _Lang(
@@ -53,16 +62,35 @@ English = _Lang(
     battle_action_choice    = "What should {} do?",
     battle_target_choice    = "Choose target for {}:",
 
+    # Items
+    item_names = {
+      # "item_name": "Item Name",
+        "agi_boots": "Hermes' Boots",
+        "potion_health": "Potion of Healing",
+        "str_helmet": "Helmet of Strength",
+        "sword": "Sword",
+    },
+    item_descriptions = {
+    #   "item_name": "Item Description",
+        "agi_boots": "A pair of boots with suspicious wings",
+        "potion_health": "Heals ♥ 5 when consumed",
+        "str_helmet": "A spartan helmet, enchanted with a strength spell",
+        "sword": "A pointy thing",
+    },
+
     # Actions
-    # attacks
-    light_stab_name = "Light Stab",
-    light_stab_desc = "Stab your opponent with your puny dagger",
-
-    stab_name   = "Stab",
-    stab_desc   = "Stick 'em with the pointy end",
-
-    slash_name  = "Slash",
-    slash_desc  = "Swing your sword at your opponent",
+    action_names = {
+      # "action_name": "Action Name",
+        "light_stab": "Light Stab",
+        "slash": "Slash",
+        "stab": "Stab",
+    },
+    action_descriptions = {
+      # "action_name": "Action Description",
+        "light_stab": "Stab your opponent with your puny dagger",
+        "slash": "Swing your sword at your opponent",
+        "stab": "Stick 'em with the pointy end",
+    },
     )
 
 
@@ -82,16 +110,36 @@ French = _Lang(
     battle_action_choice    = "Que'est-ce que {} devrait faire ?",
     battle_target_choice    = "Choisissez la cible de {}:",
 
+
+    # Items
+    item_names = {
+      # "item_name": "Item Name",
+        "agi_boots": "Bottes de Hermes",
+        "potion_health": "Potion de Gueérisson",
+        "str_helmet": "Heaume de Force",
+        "sword": "Épée",
+    },
+    item_descriptions = {
+    #   "item_name": "Item Description",
+        "agi_boots": "Une pair de bottes avec des ailes suspicieuses",
+        "potion_health": "Guérit ♥ 5 lors de consommation",
+        "str_helmet": "Une heaume spartane, enchantée avec un sort de force",
+        "sword": "Un truc pointu",
+    },
+
     # Actions
-    # attacks
-    light_stab_name = "Coup de couteau",
-    light_stab_desc = "Poignardez votre ennemi avec votre petit couteau",
-
-    stab_name   = "Coup de poignard",
-    stab_desc   = "Frappez de l'estoc",
-
-    slash_name  = "Coup d'épée",
-    slash_desc  = "Brandissez votre épée sur votre ennemi",
+    action_names = {
+      # "action_name": "Action Name",
+        "light_stab": "Coup de couteau",
+        "slash": "Coup d'épée",
+        "stab": "Coup de pointe",
+    },
+    action_descriptions = {
+      # "action_name": "Action Description",
+        "light_stab": "Poignardez votre ennemi avec votre arme",
+        "slash": "Brandissez votre épée sur votre ennemi",
+        "stab": "Frappez l'enemi avec la pointe de votre arme",
+    },
     )
 
 

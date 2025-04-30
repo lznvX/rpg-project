@@ -15,6 +15,9 @@ import os
 import pickle
 from typing import NamedTuple
 from uuid import UUID, uuid4
+from lang import get_lang_choice, f
+
+text = get_lang_choice()
 
 
 class DamageInstance(NamedTuple):
@@ -65,13 +68,33 @@ class Stats(NamedTuple):
 class Action(NamedTuple):
     """Describes an action during combat."""
 
-    name: str
-    action_type: str
-    description: str
+    name: str           # Internal name; english only
+    action_type: str    #
 
-    base_damage: int
-    damage_type: str
-    effects: dict
+    base_damage: int    # How much damage is dealt by the action
+    damage_type: str    # What type is the damage
+                        # different damage types will result in different
+                        # final damage, based on target's resistances
+    effects: dict       # Effects to be applied to the target
+
+
+    @property
+    def display_name(self) -> str:
+        """Fetch the action's name in the appropriate language."""
+        try:
+            return text.action_names[self.name]
+        except KeyError:
+            return self.name
+
+
+    @property
+    def description(self) -> str:
+        """Fetch the action's description in the appropriate language."""
+        # will show up when inspecting the action (later)
+        try:
+            return text.action_descriptions[self.name]
+        except:
+            return ""
 
 
     def get_damage(self) -> float:
@@ -83,13 +106,11 @@ class Action(NamedTuple):
 
 
     def __repr__(self):
-        return f"{self.name} (¤ {self.get_damage()})"
+        return f"{self.display_name} (¤ {self.get_damage()})"
 
 
 class Item(NamedTuple):
-
-    name: str
-    description: str # will show up when inspecting the item (later)
+    name: str        # Internal name; english only
 
     tags: tuple[str]
     #   weapon -> melee, bow, staff (magic), shield, etc.
@@ -100,15 +121,32 @@ class Item(NamedTuple):
 
     weight: int # -> limit for storage, heavy armor slows you down, +relevant in combat
 
-    max_durability: int
-    durability: int # do we want durability?
-
     stat_bonus: Stats # added to the user's stats
     actions: tuple[Action] # added to the user's actions
     uuid: UUID # used to keep track of applied bonuses
 
+
+    @property
+    def display_name(self) -> str:
+        """Fetch the item's name in the appropriate language."""
+        try:
+            return text.item_names[self.name]
+        except KeyError:
+            return self.name
+
+
+    @property
+    def description(self) -> str:
+        """Fetch the item's description in the appropriate language."""
+        # will show up when inspecting the item (later)
+        try:
+            return text.item_descriptions[self.name]
+        except KeyError:
+            return ""
+
+
     def __repr__(self):
-        return f"{self.name}"
+        return f"{self.display_name}"
 
 
 class Inventory(NamedTuple):
@@ -192,9 +230,9 @@ class Inventory(NamedTuple):
 
     @staticmethod
     def _test():
-        item1 = Item("item1", "lorem ipsum", ("item", "equippable"), 1, 100, 100, Stats(), tuple(), "UUID")
-        item2 = Item("item2", "Poland", ("item",), 1, 100, 100, Stats(), tuple(), "UUID")
-        item3 = Item("item3", "Ave Caesar", ("item", "equippable"), 1, 100, 100, Stats(), tuple(), "UUID")
+        item1 = Item("item1", ("item", "equippable"), 1,  Stats(), tuple(), "UUID")
+        item2 = Item("item2", ("item",), 1, Stats(), tuple(), "UUID")
+        item3 = Item("item3", ("item", "equippable"), 1, Stats(), tuple(), "UUID")
 
         ti = Inventory.new()
         ti.add(item1)
@@ -323,8 +361,8 @@ class Character(NamedTuple):
             else:
                 continue
         return f"{self.name} (♥ {self.health})"
-    
-    
+
+
     @staticmethod
     def _test():
         testchar = Character.new(
@@ -352,7 +390,7 @@ class EnumObject(NamedTuple):
 class _EventTypes(NamedTuple):
     PRESS_KEY: int
     LOAD_ZONE: int
-    
+
     @classmethod
     def new(cls) -> _EventTypes:
         return cls(*range(2))
@@ -386,7 +424,7 @@ def load_text(path: str) -> str:
     try:
         with open(path, "r", encoding="utf-8") as file:
             return file.read()
-    
+
     except FileNotFoundError:
         error_msg = f"File missing: {path}"
         logger.error(error_msg)
@@ -399,17 +437,17 @@ def load_text_dir(path: str) -> dict[str, str]:
     the files in the directory.
     """
     texts = {}
-    
+
     for entry in os.listdir(path):
         full_path = os.path.join(path, entry)
         name, ext = os.path.splitext(entry)
-        
+
         if ext != ".txt":
             logger.warning(f"Expected txt file at path: {full_path}")
             continue
-        
+
         texts[name] = load_text(full_path)
-    
+
     return texts
 
 
@@ -436,3 +474,7 @@ logging.basicConfig(filename="logs\\common.log", encoding="utf-8", level=logging
 
 EVENT_TYPES = _EventTypes.new()
 WORLD_OBJECT_TYPES = _WorldObjectTypes.new()
+
+if __name__ == "__main__":
+    # Tests
+    Inventory._test()

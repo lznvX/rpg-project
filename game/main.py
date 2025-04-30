@@ -45,6 +45,8 @@ player = world.WorldCharacter.new(
     0,
     Character("Player", load_text_dir("assets\\sprites\\characters\\player")),
     "down",
+    -1,
+    0,
 )
 
 world_objects = []
@@ -165,7 +167,7 @@ while 1:
             case EVENT_TYPES.LOAD_ZONE:
                 if (not isinstance(value, tuple) or len(value) != 3
                 or not isinstance(value[0], str)
-                or not isinstance(value[1], int)   
+                or not isinstance(value[1], int)
                 or not isinstance(value[2], int)):
                     logger.error(f"Expected value of type (str, int, int), got {value}")
                     continue

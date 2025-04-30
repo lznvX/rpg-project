@@ -140,40 +140,49 @@ class Grid(NamedTuple):
 
 
 class GridSprite(NamedTuple):
-    grid: Grid
     sprite_renderer: SpriteRenderer
+    grid: Grid
+    grid_y: int
+    grid_x: int
     
     @property
-    def grid_y(self) -> int:
-        return self.grid.screen_to_grid(y=self.sprite_renderer.y)
+    def y_offset(self) -> int:
+        return self.sprite_renderer.y - self.grid.grid_to_screen(y=self.grid_y)
     
     @property
-    def grid_x(self) -> int:
-        return self.grid.screen_to_grid(x=self.sprite_renderer.x)
+    def x_offset(self) -> int:
+        return self.sprite_renderer.x - self.grid.grid_to_screen(x=self.grid_x)
     
     @classmethod
-    def new(cls, grid: Grid, grid_y: int, grid_x: int, sprite: str = None) -> GridSprite:
+    def new(cls, grid: Grid, grid_y: int, grid_x: int, sprite: str = None, y_offset: int = 0,
+            x_offset: int = 0) -> GridSprite:
         return cls(
-            grid,
             SpriteRenderer.new(
-                grid.grid_to_screen(y=grid_y),
-                grid.grid_to_screen(x=grid_x),
+                grid.grid_to_screen(y=grid_y) + y_offset,
+                grid.grid_to_screen(x=grid_x) + x_offset,
                 sprite,
             ),
+            grid,
+            grid_y,
+            grid_x,
         )
     
     def config(self, **kwargs) -> GridSprite:
         grid = kwargs.get("grid", self.grid)
         grid_y = kwargs.get("grid_y", self.grid_y)
         grid_x = kwargs.get("grid_x", self.grid_x)
+        y_offset = kwargs.get("y_offset", self.y_offset)
+        x_offset = kwargs.get("x_offset", self.x_offset)
         
         return GridSprite(
-            grid,
             self.sprite_renderer.config(
-                y=grid.grid_to_screen(y=grid_y),
-                x=grid.grid_to_screen(x=grid_x),
+                y=grid.grid_to_screen(y=grid_y) + y_offset,
+                x=grid.grid_to_screen(x=grid_x) + x_offset,
                 **kwargs,
             ),
+            grid,
+            grid_y,
+            grid_x,
         )
 
 
@@ -194,9 +203,17 @@ class GridMultiSprite(NamedTuple):
     def grid_x(self) -> int:
         return self.grid_sprite.grid_x
     
+    @property
+    def y_offset(self) -> int:
+        return self.grid_sprite.y_offset
+    
+    @property
+    def x_offset(self) -> int:
+        return self.grid_sprite.x_offset
+    
     @classmethod
-    def new(cls, grid: Grid, grid_y: int, grid_x: int,
-            sprite_sheet: dict[str, str] = None, sprite_key: str = None) -> GridMultiSprite:
+    def new(cls, grid: Grid, grid_y: int, grid_x: int, sprite_sheet: dict[str, str] = None,
+            sprite_key: str = None, y_offset: int = 0, x_offset: int = 0) -> GridMultiSprite:
         if sprite_sheet:
             if sprite_key is None:
                 sprite_key = sprite_sheet.keys()[0]
@@ -205,7 +222,14 @@ class GridMultiSprite(NamedTuple):
             sprite = None
         
         return cls(
-            GridSprite.new(grid, grid_y, grid_x, sprite),
+            GridSprite.new(
+                grid,
+                grid_y,
+                grid_x,
+                sprite,
+                y_offset,
+                x_offset,
+            ),
             sprite_sheet,
             sprite_key,
         )
@@ -237,9 +261,17 @@ class WorldCharacter(NamedTuple):
     def grid_x(self) -> int:
         return self.grid_multi_sprite.grid_x
     
+    @property
+    def y_offset(self) -> int:
+        return self.grid_multi_sprite.y_offset
+    
+    @property
+    def x_offset(self) -> int:
+        return self.grid_multi_sprite.x_offset
+    
     @classmethod
     def new(cls, grid: Grid, grid_y: int, grid_x: int, character: Character,
-            sprite_key: str = None) -> WorldCharacter:
+            sprite_key: str = None, y_offset: int = 0, x_offset: int = 0) -> WorldCharacter:
         return cls(
             character,
             GridMultiSprite.new(
@@ -248,6 +280,8 @@ class WorldCharacter(NamedTuple):
                 grid_x,
                 character.sprite_sheet,
                 sprite_key,
+                y_offset,
+                x_offset,
             ),
         )
     

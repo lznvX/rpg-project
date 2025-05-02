@@ -15,7 +15,7 @@ import math
 import time
 from typing import NamedTuple
 import uuid
-from common import DialogLine, Event, EVENT_TYPES, move_toward
+from common import DialogLine, EnumObject, EVENT_TYPES, move_toward
 
 X_CORRECTION = 2.6 # Hauteur / largeur d'un caractère
 CHARACTER_TIME = 0.025 # Délai d'affichage de chaque caractère dans les textes
@@ -186,7 +186,8 @@ class TextBox(NamedTuple):
         return self.rectangle.width
     
     @classmethod
-    def new(cls, y: int, x: int, height: int, width: int, text: str = None, is_top_level: bool = True) -> TextBox:
+    def new(cls, y: int, x: int, height: int, width: int, text: str = None,
+            is_top_level: bool = True) -> TextBox:
         pid = int(uuid.uuid4())
         text_box = cls(
             pid,
@@ -229,7 +230,7 @@ class DialogBox(NamedTuple):
     pid: int
     text_box: TextBox
     dialog: tuple[DialogLine, ...]
-    on_finished_event: Event = None
+    on_finished_event: EnumObject = None
     start_time: float = 0
     line_index: int = 0
     
@@ -255,7 +256,7 @@ class DialogBox(NamedTuple):
     
     @classmethod
     def new(cls, y: int, x: int, height: int, width: int,
-            dialog: tuple[DialogLine, ...], on_finished_event: Event = None,
+            dialog: tuple[DialogLine, ...], on_finished_event: EnumObject = None,
             is_top_level: bool = True) -> DialogBox:
         pid = int(uuid.uuid4())
         dialog_box = cls(
@@ -315,7 +316,7 @@ class ChoiceBox(NamedTuple):
     pid: int
     text_box: TextBox
     options: tuple[str, ...]
-    on_confirm_events: dict[int, Event] = {}
+    on_confirm_events: dict[int, EnumObject] = {}
     selected_index: int = 0
     
     @property
@@ -340,7 +341,7 @@ class ChoiceBox(NamedTuple):
     
     @classmethod
     def new(cls, y: int, x: int, height: int, width: int,
-            options: tuple[str, ...], on_confirm_events: dict[int, Event] = {},
+            options: tuple[str, ...], on_confirm_events: dict[int, EnumObject] = {},
             selected_index: int = 0, is_top_level: bool = True) -> ChoiceBox:
         pid = int(uuid.uuid4())
         choice_box = cls(
@@ -478,7 +479,7 @@ def _make_element_manager():
 def _make_event_manager():
     events = []
     
-    def get_events() -> list[Event]:
+    def get_events() -> list[EnumObject]:
         return events
     
     def add_event(event: Event) -> None:
@@ -492,7 +493,7 @@ def _make_event_manager():
     return get_events, add_event, clear_events
 
 
-def mainloop() -> dict[str, object]:
+def update() -> dict[str, object]:
     """
     Draws the ui elements and processes inputs, returns a dictionary of events
     for main.py to handle.
@@ -515,7 +516,7 @@ def mainloop() -> dict[str, object]:
             else:
                 break
         else:
-            add_event(Event(EVENT_TYPES.PRESS_KEY, key))
+            add_event(EnumObject(EVENT_TYPES.PRESS_KEY, key))
     
     # Display updating
     

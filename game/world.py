@@ -8,8 +8,9 @@ Contributors:
 
 from __future__ import annotations
 from typing import NamedTuple, Callable
-from common import Character, Event
+from common import Character, EnumObject
 from cuinter import SpriteRenderer
+import logging
 
 TILE_HEIGHT = 8
 TILE_WIDTH = 16
@@ -32,15 +33,17 @@ TILE_NAME_TO_CHAR = {
 }
 WALKABLE_TILE_CHARS = " │─┘└┐┌"
 
+logger = logging.getLogger(__name__)
+logging.basicConfig(filename="logs\\world.log", encoding="utf-8", level=logging.DEBUG)
 
 class Grid(NamedTuple):
     # Could be called TilemapRenderer but Grid is more practical
     sprite_renderer: SpriteRenderer
-    tilemap: tuple[str] = None # Each str is a row and each char represents a tile
     tileset: dict[str, str] = None # Maps the chars in tilemap to their text sprites
+    tilemap: tuple[str] = None # Each str is a row and each char represents a tile
     
     @staticmethod
-    def tilemap_to_sprite(tilemap: tuple[str], tileset: dict[str, str]) -> str:
+    def tilemap_to_sprite(tileset: dict[str, str], tilemap: tuple[str]) -> str:
         """
         Returns a text sprite of the tilemap with each char replaced by its
         corresponding tile sprite given by the tileset.
@@ -63,9 +66,10 @@ class Grid(NamedTuple):
         return self.sprite_renderer.x
     
     @classmethod
-    def new(cls, tileset: dict[str, str], tilemap: tuple[str] = None, y: int = 0, x: int = 0) -> Grid:
+    def new(cls, tileset: dict[str, str], tilemap: tuple[str] = None,
+            y: int = 0, x: int = 0) -> Grid:
         if tilemap is not None and tileset is not None:
-            sprite = Grid.tilemap_to_sprite(tilemap, tileset)
+            sprite = Grid.tilemap_to_sprite(tileset, tilemap)
         else:
             sprite = None
         
@@ -75,27 +79,27 @@ class Grid(NamedTuple):
                 x,
                 sprite,
             ),
-            tilemap,
             tileset,
+            tilemap,
         )
     
     def config(self, **kwargs) -> Grid:
-        tilemap = kwargs.get("tilemap", self.tilemap)
         tileset = kwargs.get("tileset", self.tileset)
+        tilemap = kwargs.get("tilemap", self.tilemap)
         
         if tilemap is not self.tilemap or tileset is not self.tileset:
-            sprite = Grid.tilemap_to_sprite(tilemap, tileset)
+            sprite = Grid.tilemap_to_sprite(tileset, tilemap)
         else:
             sprite = self.sprite_renderer.sprite
         
         return Grid(
             self.sprite_renderer.config(sprite=sprite, **kwargs),
-            tilemap,
             tileset,
+            tilemap,
         )
     
-    def load_zone(self, zone: Zone) -> Grid:
-        return self.config(tilemap=zone.tilemap)
+    def load_tilemap(self, tilemap: tuple[str]) -> Grid:
+        return self.config(tilemap=tilemap)
     
     def center(self, screen_height: int, screen_width: int) -> Grid:
         return self.config(
@@ -136,39 +140,49 @@ class Grid(NamedTuple):
 
 
 class GridSprite(NamedTuple):
-    grid: Grid
     sprite_renderer: SpriteRenderer
+    grid: Grid
+    grid_y: int
+    grid_x: int
     
     @property
-    def grid_y(self) -> int:
-        return self.grid.screen_to_grid(y=self.sprite_renderer.y)
+    def y_offset(self) -> int:
+        return self.sprite_renderer.y - self.grid.grid_to_screen(y=self.grid_y)
     
     @property
-    def grid_x(self) -> int:
-        return self.grid.screen_to_grid(x=self.sprite_renderer.x)
+    def x_offset(self) -> int:
+        return self.sprite_renderer.x - self.grid.grid_to_screen(x=self.grid_x)
     
     @classmethod
-    def new(cls, grid: Grid, grid_y: int, grid_x: int, sprite: str = None) -> GridSprite:
+    def new(cls, grid: Grid, grid_y: int, grid_x: int, sprite: str = None, y_offset: int = 0,
+            x_offset: int = 0) -> GridSprite:
         return cls(
-            grid,
             SpriteRenderer.new(
-                grid.grid_to_screen(y=grid_y),
-                grid.grid_to_screen(x=grid_x),
+                grid.grid_to_screen(y=grid_y) + y_offset,
+                grid.grid_to_screen(x=grid_x) + x_offset,
                 sprite,
             ),
+            grid,
+            grid_y,
+            grid_x,
         )
     
     def config(self, **kwargs) -> GridSprite:
+        grid = kwargs.get("grid", self.grid)
         grid_y = kwargs.get("grid_y", self.grid_y)
         grid_x = kwargs.get("grid_x", self.grid_x)
+        y_offset = kwargs.get("y_offset", self.y_offset)
+        x_offset = kwargs.get("x_offset", self.x_offset)
         
         return GridSprite(
-            self.grid,
             self.sprite_renderer.config(
-                y=self.grid.grid_to_screen(y=grid_y),
-                x=self.grid.grid_to_screen(x=grid_x),
+                y=grid.grid_to_screen(y=grid_y) + y_offset,
+                x=grid.grid_to_screen(x=grid_x) + x_offset,
                 **kwargs,
             ),
+            grid,
+            grid_y,
+            grid_x,
         )
 
 
@@ -189,9 +203,17 @@ class GridMultiSprite(NamedTuple):
     def grid_x(self) -> int:
         return self.grid_sprite.grid_x
     
+    @property
+    def y_offset(self) -> int:
+        return self.grid_sprite.y_offset
+    
+    @property
+    def x_offset(self) -> int:
+        return self.grid_sprite.x_offset
+    
     @classmethod
-    def new(cls, grid: Grid, grid_y: int, grid_x: int,
-            sprite_sheet: dict[str, str] = None, sprite_key: str = None) -> GridMultiSprite:
+    def new(cls, grid: Grid, grid_y: int, grid_x: int, sprite_sheet: dict[str, str] = None,
+            sprite_key: str = None, y_offset: int = 0, x_offset: int = 0) -> GridMultiSprite:
         if sprite_sheet:
             if sprite_key is None:
                 sprite_key = sprite_sheet.keys()[0]
@@ -200,7 +222,14 @@ class GridMultiSprite(NamedTuple):
             sprite = None
         
         return cls(
-            GridSprite.new(grid, grid_y, grid_x, sprite),
+            GridSprite.new(
+                grid,
+                grid_y,
+                grid_x,
+                sprite,
+                y_offset,
+                x_offset,
+            ),
             sprite_sheet,
             sprite_key,
         )
@@ -232,8 +261,17 @@ class WorldCharacter(NamedTuple):
     def grid_x(self) -> int:
         return self.grid_multi_sprite.grid_x
     
+    @property
+    def y_offset(self) -> int:
+        return self.grid_multi_sprite.y_offset
+    
+    @property
+    def x_offset(self) -> int:
+        return self.grid_multi_sprite.x_offset
+    
     @classmethod
-    def new(cls, grid: Grid, grid_y: int, grid_x: int, character: Character, sprite_key: str = None) -> WorldCharacter:
+    def new(cls, grid: Grid, grid_y: int, grid_x: int, character: Character,
+            sprite_key: str = None, y_offset: int = 0, x_offset: int = 0) -> WorldCharacter:
         return cls(
             character,
             GridMultiSprite.new(
@@ -242,6 +280,8 @@ class WorldCharacter(NamedTuple):
                 grid_x,
                 character.sprite_sheet,
                 sprite_key,
+                y_offset,
+                x_offset,
             ),
         )
     
@@ -267,14 +307,17 @@ class WorldCharacter(NamedTuple):
 class WalkTrigger(NamedTuple):
     grid_y: int
     grid_x: int
-    on_trigger_event: Event = None
+    on_trigger_event: EnumObject = None
+    key: int = None
     
     @classmethod
-    def new(cls, grid_y: int, grid_x: int, on_trigger_event: Event = None) -> WalkTrigger:
+    def new(cls, grid_y: int, grid_x: int, on_trigger_event: EnumObject = None,
+            key: int = None) -> WalkTrigger:
         return cls(
             grid_y,
             grid_x,
             on_trigger_event,
+            key,
         )
     
     def config(self, **kwargs) -> WalkTrigger: 
@@ -282,6 +325,7 @@ class WalkTrigger(NamedTuple):
             kwargs.get("grid_y", self.grid_y),
             kwargs.get("grid_x", self.grid_x),
             kwargs.get("on_trigger_event", self.on_trigger_event),
+            kwargs.get("key", self.key),
         )
     
     def on_walk(self, grid_y: int, grid_x: int):
@@ -290,42 +334,6 @@ class WalkTrigger(NamedTuple):
         return self.on_trigger_event
 
 
-class InteractTrigger(NamedTuple):
-    grid_y: int
-    grid_x: int
-    on_trigger_event: Event = None
-    
-    @property
-    def grid_y(self) -> int:
-        return self.walk_trigger.grid_y
-    
-    @property
-    def grid_x(self) -> int:
-        return self.walk_trigger.grid_x
-    
-    @classmethod
-    def new(cls, grid_y: int, grid_x: int, on_trigger: Callable = None) -> InteractTrigger:
-        return cls(
-            WalkTrigger.new(grid_y, grid_x),
-            on_trigger,
-        )
-    
-    def config(self, **kwargs) -> InteractTrigger:
-        on_trigger = kwargs.pop("on_trigger", self.on_trigger)
-        
-        return WalkTrigger(
-            self.walk_trigger.config(**kwargs),
-            on_trigger,
-        )
-    
-    def on_interact(self, grid_y: int, grid_x: int):
-        if not self.walk_trigger.on_walk(grid_y, grid_x):
-            return False
-        if self.on_trigger is not None:
-            self.on_trigger()
-        return True
-
-
 class Zone(NamedTuple):
     tilemap: tuple[str]
-    world_objects: tuple[object, ...] = ()
+    world_objects: tuple[EnumObject, ...] = ()

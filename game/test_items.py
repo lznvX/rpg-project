@@ -7,7 +7,7 @@ Contributors:
 """
 
 
-from common import Item, Action, Stats
+from common import Item, Action, Stats, null_uuid
 from lang import get_lang_choice
 
 
@@ -36,17 +36,17 @@ text = get_lang_choice()
 light_stab = Action("light_stab",
     "attack",
     1, "physical",
-    {})
+    None)
 
 stab = Action("stab",
     "attack",
     2, "physical",
-    {})
+    None)
 
 slash = Action("slash",
     "attack",
     3, "physical",
-    {})
+    None)
 
 
 Sword = Item(
@@ -55,7 +55,7 @@ Sword = Item(
     3,
     Stats(),
     (stab, slash),
-    "UUID")
+    null_uuid)
 
 StrHelmet = Item(
     "str_helmet",
@@ -63,7 +63,7 @@ StrHelmet = Item(
     5,
     Stats(strength=5, armor=5),
     tuple(),
-    "UUID")
+    null_uuid)
 
 AgiBoots = Item(
     "agi_boots",
@@ -71,7 +71,7 @@ AgiBoots = Item(
     2,
     Stats(agility=5, armor=2),
     tuple(),
-    "UUID")
+    null_uuid)
 
 PotionHealth = Item(
     "potion_health",
@@ -79,4 +79,4 @@ PotionHealth = Item(
     1,
     Stats(),
     tuple(),
-    "UUID")
+    null_uuid)

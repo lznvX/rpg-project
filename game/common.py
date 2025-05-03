@@ -390,10 +390,12 @@ class EnumObject(NamedTuple):
 class _EventTypes(NamedTuple):
     PRESS_KEY: int
     LOAD_ZONE: int
+    START_DIALOG: int
+    MULTI_EVENT: int
 
     @classmethod
     def new(cls) -> _EventTypes:
-        return cls(*range(2))
+        return cls(*range(4))
 
 
 class _WorldObjectTypes(NamedTuple):

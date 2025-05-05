@@ -14,7 +14,7 @@ import world
 objects = {
     "assets\\dialogs\\test_dialog.pkl": (
         "welcome",
-        DialogLine("i_move_u_up", Character("Romain")),
+        ("i_move_u_up", Character("Romain")),
         EnumObject(
             EVENT_TYPES.PRESS_KEY,
             ord("w"),
@@ -22,6 +22,36 @@ objects = {
     ),
     "assets\\dialogs\\test_dialog_2.pkl": (
         "what",
+    ),
+    "assets\\choices\\menu.pkl": (
+        (
+            "menu_settings",
+            "menu_save",
+            "menu_load",
+            "menu_close",
+            "menu_save_quit",
+        ),
+        {
+            0: EnumObject(
+                EVENT_TYPES.PROMPT_CHOICE,
+                "assets\\choices\\settings.pkl",
+            ),
+            4: EnumObject(EVENT_TYPES.QUIT),
+        },
+    ),
+    "assets\\choices\\settings.pkl": (
+        (
+            "settings_0",
+            "settings_1",
+            "settings_2",
+            "menu_back",
+        ),
+        {
+            3: EnumObject(
+                EVENT_TYPES.PROMPT_CHOICE,
+                "assets\\choices\\menu.pkl",
+            ),
+        },
     ),
     "assets\\zones\\test_zone.pkl": world.Zone(
         (

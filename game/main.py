@@ -34,17 +34,28 @@ WORLD_OBJECT_CLASSES = (
 ############ Code to run on startup
 
 logger = logging.getLogger(__name__)
-logging.basicConfig(filename="logs\\main.log", encoding="utf-8", level=logging.DEBUG)
+logging.basicConfig(
+    filename="logs\\main.log",
+    filemode="w",
+    encoding="utf-8",
+    level=logging.DEBUG,
+)
 
 last_time = time.time()
 fps_timer = last_time  # Time of the last FPS update
 frame_count = 0
 
+default_box_dimensions = (
+    cuinter.screen_height - 12,
+    round(cuinter.screen_width / 4),
+    10,
+    round(cuinter.screen_width / 2),
+)
+
 tiles = load_text_dir("assets\\sprites\\tiles")
 tileset = remap_dict(tiles, world.TILE_NAME_TO_CHAR)
 
 grid = world.Grid.new(tileset)
-
 player = world.WorldCharacter.new(
     grid,
     0,
@@ -164,11 +175,18 @@ while 1:
                                 world_object.on_walk(player.grid_y, player.grid_x),
                             )
                 
-                elif value == ord("q"):
-                    raise SystemExit
+                elif value == ord("m"):
+                    try_append(
+                        new_events,
+                        EnumObject(
+                            EVENT_TYPES.PROMPT_CHOICE,
+                            "assets\\choices\\menu.pkl",
+                        ),
+                    )
             
             case EVENT_TYPES.LOAD_ZONE:
-                if (not isinstance(value, tuple) or len(value) != 3
+                if (not isinstance(value, tuple)
+                or len(value) != 3
                 or not isinstance(value[0], str)
                 or not isinstance(value[1], int)
                 or not isinstance(value[2], int)):
@@ -196,12 +214,24 @@ while 1:
                     continue
                 
                 cuinter.DialogBox.new(
-                    cuinter.screen_height - 12,
-                    round(cuinter.screen_width / 4),
-                    10,
-                    round(cuinter.screen_width / 2),
-                    load_pickle(value),
+                    *default_box_dimensions,
+                    DialogLine.process_dialog(load_pickle(value)),
                 )
+            
+            case EVENT_TYPES.PROMPT_CHOICE:
+                if not isinstance(value, str):
+                    logger.error(f"Expected value of type str, got {value}")
+                    continue
+                
+                options, on_confirm_events = load_pickle(value)
+                cuinter.ChoiceBox.new(
+                    *default_box_dimensions,
+                    translated(options),
+                    on_confirm_events,
+                )
+            
+            case EVENT_TYPES.QUIT:
+                quit()
             
             case EVENT_TYPES.MULTI_EVENT:
                 if (not isinstance(value, tuple)

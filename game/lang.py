@@ -3,8 +3,8 @@
 Created on 2025.03.17
 Contributors:
     Jakub
+    Romain
 """
-
 
 from typing import NamedTuple
 
@@ -14,6 +14,14 @@ class _Lang(NamedTuple):
     welcome: str = None
     i_move_u_up: str = None
     what: str = None
+    
+    # Choice
+    menu_back: str = None
+    menu_settings: str = None
+    menu_save: str = None
+    menu_load: str = None
+    menu_close: str = None
+    menu_save_quit: str = None
     
     # Combat
     battle_begin: str = None
@@ -55,6 +63,14 @@ English = _Lang(
     welcome = "Welcome to the game !",
     i_move_u_up = "I am now going to move you up with my mind.",
     what = "DID YOU JUST SEND BOTH A LOAD_ZONE AND A START_DIALOG EVENT WITH A SINGLE WALKTRIGGER ???",
+    
+    # Choice
+    menu_back = "Back",
+    menu_settings = "Settings",
+    menu_save = "Save",
+    menu_load = "Load",
+    menu_close = "Close menu",
+    menu_save_quit = "Save and quit",
     
     # Combat
     battle_begin    = "You are now in battle!",
@@ -103,7 +119,14 @@ English = _Lang(
 
 
 French = _Lang(
-
+    # Choice
+    menu_back = "Retour",
+    menu_settings = "Options",
+    menu_save = "Sauvegarder",
+    menu_load = "Charger",
+    menu_close = "Fermer le menu",
+    menu_save_quit = "Sauvegarder et quitter",
+    
     # Combat
     battle_begin    = "Vous êtes maintenant en combat !",
     battle_win      = "Vous avez gagné le combat !",
@@ -117,7 +140,6 @@ French = _Lang(
     battle_ko       = "{} est assommé !",
     battle_action_choice    = "Que'est-ce que {} devrait faire ?",
     battle_target_choice    = "Choisissez la cible de {}:",
-
 
     # Items
     item_names = {

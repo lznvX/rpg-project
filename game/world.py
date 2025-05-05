@@ -33,8 +33,6 @@ TILE_NAME_TO_CHAR = {
 }
 WALKABLE_TILE_CHARS = " │─┘└┐┌"
 
-logger = logging.getLogger(__name__)
-logging.basicConfig(filename="logs\\world.log", encoding="utf-8", level=logging.DEBUG)
 
 class Grid(NamedTuple):
     # Could be called TilemapRenderer but Grid is more practical
@@ -337,3 +335,12 @@ class WalkTrigger(NamedTuple):
 class Zone(NamedTuple):
     tilemap: tuple[str]
     world_objects: tuple[EnumObject, ...] = ()
+
+
+logger = logging.getLogger(__name__)
+logging.basicConfig(
+    filename="logs\\world.log",
+    filemode="w",
+    encoding="utf-8",
+    level=logging.DEBUG,
+)

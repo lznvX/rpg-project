@@ -15,13 +15,10 @@ import math
 import time
 from typing import NamedTuple
 import uuid
-from common import DialogLine, EnumObject, EVENT_TYPES, move_toward
+from common import *
 
 X_CORRECTION = 2.6 # Hauteur / largeur d'un caractère
 CHARACTER_TIME = 0.025 # Délai d'affichage de chaque caractère dans les textes
-
-logger = logging.getLogger(__name__)
-logging.basicConfig(filename="logs\\cuinter.log", encoding="utf-8", level=logging.DEBUG)
 
 
 class Label(NamedTuple):
@@ -262,35 +259,15 @@ class DialogBox(NamedTuple):
         uncapped = math.floor((time.time() - self.start_time) / CHARACTER_TIME)
         return min(uncapped, len(self.current_text))
     
-    @staticmethod
-    def safe_dialog_line(dialog_line: str | DialogLine | EnumObject) -> DialogLine | EnumObject:
-        """
-        Turns any str into a DialogLine with no character and logs any unexpected types.
-        """
-        if isinstance(dialog_line, (DialogLine, EnumObject)):
-            return dialog_line
-        elif isinstance(dialog_line, str):
-            return DialogLine(dialog_line)
-        else:
-            error_msg = "Expected value of type str | DialogLine | EnumObject, got {dialog_line}"
-            logger.error(error_msg)
-            return error_msg
-    
-    @staticmethod
-    def safe_dialog(
-        dialog: tuple[str | DialogLine | EnumObject, ...]
-    ) -> tuple[DialogLine | EnumObject, ...]:
-        return tuple(map(DialogBox.safe_dialog_line, dialog))
-    
     @classmethod
     def new(cls, y: int, x: int, height: int, width: int,
-            dialog: tuple[str | DialogLine | EnumObject, ...],
+            dialog: tuple[DialogLine | EnumObject, ...],
             is_top_level: bool = True) -> DialogBox:
         pid = int(uuid.uuid4())
         dialog_box = cls(
             pid,
             TextBox.new(y, x, height, width, None, False),
-            DialogBox.safe_dialog(dialog),
+            dialog,
             time.time(),
             0,
         )
@@ -566,6 +543,14 @@ def update() -> dict[str, object]:
     
     return get_events()
 
+
+logger = logging.getLogger(__name__)
+logging.basicConfig(
+    filename="logs\\cuinter.log",
+    filemode="w",
+    encoding="utf-8",
+    level=logging.DEBUG,
+)
 
 time.sleep(0.5)
 _fullscreen()

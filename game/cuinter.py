@@ -254,19 +254,43 @@ class DialogBox(NamedTuple):
         return self.dialog[self.line_index]
     
     @property
+    def current_text(self) -> DialogLine:
+        return self.current_line.text
+    
+    @property
     def length_to_draw(self) -> int:
         uncapped = math.floor((time.time() - self.start_time) / CHARACTER_TIME)
-        return min(uncapped, len(self.current_line.text))
+        return min(uncapped, len(self.current_text))
+    
+    @staticmethod
+    def safe_dialog_line(dialog_line: str | DialogLine | EnumObject) -> DialogLine | EnumObject:
+        """
+        Turns any str into a DialogLine with no character and logs any unexpected types.
+        """
+        if isinstance(dialog_line, (DialogLine, EnumObject)):
+            return dialog_line
+        elif isinstance(dialog_line, str):
+            return DialogLine(dialog_line)
+        else:
+            error_msg = "Expected value of type str | DialogLine | EnumObject, got {dialog_line}"
+            logger.error(error_msg)
+            return error_msg
+    
+    @staticmethod
+    def safe_dialog(
+        dialog: tuple[str | DialogLine | EnumObject, ...]
+    ) -> tuple[DialogLine | EnumObject, ...]:
+        return tuple(map(DialogBox.safe_dialog_line, dialog))
     
     @classmethod
     def new(cls, y: int, x: int, height: int, width: int,
-            dialog: tuple[DialogLine, ...],
+            dialog: tuple[str | DialogLine | EnumObject, ...],
             is_top_level: bool = True) -> DialogBox:
         pid = int(uuid.uuid4())
         dialog_box = cls(
             pid,
             TextBox.new(y, x, height, width, None, False),
-            dialog,
+            DialogBox.safe_dialog(dialog),
             time.time(),
             0,
         )
@@ -297,7 +321,7 @@ class DialogBox(NamedTuple):
     
     def next(self) -> None:
         if (isinstance(self.current_line, DialogLine)
-        and self.length_to_draw < len(self.current_line.text)):
+        and self.length_to_draw < len(self.current_text)):
             self.config(start_time=0)
         
         elif self.line_index + 1 < len(self.dialog):
@@ -317,7 +341,7 @@ class DialogBox(NamedTuple):
         formatted_name = ""
         if self.current_line.character is not None:
             formatted_name = f"[{self.current_line.character.name}]: " 
-        formatted_text = formatted_name + self.current_line.text[:self.length_to_draw]
+        formatted_text = formatted_name + self.current_text[:self.length_to_draw]
         
         self.config(text=formatted_text)
         get_elements()[self.pid].text_box.draw()

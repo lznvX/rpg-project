@@ -10,44 +10,52 @@ from typing import NamedTuple
 
 
 class _Lang(NamedTuple):
-
+    # Dialog
+    welcome: str = None
+    i_move_u_up: str = None
+    what: str = None
+    
     # Combat
-    battle_begin: str
-    battle_win: str
-    battle_loss: str
-    battle_rewards: str
-    battle_turn: str
+    battle_begin: str = None
+    battle_win: str = None
+    battle_loss: str = None
+    battle_rewards: str = None
+    battle_turn: str = None
 
-    battle_attack: str
-    battle_damage: str
-    battle_death: str
-    battle_ko: str
-    battle_action_choice: str
-    battle_target_choice: str
+    battle_attack: str = None
+    battle_damage: str = None
+    battle_death: str = None
+    battle_ko: str = None
+    battle_action_choice: str = None
+    battle_target_choice: str = None
 
     # Items
-    item_names: dict[str, str]
+    item_names: dict[str, str] = None
     # item_names = {
     #     "item_name": "Item Name"
     # }
-    item_descriptions: dict[str, str]
+    item_descriptions: dict[str, str] = None
     # item_descriptions = {
     #     "item_name": "Item Description"
     # }
 
     # Actions
-    action_names: dict[str, str]
+    action_names: dict[str, str] = None
     # action_names = {
     #     "action_name": "Action Name"
     # }
-    action_descriptions: dict[str, str]
+    action_descriptions: dict[str, str] = None
     # action_descriptions = {
     #     "action_name": "Action Description"
     # }
 
 
 English = _Lang(
-
+    # Dialog
+    welcome = "Welcome to the game !",
+    i_move_u_up = "I am now going to move you up with my mind.",
+    what = "DID YOU JUST SEND BOTH A LOAD_ZONE AND A START_DIALOG EVENT WITH A SINGLE WALKTRIGGER ???",
+    
     # Combat
     battle_begin    = "You are now in battle!",
     battle_win      = "You won the battle!",

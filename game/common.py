@@ -374,8 +374,25 @@ class Character(NamedTuple):
 
 
 class DialogLine(NamedTuple):
-    text: str
+    lang_key: str
     character: Character = None
+
+    @property
+    def text(self):
+        """Returns the text of the specified lang_key in the selected language."""
+        try:
+            lang_text = getattr(text, self.lang_key)
+            if isinstance(lang_text, str):
+                return lang_text
+            elif lang_text is None:
+                raise ValueError
+            else:
+                error_msg = f"Expected lang_text of type str, got {lang_text}"
+        except (AttributeError, ValueError):
+            error_msg = f"Selected Language doesn't contain '{self.lang_key}'"
+        
+        logger.error(error_msg)
+        return error_msg
 
 
 class EnumObject(NamedTuple):

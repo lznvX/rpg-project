@@ -55,17 +55,6 @@ default_box_dimensions = (
 tiles = load_text_dir("assets\\sprites\\tiles")
 tileset = remap_dict(tiles, world.TILE_NAME_TO_CHAR)
 
-grid = world.Grid.new(tileset)
-player = world.WorldCharacter.new(
-    grid,
-    0,
-    0,
-    Character("Player", load_text_dir("assets\\sprites\\characters\\player")),
-    "down",
-    -1,
-    0,
-)
-
 world_objects = []
 new_events = [
     EnumObject(
@@ -79,40 +68,19 @@ new_events = [
     EnumObject(
         EVENT_TYPES.START_DIALOG,
         "assets\\dialogs\\test_dialog.pkl",
-    )
+    ),
 ]
 
-# happy_sprite = load_text("assets\\sprites\\happyhappyhappy.txt")
-# 
-# cuinter.SpriteRenderer.new(
-#     0,
-#     0,
-#     happy_sprite,
-# )
-# 
-# for i in range(8):
-#     cuinter.DialogBox.new(
-#         random.randrange(0, cuinter.screen_height),
-#         random.randrange(0, cuinter.screen_width),
-#         random.randrange(10, 50),
-#         random.randrange(10, 50),
-#         dialog,
-#     )
-# 
-# options = (
-#     "haram",
-#     "harambe",
-#     "PETAH",
-#     "The honse is here.",
-# )
-# 
-# cuinter.ChoiceBox.new(
-#     cuinter.screen_height - 12,
-#     round(cuinter.screen_width / 4),
-#     10,
-#     round(cuinter.screen_width / 2),
-#     options,
-# )
+grid = world.Grid.new(tileset)
+player = world.WorldCharacter.new(
+    grid,
+    0,
+    0,
+    Character("Player", load_text_dir("assets\\sprites\\characters\\player")),
+    "down",
+    -1,
+    0,
+)
 
 fps_label = cuinter.Label.new(0, 0)
 

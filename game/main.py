@@ -55,22 +55,6 @@ default_box_dimensions = (
 tiles = load_text_dir("assets\\sprites\\tiles")
 tileset = remap_dict(tiles, world.TILE_NAME_TO_CHAR)
 
-world_objects = []
-new_events = [
-    EnumObject(
-        EVENT_TYPES.LOAD_ZONE,
-        (
-            "assets\\zones\\test_zone.pkl",
-            3,
-            5,
-        ),
-    ),
-    EnumObject(
-        EVENT_TYPES.START_DIALOG,
-        "assets\\dialogs\\test_dialog.pkl",
-    ),
-]
-
 grid = world.Grid.new(tileset)
 player = world.WorldCharacter.new(
     grid,
@@ -83,6 +67,22 @@ player = world.WorldCharacter.new(
 )
 
 fps_label = cuinter.Label.new(0, 0)
+
+world_objects = []
+new_events = [
+    EnumObject(
+        EVENT_TYPES.LOAD_ZONE,
+        (
+            "assets\\zones\\test_zone.pkl",
+            3,
+            5,
+        ),
+    ),
+    EnumObject(
+        EVENT_TYPES.LOAD_DIALOG,
+        "assets\\dialogs\\test_dialog.pkl",
+    ),
+]
 
 ############
 
@@ -102,8 +102,7 @@ while 1:
     
     ############ Event handling, code to run every frame
     
-    events = cuinter.update()
-    events += new_events
+    events = new_events + cuinter.update()
     new_events.clear()
     
     for event_type, value in events:
@@ -147,10 +146,32 @@ while 1:
                     try_append(
                         new_events,
                         EnumObject(
-                            EVENT_TYPES.PROMPT_CHOICE,
+                            EVENT_TYPES.LOAD_CHOICE,
                             "assets\\choices\\menu.pkl",
                         ),
                     )
+            
+            case EVENT_TYPES.MAKE_WORLD_OBJECT:
+                if not isinstance(value, EnumObject):
+                    logger.error(f"Expected value of type EnumObject, got {value}")
+                    continue
+                
+                world_object_type, args = value
+                world_object_class = WORLD_OBJECT_CLASSES[world_object_type]
+                
+                try:
+                    if isinstance(args, dict):
+                        new_world_object = world_object_class.new(grid=grid, **args)
+                    elif isinstance(args, (tuple, list)):
+                        new_world_object = world_object_class.new(grid=grid, *args)
+                    else:
+                        new_world_object = world_object_class.new(grid, args)
+                    try_append(world_objects, new_world_object)
+                except AttributeError:
+                    logger.error(f"Method not implemented : {world_object_class}.new()")
+            
+            case EVENT_TYPES.MAKE_UI_ELEMENT:
+                pass
             
             case EVENT_TYPES.LOAD_ZONE:
                 if (not isinstance(value, tuple)
@@ -161,22 +182,22 @@ while 1:
                     logger.error(f"Expected value of type tuple[str, int, int], got {value}")
                     continue
                 
-                world_objects.clear()
                 zone_path, player_grid_y, player_grid_x = value
-                zone: world.Zone = load_pickle(zone_path)
-                grid = grid.load_tilemap(zone.tilemap)
+                tilemap, world_objects_constructors = load_pickle(zone_path)
+                
+                grid = grid.load_tilemap(tilemap)
                 grid = grid.center(cuinter.screen_height, cuinter.screen_width)
                 player = player.config(grid=grid, grid_y=player_grid_y, grid_x=player_grid_x)
                 
-                for world_object_type, constructor_parameters in zone.world_objects:
-                    world_object_class = WORLD_OBJECT_CLASSES[world_object_type]
-                    try:
-                        new_world_object = world_object_class.new(*constructor_parameters)
-                        try_append(world_objects, new_world_object)
-                    except AttributeError:
-                        logger.error(f"Method not implemented : {world_object_class}.new()")
-                    
-            case EVENT_TYPES.START_DIALOG:
+                world_objects.clear()
+                for world_object_constructor in world_objects_constructors:
+                    new_event = EnumObject(
+                        EVENT_TYPES.MAKE_WORLD_OBJECT,
+                        world_object_constructor,
+                    )
+                    try_append(new_events, new_event)
+            
+            case EVENT_TYPES.LOAD_DIALOG:
                 if not isinstance(value, str):
                     logger.error(f"Expected value of type str, got {value}")
                     continue
@@ -186,7 +207,7 @@ while 1:
                     DialogLine.process_dialog(load_pickle(value)),
                 )
             
-            case EVENT_TYPES.PROMPT_CHOICE:
+            case EVENT_TYPES.LOAD_CHOICE:
                 if not isinstance(value, str):
                     logger.error(f"Expected value of type str, got {value}")
                     continue
@@ -207,5 +228,5 @@ while 1:
                     logger.error(f"Expected value of type tuple[EnumObject], got {value}")
                     continue
                 
-                for event in value:
-                    try_append(new_events, event)
+                for new_event in value:
+                    try_append(new_events, new_event)

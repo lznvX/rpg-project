@@ -666,9 +666,11 @@ class EnumObject(NamedTuple):
 
 class _EventTypes(NamedTuple):
     PRESS_KEY: int
+    MAKE_WORLD_OBJECT: int
+    MAKE_UI_ELEMENT: int
     LOAD_ZONE: int
-    START_DIALOG: int
-    PROMPT_CHOICE: int
+    LOAD_DIALOG: int
+    LOAD_CHOICE: int
     QUIT: int
     MULTI_EVENT: int
 

@@ -33,7 +33,7 @@ objects = {
         ),
         {
             0: EnumObject(
-                EVENT_TYPES.PROMPT_CHOICE,
+                EVENT_TYPES.LOAD_CHOICE,
                 "assets\\choices\\settings.pkl",
             ),
             4: EnumObject(EVENT_TYPES.QUIT),
@@ -48,12 +48,12 @@ objects = {
         ),
         {
             3: EnumObject(
-                EVENT_TYPES.PROMPT_CHOICE,
+                EVENT_TYPES.LOAD_CHOICE,
                 "assets\\choices\\menu.pkl",
             ),
         },
     ),
-    "assets\\zones\\test_zone.pkl": world.Zone(
+    "assets\\zones\\test_zone.pkl": (
         (
             "╝│ │ │╚╗XXXX",
             "─┘ │ │ ║XXXX",
@@ -113,7 +113,7 @@ objects = {
                                 ),
                             ),
                             EnumObject(
-                                EVENT_TYPES.START_DIALOG,
+                                EVENT_TYPES.LOAD_DIALOG,
                                 "assets\\dialogs\\test_dialog_2.pkl",
                             ),
                         ),
@@ -139,7 +139,7 @@ objects = {
             ),
         ),
     ),
-    "assets\\zones\\test_zone_2.pkl": world.Zone(
+    "assets\\zones\\test_zone_2.pkl": (
         (
             "XXXX╔╝│ │ │╚",
             "XXXX║ │ │ └─",

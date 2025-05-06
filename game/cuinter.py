@@ -505,7 +505,7 @@ def _make_event_manager():
     return get_events, add_event, clear_events
 
 
-def update() -> dict[str, object]:
+def update() -> list[EnumObject]:
     """
     Draws the ui elements and processes inputs, returns a dictionary of events
     for main.py to handle.

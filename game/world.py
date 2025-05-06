@@ -310,7 +310,7 @@ class WalkTrigger(NamedTuple):
     
     @classmethod
     def new(cls, grid_y: int, grid_x: int, on_trigger_event: EnumObject = None,
-            key: int = None) -> WalkTrigger:
+            key: int = None, grid: Grid = None) -> WalkTrigger:
         return cls(
             grid_y,
             grid_x,
@@ -330,11 +330,6 @@ class WalkTrigger(NamedTuple):
         if self.grid_y != grid_y or self.grid_x != grid_x:
             return None
         return self.on_trigger_event
-
-
-class Zone(NamedTuple):
-    tilemap: tuple[str]
-    world_objects: tuple[EnumObject, ...] = ()
 
 
 logger = logging.getLogger(__name__)

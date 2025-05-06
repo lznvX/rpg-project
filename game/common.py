@@ -349,21 +349,21 @@ class Inventory(NamedTuple):
             #TODO: implement item using
         else:
             raise NotEnoughItemError(f"Inventory does not contain any {item}")
-        
-        
+
+
     def accept(self, task : Task):
         """Add a task to the tasklist."""
         self.tasklist[task.name] += 1
-    
-    
+
+
     def finish(self, task : Task):
         """Remove a task of the tasklist."""
         if task.name not in self.tasklist:
             raise KeyError(f"The task {task.name} is not in your task list.")
         else:
             self.tasklist[task.name] -= 1
-    
-    
+
+
     def claim(self, task : Task):
         """Try to see if you have the ressources to complete a task"""
         if task.name not in self.tasklist:
@@ -371,19 +371,19 @@ class Inventory(NamedTuple):
         else:
             for i in task.conditions:
                 self.remove(i, task.conditions[i])
-        
+
             for i in task.Reward:
                 self.add(i, task.Reward[i])
-        
+
             self.finish(task)
 
 
     @staticmethod
     def _test():
-        item1 = Item("item1", "lorem ipsum", ("item", "equippable"), 1, 100, 100, Stats(), tuple(), "UUID")
-        item2 = Item("item2", "Poland", ("item",), 1, 100, 100, Stats(), tuple(), "UUID")
-        item3 = Item("item3", "Ave Caesar", ("item", "equippable"), 1, 100, 100, Stats(), tuple(), "UUID")
-      
+        item1 = Item.new("item1", ("head", "equippable"), 1, Stats(), tuple())
+        item2 = Item.new("item2", ("item",), 1, Stats(), tuple())
+        item3 = Item.new("item3", ("head", "equippable"), 1, Stats(), tuple())
+
         task1 = Task("task1", "Saiki", {item1 : 1}, {item2 : 3})
         task2 = Task("task2", "construction", {item1 : 12}, {item2 : 43})
 
@@ -405,15 +405,15 @@ class Inventory(NamedTuple):
         assert ti.backpack[item1] == 1
         assert ti.backpack[item3] == 1
         assert ti.equipment["head"].unequipped() == item3
-        
+
         ti.accept(task1)
         ti.accept(task2)
         assert ti.tasklist[task1.name] == 1
         assert ti.tasklist[task2.name] == 1
-        
+
         ti.finish(task2)
         assert ti.tasklist[task2.name] == 0
-        
+
         ti.claim(task1)
         assert ti.tasklist[task1.name] == 0
         assert ti.backpack[item1] == 0
@@ -619,12 +619,12 @@ class Task(NamedTuple):
     description : str
     conditions : Counter[str]
     Reward : Counter[str]
-    
+
 
 class DialogLine(NamedTuple):
     text: str
     character: Character = None
-    
+
     @staticmethod
     def process_dialog_line(dialog_line: str | DialogLine | EnumObject) -> DialogLine | EnumObject:
         """
@@ -633,21 +633,21 @@ class DialogLine(NamedTuple):
         """
         if isinstance(dialog_line, str):
             return DialogLine(translated(dialog_line))
-        
+
         elif (isinstance(dialog_line, tuple)
         and len(dialog_line) == 2
         and isinstance(dialog_line[0], str)
         and isinstance(dialog_line[1], Character)):
             return DialogLine(translated(dialog_line[0]), dialog_line[1])
-        
+
         elif isinstance(dialog_line, (DialogLine, EnumObject)):
             return dialog_line
-        
+
         else:
             error_msg = "Expected value of type str | DialogLine | EnumObject, got {dialog_line}"
             logger.error(error_msg)
             return error_msg
-    
+
     @staticmethod
     def process_dialog(
         dialog: tuple[str | DialogLine | EnumObject, ...]
@@ -738,7 +738,7 @@ def translated(lang_key: str | tuple[str]) -> str | tuple[str]:
     """
     if isinstance(lang_key, tuple):
         return tuple(map(translated, lang_key))
-    
+
     try:
         text = getattr(lang_text, lang_key)
         if isinstance(text, str):
@@ -749,7 +749,7 @@ def translated(lang_key: str | tuple[str]) -> str | tuple[str]:
             error_msg = f"Expected text of type str, got {text}"
     except (AttributeError, ValueError):
         error_msg = f"Selected language doesn't contain {lang_key}"
-    
+
     logger.error(error_msg)
     return lang_key
 

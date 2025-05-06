@@ -1,17 +1,59 @@
-"""Utility script to create and edit zone pickle files
+"""Utility script to create and edit ressource pickle files
 
-Run in terminal, Thonny doesn't work for me.
+Run in terminal, Thonny doesn't work for me. Purpose is to keep a human readable version of these
+ressources to easily modify them.
 
 Contributors:
     Romain
 """
 
 import pickle
-from common import EnumObject, EVENT_TYPES, WORLD_OBJECT_TYPES
+from common import *
 import world
 
-zones = {
-    "test_zone": world.Zone(
+objects = {
+    "assets\\dialogs\\test_dialog.pkl": (
+        "welcome",
+        ("i_move_u_up", Character("Romain")),
+        EnumObject(
+            EVENT_TYPES.PRESS_KEY,
+            ord("w"),
+        ),
+    ),
+    "assets\\dialogs\\test_dialog_2.pkl": (
+        "what",
+    ),
+    "assets\\choices\\menu.pkl": (
+        (
+            "menu_settings",
+            "menu_save",
+            "menu_load",
+            "menu_close",
+            "menu_save_quit",
+        ),
+        {
+            0: EnumObject(
+                EVENT_TYPES.PROMPT_CHOICE,
+                "assets\\choices\\settings.pkl",
+            ),
+            4: EnumObject(EVENT_TYPES.QUIT),
+        },
+    ),
+    "assets\\choices\\settings.pkl": (
+        (
+            "settings_0",
+            "settings_1",
+            "settings_2",
+            "menu_back",
+        ),
+        {
+            3: EnumObject(
+                EVENT_TYPES.PROMPT_CHOICE,
+                "assets\\choices\\menu.pkl",
+            ),
+        },
+    ),
+    "assets\\zones\\test_zone.pkl": world.Zone(
         (
             "╝│ │ │╚╗XXXX",
             "─┘ │ │ ║XXXX",
@@ -60,11 +102,20 @@ zones = {
                     1,
                     0,
                     EnumObject(
-                        EVENT_TYPES.LOAD_ZONE,
+                        EVENT_TYPES.MULTI_EVENT,
                         (
-                            "assets\\zones\\test_zone_2.pkl",
-                            1,
-                            11,
+                            EnumObject(
+                                EVENT_TYPES.LOAD_ZONE,
+                                (
+                                    "assets\\zones\\test_zone_2.pkl",
+                                    1,
+                                    11,
+                                ),
+                            ),
+                            EnumObject(
+                                EVENT_TYPES.START_DIALOG,
+                                "assets\\dialogs\\test_dialog_2.pkl",
+                            ),
                         ),
                     ),
                     ord("a"),
@@ -88,7 +139,7 @@ zones = {
             ),
         ),
     ),
-    "test_zone_2": world.Zone(
+    "assets\\zones\\test_zone_2.pkl": world.Zone(
         (
             "XXXX╔╝│ │ │╚",
             "XXXX║ │ │ └─",
@@ -167,8 +218,8 @@ zones = {
     ),
 }
 
-for zone_name, zone in zones.items():
-    with open(f"assets\\zones\\{zone_name}.pkl", "wb") as file:
-        pickle.dump(zone, file)
+for path, object_to_save in objects.items():
+    with open(path, "wb") as file:
+        pickle.dump(object_to_save, file)
 
-print(f"{len(zones)} zones built and saved successfully")
+print(f"{len(objects)} objects built and saved successfully")

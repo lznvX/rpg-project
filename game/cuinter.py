@@ -15,13 +15,10 @@ import math
 import time
 from typing import NamedTuple
 import uuid
-from common import DialogLine, EnumObject, EVENT_TYPES, move_toward
+from common import *
 
 X_CORRECTION = 2.6 # Hauteur / largeur d'un caractère
 CHARACTER_TIME = 0.025 # Délai d'affichage de chaque caractère dans les textes
-
-logger = logging.getLogger(__name__)
-logging.basicConfig(filename="logs\\cuinter.log", encoding="utf-8", level=logging.DEBUG)
 
 
 class Label(NamedTuple):
@@ -229,8 +226,7 @@ class TextBox(NamedTuple):
 class DialogBox(NamedTuple):
     pid: int
     text_box: TextBox
-    dialog: tuple[DialogLine, ...]
-    on_finished_event: EnumObject = None
+    dialog: tuple[DialogLine | EnumObject, ...]
     start_time: float = 0
     line_index: int = 0
     
@@ -251,19 +247,27 @@ class DialogBox(NamedTuple):
         return self.text_box.width
     
     @property
-    def dialog_line(self) -> DialogLine:
+    def current_line(self) -> DialogLine:
         return self.dialog[self.line_index]
+    
+    @property
+    def current_text(self) -> DialogLine:
+        return self.current_line.text
+    
+    @property
+    def length_to_draw(self) -> int:
+        uncapped = math.floor((time.time() - self.start_time) / CHARACTER_TIME)
+        return min(uncapped, len(self.current_text))
     
     @classmethod
     def new(cls, y: int, x: int, height: int, width: int,
-            dialog: tuple[DialogLine, ...], on_finished_event: EnumObject = None,
+            dialog: tuple[DialogLine | EnumObject, ...],
             is_top_level: bool = True) -> DialogBox:
         pid = int(uuid.uuid4())
         dialog_box = cls(
             pid,
             TextBox.new(y, x, height, width, None, False),
             dialog,
-            on_finished_event,
             time.time(),
             0,
         )
@@ -278,7 +282,6 @@ class DialogBox(NamedTuple):
             self.pid,
             self.text_box.config(False, **kwargs),
             kwargs.get("dialog", self.dialog),
-            kwargs.get("on_finished_event", self.on_finished_event),
             kwargs.get("start_time", self.start_time),
             kwargs.get("line_index", self.line_index),
         )
@@ -294,19 +297,28 @@ class DialogBox(NamedTuple):
             self.next()
     
     def next(self) -> None:
-        if math.floor((time.time() - self.start_time) / CHARACTER_TIME) <= len(self.dialog_line.text):
+        if (isinstance(self.current_line, DialogLine)
+        and self.length_to_draw < len(self.current_text)):
             self.config(start_time=0)
+        
         elif self.line_index + 1 < len(self.dialog):
-            self.config(start_time=time.time(), line_index=self.line_index + 1)
+            new_dialog_box = self.config(
+                start_time=time.time(),
+                line_index=self.line_index + 1,
+            )
+            
+            if isinstance(new_dialog_box.current_line, EnumObject):
+                add_event(new_dialog_box.current_line)
+                new_dialog_box.next()
+        
         else:
-            if self.on_finished_event is not None:
-                add_event(self.on_finished_event)
             self.delete()
     
     def draw(self) -> None:
-        length_to_draw = min(math.floor((time.time() - self.start_time) / CHARACTER_TIME), len(self.dialog_line.text))
-        formatted_text = ((f"[{self.dialog_line.character.name}]: " if not self.dialog_line.character is None else "")
-                          + self.dialog_line.text[:length_to_draw])
+        formatted_name = ""
+        if self.current_line.character is not None:
+            formatted_name = f"[{self.current_line.character.name}]: " 
+        formatted_text = formatted_name + self.current_text[:self.length_to_draw]
         
         self.config(text=formatted_text)
         get_elements()[self.pid].text_box.draw()
@@ -531,6 +543,14 @@ def update() -> dict[str, object]:
     
     return get_events()
 
+
+logger = logging.getLogger(__name__)
+logging.basicConfig(
+    filename="logs\\cuinter.log",
+    filemode="w",
+    encoding="utf-8",
+    level=logging.DEBUG,
+)
 
 time.sleep(0.5)
 _fullscreen()

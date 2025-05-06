@@ -3,51 +3,75 @@
 Created on 2025.03.17
 Contributors:
     Jakub
+    Romain
 """
-
 
 from typing import NamedTuple
 
 
 class _Lang(NamedTuple):
-
+    # Dialog
+    welcome: str = None
+    i_move_u_up: str = None
+    what: str = None
+    
+    # Choice
+    menu_back: str = None
+    menu_settings: str = None
+    menu_save: str = None
+    menu_load: str = None
+    menu_close: str = None
+    menu_save_quit: str = None
+    
     # Combat
-    battle_begin: str
-    battle_win: str
-    battle_loss: str
-    battle_rewards: str
-    battle_turn: str
+    battle_begin: str = None
+    battle_win: str = None
+    battle_loss: str = None
+    battle_rewards: str = None
+    battle_turn: str = None
 
-    battle_attack: str
-    battle_damage: str
-    battle_death: str
-    battle_ko: str
-    battle_action_choice: str
-    battle_target_choice: str
+    battle_attack: str = None
+    battle_damage: str = None
+    battle_death: str = None
+    battle_ko: str = None
+    battle_action_choice: str = None
+    battle_target_choice: str = None
 
     # Items
-    item_names: dict[str, str]
+    item_names: dict[str, str] = None
     # item_names = {
     #     "item_name": "Item Name"
     # }
-    item_descriptions: dict[str, str]
+    item_descriptions: dict[str, str] = None
     # item_descriptions = {
     #     "item_name": "Item Description"
     # }
 
     # Actions
-    action_names: dict[str, str]
+    action_names: dict[str, str] = None
     # action_names = {
     #     "action_name": "Action Name"
     # }
-    action_descriptions: dict[str, str]
+    action_descriptions: dict[str, str] = None
     # action_descriptions = {
     #     "action_name": "Action Description"
     # }
 
 
 English = _Lang(
-
+    # Dialog
+    welcome = "Welcome to the game !",
+    i_move_u_up = "I am now going to move you up with my mind.",
+    what = "DID YOU JUST SEND BOTH A LOAD_ZONE AND A START_DIALOG EVENT WITH A SINGLE WALKTRIGGER ???",
+    
+    # Choice
+    menu_back = "Back",
+    menu_settings = "Settings",
+    menu_save = "Save",
+    menu_load = "Load",
+    menu_close = "Close menu",
+    menu_save_quit = "Save and quit",
+    
     # Combat
     battle_begin    = "You are now in battle!",
     battle_win      = "You won the battle!",
@@ -95,7 +119,14 @@ English = _Lang(
 
 
 French = _Lang(
-
+    # Choice
+    menu_back = "Retour",
+    menu_settings = "Options",
+    menu_save = "Sauvegarder",
+    menu_load = "Charger",
+    menu_close = "Fermer le menu",
+    menu_save_quit = "Sauvegarder et quitter",
+    
     # Combat
     battle_begin    = "Vous êtes maintenant en combat !",
     battle_win      = "Vous avez gagné le combat !",
@@ -109,7 +140,6 @@ French = _Lang(
     battle_ko       = "{} est assommé !",
     battle_action_choice    = "Que'est-ce que {} devrait faire ?",
     battle_target_choice    = "Choisissez la cible de {}:",
-
 
     # Items
     item_names = {

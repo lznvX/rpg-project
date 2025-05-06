@@ -18,7 +18,7 @@ from uuid import UUID, uuid4
 from lang import get_lang_choice
 
 
-text = get_lang_choice()
+lang_text = get_lang_choice()
 null_uuid = UUID('00000000-0000-0000-0000-000000000000')
 
 
@@ -127,7 +127,7 @@ class Action(NamedTuple):
     def display_name(self) -> str:
         """Fetch the action's name in the appropriate language."""
         try:
-            return text.action_names[self.name]
+            return lang_text.action_names[self.name]
         except KeyError:
             return self.name
 
@@ -137,7 +137,7 @@ class Action(NamedTuple):
         """Fetch the action's description in the appropriate language."""
         # will show up when inspecting the action (later)
         try:
-            return text.action_descriptions[self.name]
+            return lang_text.action_descriptions[self.name]
         except:
             return ""
 
@@ -236,7 +236,7 @@ class Item(NamedTuple):
     def display_name(self) -> str:
         """Fetch the item's name in the appropriate language."""
         try:
-            return text.item_names[self.name]
+            return lang_text.item_names[self.name]
         except KeyError:
             return self.name
 
@@ -246,7 +246,7 @@ class Item(NamedTuple):
         """Fetch the item's description in the appropriate language."""
         # will show up when inspecting the item (later)
         try:
-            return text.item_descriptions[self.name]
+            return lang_text.item_descriptions[self.name]
         except KeyError:
             return ""
 
@@ -624,6 +624,35 @@ class Task(NamedTuple):
 class DialogLine(NamedTuple):
     text: str
     character: Character = None
+    
+    @staticmethod
+    def process_dialog_line(dialog_line: str | DialogLine | EnumObject) -> DialogLine | EnumObject:
+        """
+        Turns any str or tuple into a DialogLine while letting events through and logging any
+        unexpected types.
+        """
+        if isinstance(dialog_line, str):
+            return DialogLine(translated(dialog_line))
+        
+        elif (isinstance(dialog_line, tuple)
+        and len(dialog_line) == 2
+        and isinstance(dialog_line[0], str)
+        and isinstance(dialog_line[1], Character)):
+            return DialogLine(translated(dialog_line[0]), dialog_line[1])
+        
+        elif isinstance(dialog_line, (DialogLine, EnumObject)):
+            return dialog_line
+        
+        else:
+            error_msg = "Expected value of type str | DialogLine | EnumObject, got {dialog_line}"
+            logger.error(error_msg)
+            return error_msg
+    
+    @staticmethod
+    def process_dialog(
+        dialog: tuple[str | DialogLine | EnumObject, ...]
+    ) -> tuple[DialogLine | EnumObject, ...]:
+        return tuple(map(DialogLine.process_dialog_line, dialog))
 
 
 class EnumObject(NamedTuple):
@@ -632,16 +661,20 @@ class EnumObject(NamedTuple):
     in events and world objects.
     """
     enum: int
-    value: object
+    value: object = None
 
 
 class _EventTypes(NamedTuple):
     PRESS_KEY: int
     LOAD_ZONE: int
+    START_DIALOG: int
+    PROMPT_CHOICE: int
+    QUIT: int
+    MULTI_EVENT: int
 
     @classmethod
     def new(cls) -> _EventTypes:
-        return cls(*range(2))
+        return cls(*range(len(cls.__annotations__)))
 
 
 class _WorldObjectTypes(NamedTuple):
@@ -652,7 +685,7 @@ class _WorldObjectTypes(NamedTuple):
 
     @classmethod
     def new(cls) -> _WorldObjectTypes:
-        return cls(*range(4))
+        return cls(*range(len(cls.__annotations__)))
 
 
 def load_pickle(path: str) -> object:
@@ -699,6 +732,28 @@ def load_text_dir(path: str) -> dict[str, str]:
     return texts
 
 
+def translated(lang_key: str | tuple[str]) -> str | tuple[str]:
+    """
+    Returns the text with the specified attribute name in the selected language.
+    """
+    if isinstance(lang_key, tuple):
+        return tuple(map(translated, lang_key))
+    
+    try:
+        text = getattr(lang_text, lang_key)
+        if isinstance(text, str):
+            return text
+        elif text is None:
+            raise ValueError
+        else:
+            error_msg = f"Expected text of type str, got {text}"
+    except (AttributeError, ValueError):
+        error_msg = f"Selected language doesn't contain {lang_key}"
+    
+    logger.error(error_msg)
+    return lang_key
+
+
 def move_toward(a: int | float, b: int | float, step: int | float = 1) -> int | float:
     """Returns a moved by step towards b without overshooting."""
     return min(a + step, b) if b >= a else max(a - step, b)
@@ -718,7 +773,12 @@ def try_append(collection: list, item: object) -> None:
 
 
 logger = logging.getLogger(__name__)
-logging.basicConfig(filename="logs\\common.log", encoding="utf-8", level=logging.DEBUG)
+logging.basicConfig(
+    filename="logs\\common.log",
+    filemode="w",
+    encoding="utf-8",
+    level=logging.DEBUG,
+)
 
 EVENT_TYPES = _EventTypes.new()
 WORLD_OBJECT_TYPES = _WorldObjectTypes.new()

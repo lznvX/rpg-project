@@ -371,28 +371,25 @@ class Inventory(NamedTuple):
                 del self.tasklist[task_id]
                 return None
         else:
-            raise TaskNotFoundError(f"The task {task.display_name} is not in your task list.")
+            raise TaskNotFoundError(f"The task {task} is not in your task list.")
 
 
     def claim(self, task: Task):
         """Try to see if you have the ressources to complete a task"""
         if task not in self.tasklist:
-            raise KeyError(f"The task {task.display_name} is not in your task list.")
+            raise TaskNotFoundError(f"The task {task} is not in your task list.")
         else:
-            is_complete = True
-            for i in task.conditions.keys():
-                try:
-                    self.remove(i, task.conditions[i])
-                except NotEnoughItemError:
-                    is_complete = False
-                    print(f"Not enough ")
-                else:
-                    task.conditions[i] = 0
+            for item in task.conditions.keys():
+                if self.backpack[item] < task.conditions[item]:
+                    raise NotEnoughItemError(f"Not enough {item} to finish {task}")
+                    return None
 
-            if is_complete:
-                for item in task.reward:
-                    self.add(item, task.reward[item])
-                self.finish(task)
+            for item in task.conditions.keys():
+                self.remove(item, task.conditions[item])
+
+            for item in task.reward:
+                self.add(item, task.reward[item])
+            self.finish(task)
 
 
     @staticmethod

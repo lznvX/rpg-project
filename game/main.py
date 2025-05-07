@@ -68,8 +68,8 @@ new_events = [
         ),
     ),
     EnumObject(
-        EVENT_TYPES.LOAD_DIALOG,
-        "assets\\dialogs\\test_dialog.pkl",
+        EVENT_TYPES.LOAD_UI_ELEMENT,
+        "assets\\ui_elements\\dialogs\\welcome_dialog.pkl",
     ),
 ]
 
@@ -135,8 +135,8 @@ while 1:
                     try_append(
                         new_events,
                         EnumObject(
-                            EVENT_TYPES.LOAD_CHOICE,
-                            "assets\\choices\\menu.pkl",
+                            EVENT_TYPES.LOAD_UI_ELEMENT,
+                            "assets\\ui_elements\\choices\\menu_choice.pkl",
                         ),
                     )
             
@@ -167,6 +167,15 @@ while 1:
                 ui_element_type, args = value
                 ui_element_class = UI_ELEMENT_CLASSES[ui_element_type]
                 
+                if isinstance(args, dict):
+                    match constructor.enum:
+                        case UI_ELEMENT_TYPES.DIALOG_BOX:
+                            if "dialog" in args:
+                                args["dialog"] = DialogLine.process_dialog(args["dialog"])
+                        case UI_ELEMENT_TYPES.CHOICE_BOX:
+                            if "options" in args:
+                                args["options"] = translated(args["options"])
+                
                 try:
                     if isinstance(args, dict):
                         ui_element_class.new(**args)
@@ -194,47 +203,23 @@ while 1:
                 player = player.config(grid=grid, grid_y=player_grid_y, grid_x=player_grid_x)
                 
                 world_objects.clear()
-                for world_object_constructor in world_objects_constructors:
+                for constructor in world_objects_constructors:
                     new_event = EnumObject(
                         EVENT_TYPES.MAKE_WORLD_OBJECT,
-                        world_object_constructor,
+                        constructor,
                     )
                     try_append(new_events, new_event)
             
-            case EVENT_TYPES.LOAD_DIALOG:
-                if not isinstance(value, str):
-                    logger.error(f"Expected value of type str, got {value}"),
-                    continue
-                
-                raw_dialog = load_pickle(value)
-                dialog = DialogLine.process_dialog(raw_dialog)
-                args = {
-                    "dialog": dialog,
-                }
-                constructor = EnumObject(
-                    UI_ELEMENT_TYPES.DIALOG_BOX,
-                    args,
-                )
-                new_event = EnumObject(
-                    EVENT_TYPES.MAKE_UI_ELEMENT,
-                    constructor,
-                )
-                try_append(new_events, new_event)
-            
-            case EVENT_TYPES.LOAD_CHOICE:
+            case EVENT_TYPES.LOAD_UI_ELEMENT:
                 if not isinstance(value, str):
                     logger.error(f"Expected value of type str, got {value}")
                     continue
                 
-                options, on_confirm_events = load_pickle(value)
-                args = {
-                    "options": options,
-                    "on_confirm_events": on_confirm_events,
-                }
-                constructor = EnumObject(
-                    UI_ELEMENT_TYPES.CHOICE_BOX,
-                    args,
-                )
+                constructor = load_pickle(value)
+                if not isinstance(constructor, EnumObject):
+                    logger.error(f"Expected constructor of type EnumObject, got {constructor}")
+                    continue
+                
                 new_event = EnumObject(
                     EVENT_TYPES.MAKE_UI_ELEMENT,
                     constructor,

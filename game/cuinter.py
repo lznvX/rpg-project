@@ -34,6 +34,15 @@ class _UIElementTypes(NamedTuple):
         return cls(*range(len(cls.__annotations__)))
 
 
+class _RectanglePresets(NamedTuple):
+    DEFAULT: int
+    MENU: int
+
+    @classmethod
+    def new(cls) -> _UIElementTypes:
+        return cls(*range(len(cls.__annotations__)))
+
+
 class Label(NamedTuple):
     pid: int # Persistent identifier
     y: int
@@ -129,14 +138,14 @@ class Rectangle(NamedTuple):
     
     @classmethod
     def new(cls, y: int = None, x: int = None, height: int = None,
-            width: int = None, is_top_level: bool = True) -> Rectangle:
+            width: int = None, rectangle_preset: int = 0, is_top_level: bool = True) -> Rectangle:
         pid = int(uuid.uuid4())
         rectangle = cls(
             pid,
-            default_rect.y if y is None else y,
-            default_rect.x if x is None else x,
-            default_rect.height if height is None else height,
-            default_rect.width if width is None else width,
+            rectangles[rectangle_preset].y if y is None else y,
+            rectangles[rectangle_preset].x if x is None else x,
+            rectangles[rectangle_preset].height if height is None else height,
+            rectangles[rectangle_preset].width if width is None else width,
         )
         
         if is_top_level:
@@ -204,12 +213,19 @@ class TextBox(NamedTuple):
     
     @classmethod
     def new(cls, y: int = None, x: int = None, height: int = None,
-            width: int = None, text: str = None,
+            width: int = None, text: str = None, rectangle_preset: int = 0,
             is_top_level: bool = True) -> TextBox:
         pid = int(uuid.uuid4())
         text_box = cls(
             pid,
-            Rectangle.new(y, x, height, width, False),
+            Rectangle.new(
+                y,
+                x,
+                height,
+                width,
+                rectangle_preset,
+                False,
+            ),
             text,
         )
         
@@ -284,11 +300,19 @@ class DialogBox(NamedTuple):
     def new(cls, y: int = None, x: int = None, height: int = None,
             width: int = None,
             dialog: tuple[DialogLine | EnumObject, ...] = None,
-            is_top_level: bool = True) -> DialogBox:
+            rectangle_preset: int = 0, is_top_level: bool = True) -> DialogBox:
         pid = int(uuid.uuid4())
         dialog_box = cls(
             pid,
-            TextBox.new(y, x, height, width, None, False),
+            TextBox.new(
+                y,
+                x,
+                height,
+                width,
+                None,
+                rectangle_preset,
+                False,
+            ),
             dialog,
             time.time(),
             0,
@@ -319,6 +343,9 @@ class DialogBox(NamedTuple):
             self.next()
     
     def next(self) -> None:
+        if self.dialog is None:
+            return
+        
         if (isinstance(self.current_line, DialogLine)
         and self.length_to_draw < len(self.current_text)):
             self.config(start_time=0)
@@ -337,6 +364,10 @@ class DialogBox(NamedTuple):
             self.delete()
     
     def draw(self) -> None:
+        if self.dialog is None:
+            self.text_box.draw()
+            return
+        
         formatted_name = ""
         if self.current_line.character is not None:
             formatted_name = f"[{self.current_line.character.name}]: " 
@@ -377,11 +408,20 @@ class ChoiceBox(NamedTuple):
     def new(cls, y: int = None, x: int = None, height: int = None,
             width: int = None, options: tuple[str, ...] = None,
             on_confirm_events: dict[int, EnumObject] = {},
-            selected_index: int = 0, is_top_level: bool = True) -> ChoiceBox:
+            selected_index: int = 0, rectangle_preset: int = 0,
+            is_top_level: bool = True) -> ChoiceBox:
         pid = int(uuid.uuid4())
         choice_box = cls(
             pid,
-            TextBox.new(y, x, height, width, None, False),
+            TextBox.new(
+                y,
+                x,
+                height,
+                width,
+                None,
+                rectangle_preset,
+                False,
+            ),
             options,
             on_confirm_events,
             selected_index,
@@ -584,6 +624,7 @@ UI_ELEMENT_CLASSES = {
     UI_ELEMENT_TYPES.DIALOG_BOX: DialogBox,
     UI_ELEMENT_TYPES.CHOICE_BOX: ChoiceBox,
 }
+RECTANGLE_PRESETS = _RectanglePresets.new()
 
 time.sleep(0.5)
 _fullscreen()
@@ -597,12 +638,21 @@ stdscr.timeout(0) # Délai de vérification d'entrée
 
 screen_height, screen_width = stdscr.getmaxyx()
 empty_buffer = [[" " for _ in range(screen_width)] for _ in range(screen_height)]
-default_rect = Rectangle(
-    int(uuid.uuid4()),
-    screen_height - 12,
-    round(screen_width / 4),
-    10,
-    round(screen_width / 2),
+rectangles = (
+    Rectangle.new(
+        screen_height - 12,
+        round(screen_width / 4),
+        10,
+        round(screen_width / 2),
+        is_top_level=False,
+    ),
+    Rectangle.new(
+        round(screen_height / 4),
+        round(screen_width / 4),
+        round(screen_height / 2),
+        round(screen_width / 2),
+        is_top_level=False,
+    ),
 )
 
 get_buffer, set_cell, clear_buffer = _make_buffer_manager()

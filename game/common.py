@@ -652,8 +652,7 @@ class _EventTypes(NamedTuple):
     MAKE_WORLD_OBJECT: int
     MAKE_UI_ELEMENT: int
     LOAD_ZONE: int
-    LOAD_DIALOG: int
-    LOAD_CHOICE: int
+    LOAD_UI_ELEMENT: int
     SAVE_GAME: int
     LOAD_GAME: int
     QUIT: int

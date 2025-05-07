@@ -62,7 +62,7 @@ English = _Lang(
     # Dialog
     welcome = "Welcome to the game !",
     i_move_u_up = "I am now going to move you up with my mind.",
-    what = "DID YOU JUST SEND BOTH A LOAD_ZONE AND A LOAD_DIALOG EVENT WITH A SINGLE WALKTRIGGER ???",
+    what = "DID YOU JUST SEND BOTH A LOAD_ZONE AND A LOAD_UI_ELEMENT EVENT WITH A SINGLE WALKTRIGGER ???",
     
     # Choice
     menu_back = "Back",

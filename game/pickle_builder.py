@@ -10,48 +10,66 @@ Contributors:
 import pickle
 from common import Character, EnumObject, EVENT_TYPES
 from world import WORLD_OBJECT_TYPES
-from cuinter import UI_ELEMENT_TYPES
+from cuinter import UI_ELEMENT_TYPES, RECTANGLE_PRESETS
 
 objects = {
-    "assets\\dialogs\\test_dialog.pkl": (
-        "welcome",
-        ("i_move_u_up", Character("Romain")),
-        EnumObject(
-            EVENT_TYPES.PRESS_KEY,
-            ord("w"),
-        ),
-    ),
-    "assets\\dialogs\\test_dialog_2.pkl": (
-        "what",
-    ),
-    "assets\\choices\\menu.pkl": (
-        (
-            "menu_settings",
-            "menu_save",
-            "menu_load",
-            "menu_close",
-            "menu_save_quit",
-        ),
+    "assets\\ui_elements\\dialogs\\welcome_dialog.pkl": EnumObject(
+        UI_ELEMENT_TYPES.DIALOG_BOX,
         {
-            0: EnumObject(
-                EVENT_TYPES.LOAD_CHOICE,
-                "assets\\choices\\settings.pkl",
+            "dialog": (
+                "welcome",
+                ("i_move_u_up", Character("Romain")),
+                EnumObject(
+                    EVENT_TYPES.PRESS_KEY,
+                    ord("w"),
+                ),
             ),
-            4: EnumObject(EVENT_TYPES.QUIT),
         },
     ),
-    "assets\\choices\\settings.pkl": (
-        (
-            "settings_0",
-            "settings_1",
-            "settings_2",
-            "menu_back",
-        ),
+    "assets\\ui_elements\\dialogs\\what_dialog.pkl": EnumObject(
+        UI_ELEMENT_TYPES.DIALOG_BOX,
         {
-            3: EnumObject(
-                EVENT_TYPES.LOAD_CHOICE,
-                "assets\\choices\\menu.pkl",
+            "dialog": (
+                "what",
             ),
+        },
+    ),
+    "assets\\ui_elements\\choices\\menu_choice.pkl": EnumObject(
+        UI_ELEMENT_TYPES.CHOICE_BOX,
+        {
+            "options": (
+                "menu_settings",
+                "menu_save",
+                "menu_load",
+                "menu_close",
+                "menu_save_quit",
+            ),
+            "on_confirm_events": {
+                0: EnumObject(
+                    EVENT_TYPES.LOAD_UI_ELEMENT,
+                    "assets\\ui_elements\\choices\\settings_choice.pkl",
+                ),
+                4: EnumObject(EVENT_TYPES.QUIT),
+            },
+            "rectangle_preset": RECTANGLE_PRESETS.MENU,
+        },
+    ),
+    "assets\\ui_elements\\choices\\settings_choice.pkl": EnumObject(
+        UI_ELEMENT_TYPES.CHOICE_BOX,
+        {
+            "options": (
+                "settings_0",
+                "settings_1",
+                "settings_2",
+                "menu_back",
+            ),
+            "on_confirm_events": {
+                3: EnumObject(
+                    EVENT_TYPES.LOAD_UI_ELEMENT,
+                    "assets\\ui_elements\\choices\\menu_choice.pkl",
+                ),
+            },
+            "rectangle_preset": RECTANGLE_PRESETS.MENU,
         },
     ),
     "assets\\zones\\test_zone.pkl": (
@@ -114,8 +132,8 @@ objects = {
                                 ),
                             ),
                             EnumObject(
-                                EVENT_TYPES.LOAD_DIALOG,
-                                "assets\\dialogs\\test_dialog_2.pkl",
+                                EVENT_TYPES.LOAD_UI_ELEMENT,
+                                "assets\\ui_elements\\dialogs\\what_dialog.pkl",
                             ),
                         ),
                     ),

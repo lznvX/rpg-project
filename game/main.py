@@ -15,7 +15,9 @@ import time
 from typing import NamedTuple
 from common import *
 import cuinter
+from cuinter import UI_ELEMENT_TYPES, UI_ELEMENT_CLASSES
 import world
+from world import WORLD_OBJECT_TYPES, WORLD_OBJECT_CLASSES
 
 FPS_COUNTER_REFRESH = 1 # Time between each FPS counter update
 MOVE_MAP = {
@@ -24,12 +26,6 @@ MOVE_MAP = {
     ord("a"): (0, -1, "left"),
     ord("d"): (0, 1, "right"),
 }
-WORLD_OBJECT_CLASSES = (
-    world.GridSprite,
-    world.GridMultiSprite,
-    world.WorldCharacter,
-    world.WalkTrigger,
-)
 
 ############ Code to run on startup
 
@@ -44,13 +40,6 @@ logging.basicConfig(
 last_time = time.time()
 fps_timer = last_time  # Time of the last FPS update
 frame_count = 0
-
-default_box_dimensions = (
-    cuinter.screen_height - 12,
-    round(cuinter.screen_width / 4),
-    10,
-    round(cuinter.screen_width / 2),
-)
 
 tiles = load_text_dir("assets\\sprites\\tiles")
 tileset = remap_dict(tiles, world.TILE_NAME_TO_CHAR)
@@ -171,7 +160,22 @@ while 1:
                     logger.error(f"Method not implemented : {world_object_class}.new()")
             
             case EVENT_TYPES.MAKE_UI_ELEMENT:
-                pass
+                if not isinstance(value, EnumObject):
+                    logger.error(f"Expected value of type EnumObject, got {value}")
+                    continue
+                
+                ui_element_type, args = value
+                ui_element_class = UI_ELEMENT_CLASSES[ui_element_type]
+                
+                try:
+                    if isinstance(args, dict):
+                        ui_element_class.new(**args)
+                    elif isinstance(args, (tuple, list)):
+                        ui_element_class.new(*args)
+                    else:
+                        ui_element_class.new(args)
+                except AttributeError:
+                    logger.error(f"Method not implemented : {ui_element_class}.new()")
             
             case EVENT_TYPES.LOAD_ZONE:
                 if (not isinstance(value, tuple)
@@ -199,13 +203,23 @@ while 1:
             
             case EVENT_TYPES.LOAD_DIALOG:
                 if not isinstance(value, str):
-                    logger.error(f"Expected value of type str, got {value}")
+                    logger.error(f"Expected value of type str, got {value}"),
                     continue
                 
-                cuinter.DialogBox.new(
-                    *default_box_dimensions,
-                    DialogLine.process_dialog(load_pickle(value)),
+                raw_dialog = load_pickle(value)
+                dialog = DialogLine.process_dialog(raw_dialog)
+                args = {
+                    "dialog": dialog,
+                }
+                constructor = EnumObject(
+                    UI_ELEMENT_TYPES.DIALOG_BOX,
+                    args,
                 )
+                new_event = EnumObject(
+                    EVENT_TYPES.MAKE_UI_ELEMENT,
+                    constructor,
+                )
+                try_append(new_events, new_event)
             
             case EVENT_TYPES.LOAD_CHOICE:
                 if not isinstance(value, str):
@@ -213,11 +227,19 @@ while 1:
                     continue
                 
                 options, on_confirm_events = load_pickle(value)
-                cuinter.ChoiceBox.new(
-                    *default_box_dimensions,
-                    translated(options),
-                    on_confirm_events,
+                args = {
+                    "options": options,
+                    "on_confirm_events": on_confirm_events,
+                }
+                constructor = EnumObject(
+                    UI_ELEMENT_TYPES.CHOICE_BOX,
+                    args,
                 )
+                new_event = EnumObject(
+                    EVENT_TYPES.MAKE_UI_ELEMENT,
+                    constructor,
+                )
+                try_append(new_events, new_event)
             
             case EVENT_TYPES.QUIT:
                 quit()

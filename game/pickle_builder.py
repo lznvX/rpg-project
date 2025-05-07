@@ -8,8 +8,9 @@ Contributors:
 """
 
 import pickle
-from common import *
-import world
+from common import Character, EnumObject, EVENT_TYPES
+from world import WORLD_OBJECT_TYPES
+from cuinter import UI_ELEMENT_TYPES
 
 objects = {
     "assets\\dialogs\\test_dialog.pkl": (

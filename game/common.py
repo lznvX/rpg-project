@@ -17,7 +17,6 @@ from typing import NamedTuple, Callable
 from uuid import UUID, uuid4
 from lang import get_lang_choice
 
-
 lang_text = get_lang_choice()
 null_uuid = UUID('00000000-0000-0000-0000-000000000000')
 
@@ -40,22 +39,6 @@ class ItemNotFoundError(ValueError):
 class IncompatibleSlotError(ValueError):
     """raised when an item is inserted in an incorrect slot."""
     pass
-
-
-def named_tuple_modifier(data_type: Callable, old_data: NamedTuple, **changes) -> NamedTuple:
-    """Generate a new NamedTuple based on an existing one.
-
-    Changes are represented as another NamedTuple of the same type
-    """
-    changes = data_type(**changes)
-
-    new_data = []
-    for old, new in zip(old_data, changes):
-        if new is None:
-            new_data.append(old)
-        else:
-            new_data.append(new)
-    return data_type(*new_data)
 
 
 class DamageInstance(NamedTuple):
@@ -671,6 +654,8 @@ class _EventTypes(NamedTuple):
     LOAD_ZONE: int
     LOAD_DIALOG: int
     LOAD_CHOICE: int
+    SAVE_GAME: int
+    LOAD_GAME: int
     QUIT: int
     MULTI_EVENT: int
 
@@ -679,15 +664,20 @@ class _EventTypes(NamedTuple):
         return cls(*range(len(cls.__annotations__)))
 
 
-class _WorldObjectTypes(NamedTuple):
-    GRID_SPRITE: int
-    GRID_MULTI_SPRITE: int
-    WORLD_CHARACTER: int
-    WALK_TRIGGER: int
+def named_tuple_modifier(data_type: Callable, old_data: NamedTuple, **changes) -> NamedTuple:
+    """Generate a new NamedTuple based on an existing one.
 
-    @classmethod
-    def new(cls) -> _WorldObjectTypes:
-        return cls(*range(len(cls.__annotations__)))
+    Changes are represented as another NamedTuple of the same type
+    """
+    changes = data_type(**changes)
+
+    new_data = []
+    for old, new in zip(old_data, changes):
+        if new is None:
+            new_data.append(old)
+        else:
+            new_data.append(new)
+    return data_type(*new_data)
 
 
 def load_pickle(path: str) -> object:
@@ -783,7 +773,6 @@ logging.basicConfig(
 )
 
 EVENT_TYPES = _EventTypes.new()
-WORLD_OBJECT_TYPES = _WorldObjectTypes.new()
 
 if __name__ == "__main__":
     # Tests

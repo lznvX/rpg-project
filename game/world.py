@@ -34,6 +34,17 @@ TILE_NAME_TO_CHAR = {
 WALKABLE_TILE_CHARS = " │─┘└┐┌"
 
 
+class _WorldObjectTypes(NamedTuple):
+    GRID_SPRITE: int
+    GRID_MULTI_SPRITE: int
+    WORLD_CHARACTER: int
+    WALK_TRIGGER: int
+
+    @classmethod
+    def new(cls) -> _WorldObjectTypes:
+        return cls(*range(len(cls.__annotations__)))
+
+
 class Grid(NamedTuple):
     # Could be called TilemapRenderer but Grid is more practical
     sprite_renderer: SpriteRenderer
@@ -339,3 +350,11 @@ logging.basicConfig(
     encoding="utf-8",
     level=logging.DEBUG,
 )
+
+WORLD_OBJECT_TYPES = _WorldObjectTypes.new()
+WORLD_OBJECT_CLASSES = {
+    WORLD_OBJECT_TYPES.GRID_SPRITE: GridSprite,
+    WORLD_OBJECT_TYPES.GRID_MULTI_SPRITE: GridMultiSprite,
+    WORLD_OBJECT_TYPES.WORLD_CHARACTER: WorldCharacter,
+    WORLD_OBJECT_TYPES.WALK_TRIGGER: WalkTrigger,
+}

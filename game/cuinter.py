@@ -21,6 +21,19 @@ X_CORRECTION = 2.6 # Hauteur / largeur d'un caractère
 CHARACTER_TIME = 0.025 # Délai d'affichage de chaque caractère dans les textes
 
 
+class _UIElementTypes(NamedTuple):
+    LABEL: int
+    SPRITE_RENDERER: int
+    RECTANGLE: int
+    TEXT_BOX: int
+    DIALOG_BOX: int
+    CHOICE_BOX: int
+
+    @classmethod
+    def new(cls) -> _UIElementTypes:
+        return cls(*range(len(cls.__annotations__)))
+
+
 class Label(NamedTuple):
     pid: int # Persistent identifier
     y: int
@@ -56,60 +69,6 @@ class Label(NamedTuple):
         
         for i, char in enumerate(self.text):
             set_cell(self.y, self.x + i, char)
-
-
-class Rectangle(NamedTuple):
-    pid: int
-    y: int
-    x: int
-    height: int
-    width: int
-    
-    @classmethod
-    def new(cls, y: int, x: int, height: int, width: int, is_top_level: bool = True) -> Rectangle:
-        pid = int(uuid.uuid4())
-        rectangle = cls(pid, y, x, height, width)
-        
-        if is_top_level:
-            set_element(pid, rectangle)
-            logger.debug("Created new Rectangle")
-        return rectangle
-    
-    def config(self, is_top_level: bool = True, **kwargs) -> Rectangle:
-        rectangle = Rectangle(
-            self.pid,
-            kwargs.get("y", self.y),
-            kwargs.get("x", self.x),
-            kwargs.get("height", self.height),
-            kwargs.get("width", self.width),
-        )
-        
-        if is_top_level: set_element(self.pid, rectangle)
-        return rectangle
-    
-    def delete(self) -> None:
-        remove_element(self.pid)
-    
-    def draw(self) -> None:
-        if self.height <= 0 or self.width <= 0: return
-        
-        y1, y2 = self.y, self.y + self.height
-        x1, x2 = self.x, self.x + self.width
-        
-        set_cell(y1, x1, "┌")
-        set_cell(y1, x2, "┐")
-        set_cell(y2, x1, "└")
-        set_cell(y2, x2, "┘")
-        
-        for y in range(y1 + 1, y2):
-            set_cell(y, x1, "│")
-            set_cell(y, x2, "│")
-            for x in range(x1 + 1, x2):
-                set_cell(y, x, " ")
-        
-        for x in range(x1 + 1, x2):
-            set_cell(y1, x, "─")
-            set_cell(y2, x, "─")
 
 
 class SpriteRenderer(NamedTuple):
@@ -161,6 +120,67 @@ class SpriteRenderer(NamedTuple):
                 set_cell(self.y + y, self.x + x, char)
 
 
+class Rectangle(NamedTuple):
+    pid: int
+    y: int
+    x: int
+    height: int
+    width: int
+    
+    @classmethod
+    def new(cls, y: int = None, x: int = None, height: int = None,
+            width: int = None, is_top_level: bool = True) -> Rectangle:
+        pid = int(uuid.uuid4())
+        rectangle = cls(
+            pid,
+            default_rect.y if y is None else y,
+            default_rect.x if x is None else x,
+            default_rect.height if height is None else height,
+            default_rect.width if width is None else width,
+        )
+        
+        if is_top_level:
+            set_element(pid, rectangle)
+            logger.debug("Created new Rectangle")
+        return rectangle
+    
+    def config(self, is_top_level: bool = True, **kwargs) -> Rectangle:
+        rectangle = Rectangle(
+            self.pid,
+            kwargs.get("y", self.y),
+            kwargs.get("x", self.x),
+            kwargs.get("height", self.height),
+            kwargs.get("width", self.width),
+        )
+        
+        if is_top_level: set_element(self.pid, rectangle)
+        return rectangle
+    
+    def delete(self) -> None:
+        remove_element(self.pid)
+    
+    def draw(self) -> None:
+        if self.height <= 0 or self.width <= 0: return
+        
+        y1, y2 = self.y, self.y + self.height
+        x1, x2 = self.x, self.x + self.width
+        
+        set_cell(y1, x1, "┌")
+        set_cell(y1, x2, "┐")
+        set_cell(y2, x1, "└")
+        set_cell(y2, x2, "┘")
+        
+        for y in range(y1 + 1, y2):
+            set_cell(y, x1, "│")
+            set_cell(y, x2, "│")
+            for x in range(x1 + 1, x2):
+                set_cell(y, x, " ")
+        
+        for x in range(x1 + 1, x2):
+            set_cell(y1, x, "─")
+            set_cell(y2, x, "─")
+
+
 class TextBox(NamedTuple):
     pid: int
     rectangle: Rectangle
@@ -183,7 +203,8 @@ class TextBox(NamedTuple):
         return self.rectangle.width
     
     @classmethod
-    def new(cls, y: int, x: int, height: int, width: int, text: str = None,
+    def new(cls, y: int = None, x: int = None, height: int = None,
+            width: int = None, text: str = None,
             is_top_level: bool = True) -> TextBox:
         pid = int(uuid.uuid4())
         text_box = cls(
@@ -260,8 +281,9 @@ class DialogBox(NamedTuple):
         return min(uncapped, len(self.current_text))
     
     @classmethod
-    def new(cls, y: int, x: int, height: int, width: int,
-            dialog: tuple[DialogLine | EnumObject, ...],
+    def new(cls, y: int = None, x: int = None, height: int = None,
+            width: int = None,
+            dialog: tuple[DialogLine | EnumObject, ...] = None,
             is_top_level: bool = True) -> DialogBox:
         pid = int(uuid.uuid4())
         dialog_box = cls(
@@ -352,8 +374,9 @@ class ChoiceBox(NamedTuple):
         return self.options[self.selected_index]
     
     @classmethod
-    def new(cls, y: int, x: int, height: int, width: int,
-            options: tuple[str, ...], on_confirm_events: dict[int, EnumObject] = {},
+    def new(cls, y: int = None, x: int = None, height: int = None,
+            width: int = None, options: tuple[str, ...] = None,
+            on_confirm_events: dict[int, EnumObject] = {},
             selected_index: int = 0, is_top_level: bool = True) -> ChoiceBox:
         pid = int(uuid.uuid4())
         choice_box = cls(
@@ -552,6 +575,16 @@ logging.basicConfig(
     level=logging.DEBUG,
 )
 
+UI_ELEMENT_TYPES = _UIElementTypes.new()
+UI_ELEMENT_CLASSES = {
+    UI_ELEMENT_TYPES.LABEL: Label,
+    UI_ELEMENT_TYPES.SPRITE_RENDERER: SpriteRenderer,
+    UI_ELEMENT_TYPES.RECTANGLE: Rectangle,
+    UI_ELEMENT_TYPES.TEXT_BOX: TextBox,
+    UI_ELEMENT_TYPES.DIALOG_BOX: DialogBox,
+    UI_ELEMENT_TYPES.CHOICE_BOX: ChoiceBox,
+}
+
 time.sleep(0.5)
 _fullscreen()
 time.sleep(0.5)
@@ -564,6 +597,13 @@ stdscr.timeout(0) # Délai de vérification d'entrée
 
 screen_height, screen_width = stdscr.getmaxyx()
 empty_buffer = [[" " for _ in range(screen_width)] for _ in range(screen_height)]
+default_rect = Rectangle(
+    int(uuid.uuid4()),
+    screen_height - 12,
+    round(screen_width / 4),
+    10,
+    round(screen_width / 2),
+)
 
 get_buffer, set_cell, clear_buffer = _make_buffer_manager()
 get_elements, set_element, remove_element = _make_element_manager()

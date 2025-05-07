@@ -40,6 +40,9 @@ class ItemNotFoundError(ValueError):
 class IncompatibleSlotError(ValueError):
     """raised when an item is inserted in an incorrect slot."""
     pass
+class TaskNotFoundError(ValueError):
+    """raised by an Inventory.tasklist when referencing a nonexistant task."""
+    pass
 
 
 def named_tuple_modifier(data_type: Callable, old_data: NamedTuple, **changes) -> NamedTuple:
@@ -261,7 +264,7 @@ class Inventory(NamedTuple):
     Not necessarily the player.
     """
     equipment : dict[str, Item]
-    tasklist : Counter[str]
+    tasklist : list[Task]
     backpack : Counter[Item]
     slots = ("mainhand", "offhand", "head", "body", "feet")
 
@@ -270,7 +273,7 @@ class Inventory(NamedTuple):
     def new(self) -> Inventory:
         """Create a new empty inventory."""
         equipment = dict()
-        tasklist = Counter()
+        tasklist = list()
         for slot in self.slots:
             equipment[slot] = None
 
@@ -351,31 +354,45 @@ class Inventory(NamedTuple):
             raise NotEnoughItemError(f"Inventory does not contain any {item}")
 
 
-    def accept(self, task : Task):
+    def accept(self, task: Task):
         """Add a task to the tasklist."""
-        self.tasklist[task.name] += 1
+        self.tasklist.append(task)
 
 
-    def finish(self, task : Task):
+    def finish(self, finished_task: Task):
         """Remove a task of the tasklist."""
-        if task.name not in self.tasklist:
-            raise KeyError(f"The task {task.name} is not in your task list.")
+        task_uuid = finished_task.uuid
+
+        for task_id, task in enumerate(self.tasklist):
+            if task.uuid != task_uuid:
+                continue
+            else:
+
+                del self.tasklist[task_id]
+                return None
         else:
-            self.tasklist[task.name] -= 1
+            raise TaskNotFoundError(f"The task {task.display_name} is not in your task list.")
 
 
-    def claim(self, task : Task):
+    def claim(self, task: Task):
         """Try to see if you have the ressources to complete a task"""
-        if task.name not in self.tasklist:
-            raise KeyError(f"The task {task.name} is not in your task list.")
+        if task not in self.tasklist:
+            raise KeyError(f"The task {task.display_name} is not in your task list.")
         else:
-            for i in task.conditions:
-                self.remove(i, task.conditions[i])
+            is_complete = True
+            for i in task.conditions.keys():
+                try:
+                    self.remove(i, task.conditions[i])
+                except NotEnoughItemError:
+                    is_complete = False
+                    print(f"Not enough ")
+                else:
+                    task.conditions[i] = 0
 
-            for i in task.Reward:
-                self.add(i, task.Reward[i])
-
-            self.finish(task)
+            if is_complete:
+                for item in task.reward:
+                    self.add(item, task.reward[item])
+                self.finish(task)
 
 
     @staticmethod
@@ -384,8 +401,8 @@ class Inventory(NamedTuple):
         item2 = Item.new("item2", ("item",), 1, Stats(), tuple())
         item3 = Item.new("item3", ("head", "equippable"), 1, Stats(), tuple())
 
-        task1 = Task("task1", "Saiki", {item1 : 1}, {item2 : 3})
-        task2 = Task("task2", "construction", {item1 : 12}, {item2 : 43})
+        task1 = Task.new("task1", {item1 : 1}, {item2 : 3})
+        task2 = Task.new("task2", {item1 : 12}, {item2 : 43})
 
         ti = Inventory.new()
         ti.add(item1)
@@ -408,14 +425,14 @@ class Inventory(NamedTuple):
 
         ti.accept(task1)
         ti.accept(task2)
-        assert ti.tasklist[task1.name] == 1
-        assert ti.tasklist[task2.name] == 1
+        assert task1 in ti.tasklist
+        assert task2 in ti.tasklist
 
         ti.finish(task2)
-        assert ti.tasklist[task2.name] == 0
+        assert task2 not in ti.tasklist
 
         ti.claim(task1)
-        assert ti.tasklist[task1.name] == 0
+        assert task1 not in ti.tasklist
         assert ti.backpack[item1] == 0
         assert ti.backpack[item2] == 10
 
@@ -428,6 +445,7 @@ class Character(NamedTuple):
     The default constructor should not be used. Instead, use Character.new().
     """
     name: str = None
+    uuid: UUID = None
     sprite_sheet: dict[str, str] = None
     is_player: bool = None
     is_alive: bool = None
@@ -449,13 +467,14 @@ class Character(NamedTuple):
     @staticmethod
     def new(name: str, sprite_sheet: dict[str, str], is_player: bool,
             base_stats: Stats, actions: dict[UUID, Action],
-            initial_effects: dict) -> Character:
+            initial_effects: dict, uuid: UUID=None) -> Character:
         """Character constructor.
 
         Needed because NamedTuple.__init__ can't be modified.
         """
         return Character(name,
                          sprite_sheet,
+                         uuid if uuid is not None else uuid4(),
                          is_player,
                          True,
 
@@ -615,10 +634,41 @@ class Task(NamedTuple):
     """
     A quest that if the condition is fulfild give a reward
     """
-    name : str
-    description : str
-    conditions : Counter[str]
-    Reward : Counter[str]
+    name: str
+    conditions: Counter[Item]
+    reward: Counter[Item]
+    uuid: UUID
+
+
+    @staticmethod
+    def new(name: str, conditions: dict[Item, int], reward: dict[Item, int]) -> Item:
+         """Task constructor.
+
+         Needed because NamedTuple.__init__ can't be modified.
+         """
+         return Task(name,
+                     Counter(conditions),
+                     Counter(reward),
+                     uuid4(),
+                     )
+
+    @property
+    def display_name(self) -> str:
+        """Fetch the task's name in the appropriate language."""
+        try:
+            return lang_text.task_names[self.name]
+        except KeyError:
+            return self.name
+
+
+    @property
+    def description(self) -> str:
+        """Fetch the task's description in the appropriate language."""
+        # will show up when inspecting the task (later)
+        try:
+            return lang_text.task_descriptions[self.name]
+        except KeyError:
+            return ""
 
 
 class DialogLine(NamedTuple):

@@ -14,7 +14,7 @@ class _Lang(NamedTuple):
     welcome: str = None
     i_move_u_up: str = None
     what: str = None
-    
+
     # Choice
     menu_back: str = None
     menu_settings: str = None
@@ -22,7 +22,7 @@ class _Lang(NamedTuple):
     menu_load: str = None
     menu_close: str = None
     menu_save_quit: str = None
-    
+
     # Combat
     battle_begin: str = None
     battle_win: str = None
@@ -57,13 +57,23 @@ class _Lang(NamedTuple):
     #     "action_name": "Action Description"
     # }
 
+    # Tasks
+    task_names: dict[str, str] = None
+    # task_names = {
+    #     "task_name": "Task Name"
+    # }
+    task_descriptions: dict[str, str] = None
+    # task_descriptions = {
+    #     "task_name": "Task Description"
+    # }
+
 
 English = _Lang(
     # Dialog
     welcome = "Welcome to the game !",
     i_move_u_up = "I am now going to move you up with my mind.",
     what = "DID YOU JUST SEND BOTH A LOAD_ZONE AND A START_DIALOG EVENT WITH A SINGLE WALKTRIGGER ???",
-    
+
     # Choice
     menu_back = "Back",
     menu_settings = "Settings",
@@ -71,7 +81,7 @@ English = _Lang(
     menu_load = "Load",
     menu_close = "Close menu",
     menu_save_quit = "Save and quit",
-    
+
     # Combat
     battle_begin    = "You are now in battle!",
     battle_win      = "You won the battle!",
@@ -115,6 +125,14 @@ English = _Lang(
         "slash": "Swing your sword at your opponent",
         "stab": "Stick 'em with the pointy end",
     },
+
+    # Tasks
+    task_names = {
+        # "task_name": "Task Name"
+    },
+    task_descriptions = {
+        # "task_name": "Task Description"
+    },
     )
 
 
@@ -126,7 +144,7 @@ French = _Lang(
     menu_load = "Charger",
     menu_close = "Fermer le menu",
     menu_save_quit = "Sauvegarder et quitter",
-    
+
     # Combat
     battle_begin    = "Vous êtes maintenant en combat !",
     battle_win      = "Vous avez gagné le combat !",
@@ -135,7 +153,7 @@ French = _Lang(
     battle_turn     = "Le tour {} commence !",
 
     battle_attack   = "{} utilise {} sur {}",
-    battle_damage   = "{} prend ¤ {} dégats ! (il reste ♥ {})",
+    battle_damage   = "{} prend ¤ {} dégats ! (il lui reste ♥ {})",
     battle_death    = "{} meurt !",
     battle_ko       = "{} est assommé !",
     battle_action_choice    = "Que'est-ce que {} devrait faire ?",
@@ -169,6 +187,15 @@ French = _Lang(
         "light_stab": "Poignardez votre ennemi avec votre arme",
         "slash": "Brandissez votre épée sur votre ennemi",
         "stab": "Frappez l'enemi avec la pointe de votre arme",
+    },
+
+
+    # Tasks
+    task_names = {
+        # "task_name": "Task Name"
+    },
+    task_descriptions = {
+        # "task_name": "Task Description"
     },
     )
 

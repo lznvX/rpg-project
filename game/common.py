@@ -649,10 +649,11 @@ class EnumObject(NamedTuple):
 
 class _EventTypes(NamedTuple):
     PRESS_KEY: int
-    MAKE_WORLD_OBJECT: int
     MAKE_UI_ELEMENT: int
-    LOAD_ZONE: int
+    MAKE_WORLD_OBJECT: int
     LOAD_UI_ELEMENT: int
+    LOAD_ZONE: int
+    LOAD_COMBAT: int
     SAVE_GAME: int
     LOAD_GAME: int
     QUIT: int
@@ -683,6 +684,7 @@ def load_pickle(path: str) -> object:
     """Reads and returns the pickle object at the provided path."""
     try:
         with open(path, "rb") as file:
+            logger.debug(f"Loaded pickle file: {path}")
             return pickle.load(file)
 
     except FileNotFoundError:
@@ -695,6 +697,7 @@ def load_text(path: str) -> str:
     """Reads and returns the content of the text file at the provided path."""
     try:
         with open(path, "r", encoding="utf-8") as file:
+            logger.debug(f"Loaded text file: {path}")
             return file.read()
 
     except FileNotFoundError:
@@ -715,11 +718,12 @@ def load_text_dir(path: str) -> dict[str, str]:
         name, ext = os.path.splitext(entry)
 
         if ext != ".txt":
-            logger.warning(f"Expected txt file at path: {full_path}")
+            logger.warning(f"Expected text file at path: {full_path}")
             continue
 
         texts[name] = load_text(full_path)
-
+    
+    logger.debug(f"Loaded text file directory: {path}")
     return texts
 
 
@@ -764,12 +768,6 @@ def try_append(collection: list, item: object) -> None:
 
 
 logger = logging.getLogger(__name__)
-logging.basicConfig(
-    filename="logs\\common.log",
-    filemode="w",
-    encoding="utf-8",
-    level=logging.DEBUG,
-)
 
 EVENT_TYPES = _EventTypes.new()
 

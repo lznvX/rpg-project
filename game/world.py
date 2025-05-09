@@ -344,12 +344,6 @@ class WalkTrigger(NamedTuple):
 
 
 logger = logging.getLogger(__name__)
-logging.basicConfig(
-    filename="logs\\world.log",
-    filemode="w",
-    encoding="utf-8",
-    level=logging.DEBUG,
-)
 
 WORLD_OBJECT_TYPES = _WorldObjectTypes.new()
 WORLD_OBJECT_CLASSES = {

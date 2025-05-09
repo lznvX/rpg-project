@@ -608,12 +608,6 @@ def update() -> list[EnumObject]:
 
 
 logger = logging.getLogger(__name__)
-logging.basicConfig(
-    filename="logs\\cuinter.log",
-    filemode="w",
-    encoding="utf-8",
-    level=logging.DEBUG,
-)
 
 UI_ELEMENT_TYPES = _UIElementTypes.new()
 UI_ELEMENT_CLASSES = {

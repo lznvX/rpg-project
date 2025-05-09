@@ -17,11 +17,13 @@ class _Lang(NamedTuple):
     
     # Choice
     menu_back: str = None
+    menu_inventory: str = None
     menu_settings: str = None
     menu_save: str = None
     menu_load: str = None
     menu_close: str = None
     menu_save_quit: str = None
+    menu_test_combat: str = None
     
     # Combat
     battle_begin: str = None
@@ -66,11 +68,13 @@ English = _Lang(
     
     # Choice
     menu_back = "Back",
+    menu_inventory = "Inventory",
     menu_settings = "Settings",
     menu_save = "Save",
     menu_load = "Load",
     menu_close = "Close menu",
     menu_save_quit = "Save and quit",
+    menu_test_combat = "Start combat test",
     
     # Combat
     battle_begin    = "You are now in battle!",
@@ -121,11 +125,13 @@ English = _Lang(
 French = _Lang(
     # Choice
     menu_back = "Retour",
+    menu_inventory = "Inventaire",
     menu_settings = "Options",
     menu_save = "Sauvegarder",
     menu_load = "Charger",
     menu_close = "Fermer le menu",
     menu_save_quit = "Sauvegarder et quitter",
+    menu_test_combat = "Commencer combat de test",
     
     # Combat
     battle_begin    = "Vous êtes maintenant en combat !",

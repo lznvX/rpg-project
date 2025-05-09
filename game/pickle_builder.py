@@ -38,18 +38,44 @@ objects = {
         UI_ELEMENT_TYPES.CHOICE_BOX,
         {
             "options": (
+                "menu_inventory",
                 "menu_settings",
                 "menu_save",
                 "menu_load",
-                "menu_close",
                 "menu_save_quit",
+                "menu_test_combat",
+                "menu_close",
             ),
             "on_confirm_events": {
                 0: EnumObject(
                     EVENT_TYPES.LOAD_UI_ELEMENT,
+                    "assets\\ui_elements\\choices\\inventory_choice.pkl",
+                ),
+                1: EnumObject(
+                    EVENT_TYPES.LOAD_UI_ELEMENT,
                     "assets\\ui_elements\\choices\\settings_choice.pkl",
                 ),
-                4: EnumObject(EVENT_TYPES.QUIT),
+                2: EnumObject(
+                    EVENT_TYPES.SAVE_GAME,
+                ),
+                3: EnumObject(
+                    EVENT_TYPES.LOAD_GAME,
+                ),
+                4: EnumObject(
+                    EVENT_TYPES.MULTI_EVENT,
+                    (
+                        EnumObject(
+                            EVENT_TYPES.SAVE_GAME,
+                        ),
+                        EnumObject(
+                            EVENT_TYPES.QUIT,
+                        ),
+                    ),
+                ),
+                5: EnumObject(
+                    EVENT_TYPES.LOAD_COMBAT,
+                    "assets\\combats\\test_combat.pkl",
+                ),
             },
             "rectangle_preset": RECTANGLE_PRESETS.MENU,
         },

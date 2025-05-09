@@ -29,13 +29,14 @@ MOVE_MAP = {
 
 ############ Code to run on startup
 
-logger = logging.getLogger(__name__)
 logging.basicConfig(
-    filename="logs\\main.log",
+    filename="logs\\game.log",
     filemode="w",
     encoding="utf-8",
     level=logging.DEBUG,
+    format="%(name)-8s :: %(levelname)-8s :: %(message)s",
 )
+logger = logging.getLogger(__name__)
 
 last_time = time.time()
 fps_timer = last_time  # Time of the last FPS update
@@ -140,25 +141,6 @@ while 1:
                         ),
                     )
             
-            case EVENT_TYPES.MAKE_WORLD_OBJECT:
-                if not isinstance(value, EnumObject):
-                    logger.error(f"Expected value of type EnumObject, got {value}")
-                    continue
-                
-                world_object_type, args = value
-                world_object_class = WORLD_OBJECT_CLASSES[world_object_type]
-                
-                try:
-                    if isinstance(args, dict):
-                        new_world_object = world_object_class.new(grid=grid, **args)
-                    elif isinstance(args, (tuple, list)):
-                        new_world_object = world_object_class.new(grid=grid, *args)
-                    else:
-                        new_world_object = world_object_class.new(grid, args)
-                    try_append(world_objects, new_world_object)
-                except AttributeError:
-                    logger.error(f"Method not implemented : {world_object_class}.new()")
-            
             case EVENT_TYPES.MAKE_UI_ELEMENT:
                 if not isinstance(value, EnumObject):
                     logger.error(f"Expected value of type EnumObject, got {value}")
@@ -184,7 +166,44 @@ while 1:
                     else:
                         ui_element_class.new(args)
                 except AttributeError:
-                    logger.error(f"Method not implemented : {ui_element_class}.new()")
+                    logger.error(f"Not implemented: {ui_element_class}.new()")
+            
+            case EVENT_TYPES.MAKE_WORLD_OBJECT:
+                if not isinstance(value, EnumObject):
+                    logger.error(f"Expected value of type EnumObject, got {value}")
+                    continue
+                
+                world_object_type, args = value
+                world_object_class = WORLD_OBJECT_CLASSES[world_object_type]
+                
+                try:
+                    if isinstance(args, dict):
+                        new_world_object = world_object_class.new(grid=grid, **args)
+                    elif isinstance(args, (tuple, list)):
+                        new_world_object = world_object_class.new(grid=grid, *args)
+                    else:
+                        new_world_object = world_object_class.new(grid, args)
+                    try_append(world_objects, new_world_object)
+                except AttributeError:
+                    logger.error(f"Not implemented: {world_object_class}.new()")
+            
+            case EVENT_TYPES.LOAD_UI_ELEMENT:
+                if not isinstance(value, str):
+                    logger.error(f"Expected value of type str, got {value}")
+                    continue
+                
+                constructor = load_pickle(value)
+                if constructor is None:
+                    continue
+                elif not isinstance(constructor, EnumObject):
+                    logger.error(f"Expected constructor of type EnumObject, got {constructor}")
+                    continue
+                
+                new_event = EnumObject(
+                    EVENT_TYPES.MAKE_UI_ELEMENT,
+                    constructor,
+                )
+                try_append(new_events, new_event)
             
             case EVENT_TYPES.LOAD_ZONE:
                 if (not isinstance(value, tuple)
@@ -196,7 +215,11 @@ while 1:
                     continue
                 
                 zone_path, player_grid_y, player_grid_x = value
-                tilemap, world_objects_constructors = load_pickle(zone_path)
+                zone_data = load_pickle(zone_path)
+                if zone_data is None:
+                    continue
+                
+                tilemap, world_objects_constructors = zone_data
                 
                 grid = grid.load_tilemap(tilemap)
                 grid = grid.center(cuinter.screen_height, cuinter.screen_width)
@@ -210,21 +233,21 @@ while 1:
                     )
                     try_append(new_events, new_event)
             
-            case EVENT_TYPES.LOAD_UI_ELEMENT:
+            case EVENT_TYPES.LOAD_COMBAT:
                 if not isinstance(value, str):
                     logger.error(f"Expected value of type str, got {value}")
                     continue
                 
-                constructor = load_pickle(value)
-                if not isinstance(constructor, EnumObject):
-                    logger.error(f"Expected constructor of type EnumObject, got {constructor}")
+                combat_data = load_pickle(zone_path)
+                if combat_data is None:
                     continue
-                
-                new_event = EnumObject(
-                    EVENT_TYPES.MAKE_UI_ELEMENT,
-                    constructor,
-                )
-                try_append(new_events, new_event)
+                logger.error(f"Not implemented: EVENT_TYPES.LOAD_COMBAT (enum {EVENT_TYPES.LOAD_COMBAT})")
+            
+            case EVENT_TYPES.SAVE_GAME:
+                logger.error(f"Not implemented: EVENT_TYPES.SAVE_GAME (enum {EVENT_TYPES.SAVE_GAME})")
+            
+            case EVENT_TYPES.LOAD_GAME:
+                logger.error(f"Not implemented: EVENT_TYPES.LOAD_GAME (enum {EVENT_TYPES.LOAD_GAME})")
             
             case EVENT_TYPES.QUIT:
                 quit()

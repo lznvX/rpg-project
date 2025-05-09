@@ -11,6 +11,8 @@ import pickle
 from common import Character, EnumObject, EVENT_TYPES
 from world import WORLD_OBJECT_TYPES
 from cuinter import UI_ELEMENT_TYPES, RECTANGLE_PRESETS
+from settings import SETTING_TYPES
+from lang import LANGUAGE_ENUM
 
 objects = {
     "assets\\ui_elements\\dialogs\\welcome_dialog.pkl": EnumObject(
@@ -18,7 +20,7 @@ objects = {
         {
             "dialog": (
                 "welcome",
-                ("i_move_u_up", Character("Romain")),
+                ("i_move_u_up", "romain"),
                 EnumObject(
                     EVENT_TYPES.PRESS_KEY,
                     ord("w"),
@@ -84,15 +86,50 @@ objects = {
         UI_ELEMENT_TYPES.CHOICE_BOX,
         {
             "options": (
-                "settings_0",
+                "settings_language",
                 "settings_1",
                 "settings_2",
                 "menu_back",
             ),
             "on_confirm_events": {
+                0: EnumObject(
+                    EVENT_TYPES.LOAD_UI_ELEMENT,
+                    "assets\\ui_elements\\choices\\language_choice.pkl",
+                ),
                 3: EnumObject(
                     EVENT_TYPES.LOAD_UI_ELEMENT,
                     "assets\\ui_elements\\choices\\menu_choice.pkl",
+                ),
+            },
+            "rectangle_preset": RECTANGLE_PRESETS.MENU,
+        },
+    ),
+    "assets\\ui_elements\\choices\\language_choice.pkl": EnumObject(
+        UI_ELEMENT_TYPES.CHOICE_BOX,
+        {
+            "options": (
+                "English",
+                "Français",
+                "menu_back",
+            ),
+            "on_confirm_events": {
+                0: EnumObject(
+                    EVENT_TYPES.SET_SETTING,
+                    EnumObject(
+                        SETTING_TYPES.LANGUAGE,
+                        LANGUAGE_ENUM.ENGLISH,
+                    ),
+                ),
+                1: EnumObject(
+                    EVENT_TYPES.SET_SETTING,
+                    EnumObject(
+                        SETTING_TYPES.LANGUAGE,
+                        LANGUAGE_ENUM.FRENCH,
+                    ),
+                ),
+                2: EnumObject(
+                    EVENT_TYPES.LOAD_UI_ELEMENT,
+                    "assets\\ui_elements\\choices\\settings_choice.pkl",
                 ),
             },
             "rectangle_preset": RECTANGLE_PRESETS.MENU,

@@ -369,8 +369,8 @@ class DialogBox(NamedTuple):
             return
         
         formatted_name = ""
-        if self.current_line.character is not None:
-            formatted_name = f"[{self.current_line.character.name}]: " 
+        if self.current_line.character_name is not None:
+            formatted_name = f"[{self.current_line.character_name}]: " 
         formatted_text = formatted_name + self.current_text[:self.length_to_draw]
         
         self.config(text=formatted_text)

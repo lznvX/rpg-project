@@ -18,6 +18,8 @@ import cuinter
 from cuinter import UI_ELEMENT_TYPES, UI_ELEMENT_CLASSES
 import world
 from world import WORLD_OBJECT_TYPES, WORLD_OBJECT_CLASSES
+from settings import SETTING_TYPES
+from lang import LANGUAGE_ENUM
 
 FPS_COUNTER_REFRESH = 1 # Time between each FPS counter update
 MOVE_MAP = {
@@ -241,13 +243,16 @@ while 1:
                 combat_data = load_pickle(zone_path)
                 if combat_data is None:
                     continue
-                logger.error(f"Not implemented: EVENT_TYPES.LOAD_COMBAT (enum {EVENT_TYPES.LOAD_COMBAT})")
+                logger.error(f"Not implemented: EVENT_TYPES.LOAD_COMBAT")
+            
+            case EVENT_TYPES.SET_SETTING:
+                logger.error(f"Not implemented: EVENT_TYPES.SET_SETTING")
             
             case EVENT_TYPES.SAVE_GAME:
-                logger.error(f"Not implemented: EVENT_TYPES.SAVE_GAME (enum {EVENT_TYPES.SAVE_GAME})")
+                logger.error(f"Not implemented: EVENT_TYPES.SAVE_GAME")
             
             case EVENT_TYPES.LOAD_GAME:
-                logger.error(f"Not implemented: EVENT_TYPES.LOAD_GAME (enum {EVENT_TYPES.LOAD_GAME})")
+                logger.error(f"Not implemented: EVENT_TYPES.LOAD_GAME")
             
             case EVENT_TYPES.QUIT:
                 quit()

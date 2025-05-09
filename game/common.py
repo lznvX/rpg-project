@@ -606,7 +606,7 @@ class Task(NamedTuple):
 
 class DialogLine(NamedTuple):
     text: str
-    character: Character = None
+    character_name: str = None
     
     @staticmethod
     def process_dialog_line(dialog_line: str | DialogLine | EnumObject) -> DialogLine | EnumObject:
@@ -620,8 +620,11 @@ class DialogLine(NamedTuple):
         elif (isinstance(dialog_line, tuple)
         and len(dialog_line) == 2
         and isinstance(dialog_line[0], str)
-        and isinstance(dialog_line[1], Character)):
-            return DialogLine(translated(dialog_line[0]), dialog_line[1])
+        and isinstance(dialog_line[1], str)):
+            return DialogLine(
+                translated(dialog_line[0]),
+                lang_text.character_names[dialog_line[1]],
+            )
         
         elif isinstance(dialog_line, (DialogLine, EnumObject)):
             return dialog_line
@@ -654,6 +657,7 @@ class _EventTypes(NamedTuple):
     LOAD_UI_ELEMENT: int
     LOAD_ZONE: int
     LOAD_COMBAT: int
+    SET_SETTING: int
     SAVE_GAME: int
     LOAD_GAME: int
     QUIT: int
@@ -741,11 +745,11 @@ def translated(lang_key: str | tuple[str]) -> str | tuple[str]:
         elif text is None:
             raise ValueError
         else:
-            error_msg = f"Expected text of type str, got {text}"
+            msg = f"Expected text of type str, got {text}"
     except (AttributeError, ValueError):
-        error_msg = f"Selected language doesn't contain {lang_key}"
+        msg = f"Selected language doesn't contain {lang_key}"
     
-    logger.error(error_msg)
+    logger.warning(msg)
     return lang_key
 
 

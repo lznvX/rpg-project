@@ -6,7 +6,17 @@ Contributors:
     Romain
 """
 
+from __future__ import annotations
 from typing import NamedTuple
+
+
+class _LanguageEnum(NamedTuple):
+    ENGLISH: int
+    FRENCH: int
+
+    @classmethod
+    def new(cls) -> _LanguageEnum:
+        return cls(*range(len(cls.__annotations__)))
 
 
 class _Lang(NamedTuple):
@@ -25,6 +35,8 @@ class _Lang(NamedTuple):
     menu_save_quit: str = None
     menu_test_combat: str = None
     
+    settings_language: str = None
+    
     # Combat
     battle_begin: str = None
     battle_win: str = None
@@ -38,7 +50,10 @@ class _Lang(NamedTuple):
     battle_ko: str = None
     battle_action_choice: str = None
     battle_target_choice: str = None
-
+    
+    # Characters
+    character_names: dict[str, str] = None
+    
     # Items
     item_names: dict[str, str] = None
     # item_names = {
@@ -60,12 +75,27 @@ class _Lang(NamedTuple):
     # }
 
 
-English = _Lang(
+def get_lang_choice() -> _Lang:
+    """Returns the class with text in the relevant language.
+
+    Language is specified in settings.pkl (not implemented)
+    If language is not specified, or settings.pkl file is missing, English is
+    used by default.
+    """
+    return ENGLISH
+
+
+def f(fstring: str, *args: object) -> str:
+    """Shorthand for fstring.format(*args)."""
+    return fstring.format(*args)
+
+
+ENGLISH = _Lang(
     # Dialog
     welcome = "Welcome to the game !",
     i_move_u_up = "I am now going to move you up with my mind.",
     what = "DID YOU JUST SEND BOTH A LOAD_ZONE AND A LOAD_UI_ELEMENT EVENT WITH A SINGLE WALKTRIGGER ???",
-    
+
     # Choice
     menu_back = "Back",
     menu_inventory = "Inventory",
@@ -75,7 +105,9 @@ English = _Lang(
     menu_close = "Close menu",
     menu_save_quit = "Save and quit",
     menu_test_combat = "Start combat test",
-    
+
+    settings_language = "Language",
+
     # Combat
     battle_begin    = "You are now in battle!",
     battle_win      = "You won the battle!",
@@ -89,6 +121,11 @@ English = _Lang(
     battle_ko       = "{} is knocked out!",
     battle_action_choice    = "What should {} do?",
     battle_target_choice    = "Choose target for {}:",
+
+    # Characters
+    character_names = {
+        "romain": "Romain",
+    },
 
     # Items
     item_names = {
@@ -119,10 +156,10 @@ English = _Lang(
         "slash": "Swing your sword at your opponent",
         "stab": "Stick 'em with the pointy end",
     },
-    )
+)
 
 
-French = _Lang(
+FRENCH = _Lang(
     # Choice
     menu_back = "Retour",
     menu_inventory = "Inventaire",
@@ -132,6 +169,8 @@ French = _Lang(
     menu_close = "Fermer le menu",
     menu_save_quit = "Sauvegarder et quitter",
     menu_test_combat = "Commencer combat de test",
+    
+    settings_language = "Langue",
     
     # Combat
     battle_begin    = "Vous êtes maintenant en combat !",
@@ -146,6 +185,11 @@ French = _Lang(
     battle_ko       = "{} est assommé !",
     battle_action_choice    = "Que'est-ce que {} devrait faire ?",
     battle_target_choice    = "Choisissez la cible de {}:",
+
+    # Characters
+    character_names = {
+        "romain": "Romain",
+    },
 
     # Items
     item_names = {
@@ -176,19 +220,11 @@ French = _Lang(
         "slash": "Brandissez votre épée sur votre ennemi",
         "stab": "Frappez l'enemi avec la pointe de votre arme",
     },
-    )
+)
 
 
-def get_lang_choice() -> _Lang:
-    """Returns the class with text in the relevant language.
-
-    Language is specified in options.txt (not implemented)
-    If language is not specified, or options.txt file is missing, English is
-    used by default.
-    """
-    return English
-
-
-def f(fstring: str, *args: object) -> str:
-    """Shorthand for fstring.format(*args)."""
-    return fstring.format(*args)
+LANGUAGE_ENUM = _LanguageEnum.new()
+LANGUAGES = {
+    LANGUAGE_ENUM.ENGLISH: ENGLISH,
+    LANGUAGE_ENUM.FRENCH: FRENCH,
+}

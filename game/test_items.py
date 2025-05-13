@@ -57,7 +57,6 @@ Dagger = Item(
     (light_stab,),
     null_uuid)
 
-
 Sword = Item(
     "sword",
     ("equippable", "weapon", "mainhand", "offhand"),

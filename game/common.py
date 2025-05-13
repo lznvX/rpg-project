@@ -17,6 +17,7 @@ from typing import NamedTuple, Callable
 from uuid import UUID, uuid4
 from lang import get_lang_choice
 
+
 lang_text = get_lang_choice()
 null_uuid = UUID('00000000-0000-0000-0000-000000000000')
 
@@ -41,6 +42,9 @@ class IncompatibleSlotError(ValueError):
     pass
 class TaskNotFoundError(ValueError):
     """raised by an Inventory.tasklist when referencing a nonexistant task."""
+    pass
+class CharacterNotFoundError(ValueError):
+    """Raised when a character with the given UUID doesn't exist"""
     pass
 
 
@@ -568,6 +572,20 @@ class Character(NamedTuple):
         assert testchar.current == Stats(  8,  16,   4,   8,  11,   4,   4,   4)
 
         print("Character tests passed")
+
+
+class Party(NamedTuple):
+    name: str
+    members: tuple[Character]
+    leader: UUID
+
+
+    def get_member(self, member_uuid: UUID) -> Character:
+        for member in self.members:
+            if member.uuid == member_uuid:
+                return member
+
+        raise CharacterNotFoundError(f"Cannot find character with UUID {member_uuid} in {self.name}")
 
 
 class Task(NamedTuple):

@@ -11,20 +11,13 @@ from get_input import get_input
 import random as r
 import time
 from lang import get_lang_choice, f
-from common import Stats, DamageInstance, Character, Action
+from common import Stats, DamageInstance, Character, Action, Party
+import monsters as m
+import testitems as ti
 
 
 text = get_lang_choice()
 auto_turn_delay = 0.5 # seconds
-
-
-class DefaultStats(NamedTuple):
-    """A collection of default stats for various character races."""
-
-              #       MHP, MST, MMA, STR, AGI, ACU, ARM, RES
-    human     = Stats(  8,  16,   4,   8,   6,   4,   2,   4)
-    goblin    = Stats(  2,   8,   2,   2,  16,   1,   1,   2)
-    hobgoblin = Stats(  5,   8,   3,   4,   8,   2,   2,   2)
 
 
 class Battle(NamedTuple):
@@ -211,19 +204,6 @@ class Battle(NamedTuple):
         return f"{self.team1_name}\n{team1}\n\nVS\n\n{self.team2_name}\n{team2}"
 
 
-light_stab = Action(text.light_stab_name, "attack", text.light_stab_desc, 1, "physical", {})
-stab = Action(text.stab_name, "attack", text.stab_desc, 2, "physical", {})
-slash = Action(text.slash_name, "attack", text.slash_desc, 3, "physical", {})
-
-
-def Goblin() -> Character:
-    return Character.new("Goblin", False, DefaultStats.goblin, [light_stab], {})
-
-
-def Hobgoblin() -> Character:
-    return Character.new("Hobgoblin", False, DefaultStats.hobgoblin, [stab], {})
-
-
 def list_choices(choices: list | tuple, text: str="", start_from_1: bool=True,
                  template: str="{}) {}") -> None:
 
@@ -234,11 +214,45 @@ def list_choices(choices: list | tuple, text: str="", start_from_1: bool=True,
 		print(template.format(i + start_from_1, choice))
 
 
+def _test_pcs():
+    alice = Character.new(
+            name            = "Alice",
+            sprite_sheet    = None,
+            is_player       = False,
+            base_stats      = m.DefaultStats.human,
+            actions         = {},
+            initial_effects = {}
+            )
+    alice.inventory.add(ti.Sword)
+    alice.inventory.add(ti.AgiBoots)
+    alice = alice.equip("mainhand", ti.Sword)
+    alice = alice.equip("feet", ti.AgiBoots)
+
+    bob = Character.new(
+            name            = "Bob",
+            sprite_sheet    = None,
+            is_player       = True,
+            base_stats      = m.DefaultStats.human,
+            actions         = {},
+            initial_effects = {}
+            )
+    bob.inventory.add(ti.Sword)
+    bob.inventory.add(ti.StrHelmet)
+    bob = bob.equip("mainhand", ti.Sword)
+    bob = bob.equip("feet", ti.StrHelmet)
+
+    return alice, bob
+
+
 if __name__ == "__main__":
-    p = Character.new("Alice", False, DefaultStats.human, [slash, stab], {})
-    q = Character.new("Bob", True, DefaultStats.human, [slash, stab], {})
+    alice, bob = _test_pcs()
+    player_party = Party("Adventuring Party", (alice, bob), bob.uuid)
 
 
-    current_battle = Battle.new([p, q], "Adventuring Party", [Goblin(), Goblin(), Goblin(), Hobgoblin(), Hobgoblin()], "Goblin Gang")
+    gg_leader = m.Hobgoblin()
+    goblin_gang = Party("Goblin Gang", (gg_leader, m.Goblin(), m.Goblin(), m.Goblin(), m.Goblin()), gg_leader.uuid)
+
+
+    current_battle = Battle.new(player_party, goblin_gang)
 
     current_battle.begin()

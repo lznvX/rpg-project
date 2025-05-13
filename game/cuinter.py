@@ -35,7 +35,7 @@ class _UIElementTypes(NamedTuple):
 
 
 class _RectanglePresets(NamedTuple):
-    DEFAULT: int
+    DIALOG: int
     MENU: int
 
     @classmethod
@@ -130,22 +130,63 @@ class SpriteRenderer(NamedTuple):
 
 
 class Rectangle(NamedTuple):
-    pid: int
-    y: int
-    x: int
-    height: int
-    width: int
+    pid: int = None
+    y: int = None
+    x: int = None
+    height: int = None
+    width: int = None
+    
+    @staticmethod
+    def get_preset(preset: int = 0):
+        
+        try:
+            screen_height
+            screen_width
+        except NameError:
+            logger.error("Rectangle couldn't access screen dimensions")
+            return Rectangle(
+                y=0,
+                x=0,
+                height=20,
+                width=20,
+            )
+        
+        match preset:
+            case RECTANGLE_PRESETS.DIALOG:
+                return Rectangle(
+                    y=screen_height - 12,
+                    x=round(screen_width / 4),
+                    height=10,
+                    width=round(screen_width / 2),
+                )
+            case RECTANGLE_PRESETS.MENU:
+                return Rectangle(
+                    y=round(screen_height / 4),
+                    x=round(screen_width / 4),
+                    height=round(screen_height / 2),
+                    width=round(screen_width / 2),
+                )
+            case _:
+                logger.error("Rectangle preset enum not found: {preset}")
+                return Rectangle(
+                    y=screen_height - 12,
+                    x=round(screen_width / 4),
+                    height=10,
+                    width=round(screen_width / 2),
+                )
     
     @classmethod
     def new(cls, y: int = None, x: int = None, height: int = None,
-            width: int = None, rectangle_preset: int = 0, is_top_level: bool = True) -> Rectangle:
+            width: int = None, rectangle_preset: int = 0,
+            is_top_level: bool = True) -> Rectangle:
+        preset = Rectangle.get_preset(rectangle_preset)
         pid = int(uuid.uuid4())
         rectangle = cls(
             pid,
-            rectangles[rectangle_preset].y if y is None else y,
-            rectangles[rectangle_preset].x if x is None else x,
-            rectangles[rectangle_preset].height if height is None else height,
-            rectangles[rectangle_preset].width if width is None else width,
+            preset.y if y is None else y,
+            preset.x if x is None else x,
+            preset.height if height is None else height,
+            preset.width if width is None else width,
         )
         
         if is_top_level:
@@ -517,53 +558,53 @@ def _display_buffer(stdscr) -> None:
 
 
 def _make_buffer_manager():
-    buffer = copy.deepcopy(empty_buffer)
+    cache = copy.deepcopy(empty_buffer)
     
     def get_buffer() -> list[list[str]]:
-        return buffer
+        return cache
     
     def set_cell(y: int, x: int, char: str = " ") -> None:
-        nonlocal buffer
+        nonlocal cache
         if 0 <= y < screen_height and 0 <= x < screen_width:
-            buffer[y][x] = char
+            cache[y][x] = char
     
     def clear_buffer() -> None:
-        nonlocal buffer
-        buffer = copy.deepcopy(empty_buffer)
+        nonlocal cache
+        cache = copy.deepcopy(empty_buffer)
     
     return get_buffer, set_cell, clear_buffer
 
 
 def _make_element_manager():
-    elements = {}
+    cache = {}
     
     def get_elements() -> dict[int, object]:
-        return elements
+        return cache
     
     def set_element(pid: int, element: object) -> None:
-        nonlocal elements
-        elements[pid] = element
+        nonlocal cache
+        cache[pid] = element
     
     def remove_element(pid: int) -> None:
-        nonlocal elements
-        del elements[pid]
+        nonlocal cache
+        del cache[pid]
     
     return get_elements, set_element, remove_element
 
 
 def _make_event_manager():
-    events = []
+    cache = []
     
     def get_events() -> list[EnumObject]:
-        return events
+        return cache
     
     def add_event(event: Event) -> None:
-        nonlocal events
-        events.append(event)
+        nonlocal cache
+        cache.append(event)
     
     def clear_events() -> None:
-        nonlocal events
-        events.clear()
+        nonlocal cache
+        cache.clear()
     
     return get_events, add_event, clear_events
 
@@ -632,22 +673,6 @@ stdscr.timeout(0) # Délai de vérification d'entrée
 
 screen_height, screen_width = stdscr.getmaxyx()
 empty_buffer = [[" " for _ in range(screen_width)] for _ in range(screen_height)]
-rectangles = (
-    Rectangle.new(
-        screen_height - 12,
-        round(screen_width / 4),
-        10,
-        round(screen_width / 2),
-        is_top_level=False,
-    ),
-    Rectangle.new(
-        round(screen_height / 4),
-        round(screen_width / 4),
-        round(screen_height / 2),
-        round(screen_width / 2),
-        is_top_level=False,
-    ),
-)
 
 get_buffer, set_cell, clear_buffer = _make_buffer_manager()
 get_elements, set_element, remove_element = _make_element_manager()

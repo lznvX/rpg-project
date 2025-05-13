@@ -16,10 +16,11 @@ from typing import NamedTuple
 from common import *
 import cuinter
 from cuinter import UI_ELEMENT_TYPES, UI_ELEMENT_CLASSES
+from files import *
+from lang import LANGUAGE_ENUM
+import settings
 import world
 from world import WORLD_OBJECT_TYPES, WORLD_OBJECT_CLASSES
-from settings import SETTING_TYPES
-from lang import LANGUAGE_ENUM
 
 FPS_COUNTER_REFRESH = 1 # Time between each FPS counter update
 MOVE_MAP = {
@@ -52,7 +53,10 @@ player = world.WorldCharacter.new(
     grid,
     0,
     0,
-    Character("Player", load_text_dir("assets\\sprites\\characters\\player")),
+    Character(
+        name="Player",
+        sprite_sheet=load_text_dir("assets\\sprites\\characters\\player"),
+    ),
     "down",
     -1,
     0,
@@ -245,8 +249,8 @@ while 1:
                     continue
                 logger.error(f"Not implemented: EVENT_TYPES.LOAD_COMBAT")
             
-            case EVENT_TYPES.SET_SETTING:
-                logger.error(f"Not implemented: EVENT_TYPES.SET_SETTING")
+            case EVENT_TYPES.CONFIG_SETTINGS:
+                logger.error(f"Not implemented: EVENT_TYPES.CONFIG_SETTINGS")
             
             case EVENT_TYPES.SAVE_GAME:
                 logger.error(f"Not implemented: EVENT_TYPES.SAVE_GAME")

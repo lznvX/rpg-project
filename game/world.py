@@ -296,7 +296,6 @@ class WorldCharacter(NamedTuple):
     
     def config(self, **kwargs) -> WorldCharacter:
         character = kwargs.get("character", self.character)
-        
         return WorldCharacter(
             character,
             self.grid_multi_sprite.config(

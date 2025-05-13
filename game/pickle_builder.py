@@ -114,18 +114,16 @@ objects = {
             ),
             "on_confirm_events": {
                 0: EnumObject(
-                    EVENT_TYPES.SET_SETTING,
-                    EnumObject(
-                        SETTING_TYPES.LANGUAGE,
-                        LANGUAGE_ENUM.ENGLISH,
-                    ),
+                    EVENT_TYPES.CONFIG_SETTINGS,
+                    {
+                        "language": LANGUAGE_ENUM.ENGLISH
+                    },
                 ),
                 1: EnumObject(
-                    EVENT_TYPES.SET_SETTING,
-                    EnumObject(
-                        SETTING_TYPES.LANGUAGE,
-                        LANGUAGE_ENUM.FRENCH,
-                    ),
+                    EVENT_TYPES.CONFIG_SETTINGS,
+                    {
+                        "language": LANGUAGE_ENUM.FRENCH
+                    },
                 ),
                 2: EnumObject(
                     EVENT_TYPES.LOAD_UI_ELEMENT,

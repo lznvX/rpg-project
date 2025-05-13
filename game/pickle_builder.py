@@ -8,52 +8,132 @@ Contributors:
 """
 
 import pickle
-from common import *
-import world
+from common import Character, EnumObject, EVENT_TYPES
+from world import WORLD_OBJECT_TYPES
+from cuinter import UI_ELEMENT_TYPES, RECTANGLE_PRESETS
+from settings import SETTING_TYPES
+from lang import LANGUAGE_ENUM
 
 objects = {
-    "assets\\dialogs\\test_dialog.pkl": (
-        "welcome",
-        ("i_move_u_up", Character("Romain")),
-        EnumObject(
-            EVENT_TYPES.PRESS_KEY,
-            ord("w"),
-        ),
-    ),
-    "assets\\dialogs\\test_dialog_2.pkl": (
-        "what",
-    ),
-    "assets\\choices\\menu.pkl": (
-        (
-            "menu_settings",
-            "menu_save",
-            "menu_load",
-            "menu_close",
-            "menu_save_quit",
-        ),
+    "assets\\ui_elements\\dialogs\\welcome_dialog.pkl": EnumObject(
+        UI_ELEMENT_TYPES.DIALOG_BOX,
         {
-            0: EnumObject(
-                EVENT_TYPES.PROMPT_CHOICE,
-                "assets\\choices\\settings.pkl",
-            ),
-            4: EnumObject(EVENT_TYPES.QUIT),
-        },
-    ),
-    "assets\\choices\\settings.pkl": (
-        (
-            "settings_0",
-            "settings_1",
-            "settings_2",
-            "menu_back",
-        ),
-        {
-            3: EnumObject(
-                EVENT_TYPES.PROMPT_CHOICE,
-                "assets\\choices\\menu.pkl",
+            "dialog": (
+                "welcome",
+                ("i_move_u_up", "romain"),
+                EnumObject(
+                    EVENT_TYPES.PRESS_KEY,
+                    ord("w"),
+                ),
             ),
         },
     ),
-    "assets\\zones\\test_zone.pkl": world.Zone(
+    "assets\\ui_elements\\dialogs\\what_dialog.pkl": EnumObject(
+        UI_ELEMENT_TYPES.DIALOG_BOX,
+        {
+            "dialog": (
+                "what",
+            ),
+        },
+    ),
+    "assets\\ui_elements\\choices\\menu_choice.pkl": EnumObject(
+        UI_ELEMENT_TYPES.CHOICE_BOX,
+        {
+            "options": (
+                "menu_inventory",
+                "menu_settings",
+                "menu_save",
+                "menu_load",
+                "menu_save_quit",
+                "menu_test_combat",
+                "menu_close",
+            ),
+            "on_confirm_events": {
+                0: EnumObject(
+                    EVENT_TYPES.LOAD_UI_ELEMENT,
+                    "assets\\ui_elements\\choices\\inventory_choice.pkl",
+                ),
+                1: EnumObject(
+                    EVENT_TYPES.LOAD_UI_ELEMENT,
+                    "assets\\ui_elements\\choices\\settings_choice.pkl",
+                ),
+                2: EnumObject(
+                    EVENT_TYPES.SAVE_GAME,
+                ),
+                3: EnumObject(
+                    EVENT_TYPES.LOAD_GAME,
+                ),
+                4: EnumObject(
+                    EVENT_TYPES.MULTI_EVENT,
+                    (
+                        EnumObject(
+                            EVENT_TYPES.SAVE_GAME,
+                        ),
+                        EnumObject(
+                            EVENT_TYPES.QUIT,
+                        ),
+                    ),
+                ),
+                5: EnumObject(
+                    EVENT_TYPES.LOAD_COMBAT,
+                    "assets\\combats\\test_combat.pkl",
+                ),
+            },
+            "rectangle_preset": RECTANGLE_PRESETS.MENU,
+        },
+    ),
+    "assets\\ui_elements\\choices\\settings_choice.pkl": EnumObject(
+        UI_ELEMENT_TYPES.CHOICE_BOX,
+        {
+            "options": (
+                "settings_language",
+                "settings_1",
+                "settings_2",
+                "menu_back",
+            ),
+            "on_confirm_events": {
+                0: EnumObject(
+                    EVENT_TYPES.LOAD_UI_ELEMENT,
+                    "assets\\ui_elements\\choices\\language_choice.pkl",
+                ),
+                3: EnumObject(
+                    EVENT_TYPES.LOAD_UI_ELEMENT,
+                    "assets\\ui_elements\\choices\\menu_choice.pkl",
+                ),
+            },
+            "rectangle_preset": RECTANGLE_PRESETS.MENU,
+        },
+    ),
+    "assets\\ui_elements\\choices\\language_choice.pkl": EnumObject(
+        UI_ELEMENT_TYPES.CHOICE_BOX,
+        {
+            "options": (
+                "English",
+                "Français",
+                "menu_back",
+            ),
+            "on_confirm_events": {
+                0: EnumObject(
+                    EVENT_TYPES.CONFIG_SETTINGS,
+                    {
+                        "language": LANGUAGE_ENUM.ENGLISH
+                    },
+                ),
+                1: EnumObject(
+                    EVENT_TYPES.CONFIG_SETTINGS,
+                    {
+                        "language": LANGUAGE_ENUM.FRENCH
+                    },
+                ),
+                2: EnumObject(
+                    EVENT_TYPES.LOAD_UI_ELEMENT,
+                    "assets\\ui_elements\\choices\\settings_choice.pkl",
+                ),
+            },
+            "rectangle_preset": RECTANGLE_PRESETS.MENU,
+        },
+    ),
+    "assets\\zones\\test_zone.pkl": (
         (
             "╝│ │ │╚╗XXXX",
             "─┘ │ │ ║XXXX",
@@ -113,8 +193,8 @@ objects = {
                                 ),
                             ),
                             EnumObject(
-                                EVENT_TYPES.START_DIALOG,
-                                "assets\\dialogs\\test_dialog_2.pkl",
+                                EVENT_TYPES.LOAD_UI_ELEMENT,
+                                "assets\\ui_elements\\dialogs\\what_dialog.pkl",
                             ),
                         ),
                     ),
@@ -139,7 +219,7 @@ objects = {
             ),
         ),
     ),
-    "assets\\zones\\test_zone_2.pkl": world.Zone(
+    "assets\\zones\\test_zone_2.pkl": (
         (
             "XXXX╔╝│ │ │╚",
             "XXXX║ │ │ └─",

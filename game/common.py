@@ -17,7 +17,6 @@ from typing import NamedTuple, Callable
 from uuid import UUID, uuid4
 from lang import get_lang_choice
 
-
 lang_text = get_lang_choice()
 null_uuid = UUID('00000000-0000-0000-0000-000000000000')
 
@@ -43,22 +42,6 @@ class IncompatibleSlotError(ValueError):
 class TaskNotFoundError(ValueError):
     """raised by an Inventory.tasklist when referencing a nonexistant task."""
     pass
-
-
-def named_tuple_modifier(data_type: Callable, old_data: NamedTuple, **changes) -> NamedTuple:
-    """Generate a new NamedTuple based on an existing one.
-
-    Changes are represented as another NamedTuple of the same type
-    """
-    changes = data_type(**changes)
-
-    new_data = []
-    for old, new in zip(old_data, changes):
-        if new is None:
-            new_data.append(old)
-        else:
-            new_data.append(new)
-    return data_type(*new_data)
 
 
 class DamageInstance(NamedTuple):
@@ -670,7 +653,7 @@ class Task(NamedTuple):
 
 class DialogLine(NamedTuple):
     text: str
-    character: Character = None
+    character_name: str = None
 
     @staticmethod
     def process_dialog_line(dialog_line: str | DialogLine | EnumObject) -> DialogLine | EnumObject:
@@ -684,9 +667,12 @@ class DialogLine(NamedTuple):
         elif (isinstance(dialog_line, tuple)
         and len(dialog_line) == 2
         and isinstance(dialog_line[0], str)
-        and isinstance(dialog_line[1], Character)):
-            return DialogLine(translated(dialog_line[0]), dialog_line[1])
-
+        and isinstance(dialog_line[1], str)):
+            return DialogLine(
+                translated(dialog_line[0]),
+                lang_text.character_names[dialog_line[1]],
+            )
+        
         elif isinstance(dialog_line, (DialogLine, EnumObject)):
             return dialog_line
 
@@ -713,9 +699,14 @@ class EnumObject(NamedTuple):
 
 class _EventTypes(NamedTuple):
     PRESS_KEY: int
+    MAKE_UI_ELEMENT: int
+    MAKE_WORLD_OBJECT: int
+    LOAD_UI_ELEMENT: int
     LOAD_ZONE: int
-    START_DIALOG: int
-    PROMPT_CHOICE: int
+    LOAD_COMBAT: int
+    CONFIG_SETTINGS: int
+    SAVE_GAME: int
+    LOAD_GAME: int
     QUIT: int
     MULTI_EVENT: int
 
@@ -724,59 +715,20 @@ class _EventTypes(NamedTuple):
         return cls(*range(len(cls.__annotations__)))
 
 
-class _WorldObjectTypes(NamedTuple):
-    GRID_SPRITE: int
-    GRID_MULTI_SPRITE: int
-    WORLD_CHARACTER: int
-    WALK_TRIGGER: int
+def named_tuple_modifier(data_type: Callable, old_data: NamedTuple, **changes) -> NamedTuple:
+    """Generate a new NamedTuple based on an existing one.
 
-    @classmethod
-    def new(cls) -> _WorldObjectTypes:
-        return cls(*range(len(cls.__annotations__)))
-
-
-def load_pickle(path: str) -> object:
-    """Reads and returns the pickle object at the provided path."""
-    try:
-        with open(path, "rb") as file:
-            return pickle.load(file)
-
-    except FileNotFoundError:
-        error_msg = f"File missing: {path}"
-        logger.error(error_msg)
-        return None
-
-
-def load_text(path: str) -> str:
-    """Reads and returns the content of the text file at the provided path."""
-    try:
-        with open(path, "r", encoding="utf-8") as file:
-            return file.read()
-
-    except FileNotFoundError:
-        error_msg = f"File missing: {path}"
-        logger.error(error_msg)
-        return error_msg
-
-
-def load_text_dir(path: str) -> dict[str, str]:
+    Changes are represented as another NamedTuple of the same type
     """
-    Returns a dict with keys being the filenames, values being the contents of
-    the files in the directory.
-    """
-    texts = {}
+    changes = data_type(**changes)
 
-    for entry in os.listdir(path):
-        full_path = os.path.join(path, entry)
-        name, ext = os.path.splitext(entry)
-
-        if ext != ".txt":
-            logger.warning(f"Expected txt file at path: {full_path}")
-            continue
-
-        texts[name] = load_text(full_path)
-
-    return texts
+    new_data = []
+    for old, new in zip(old_data, changes):
+        if new is None:
+            new_data.append(old)
+        else:
+            new_data.append(new)
+    return data_type(*new_data)
 
 
 def translated(lang_key: str | tuple[str]) -> str | tuple[str]:
@@ -793,11 +745,11 @@ def translated(lang_key: str | tuple[str]) -> str | tuple[str]:
         elif text is None:
             raise ValueError
         else:
-            error_msg = f"Expected text of type str, got {text}"
+            msg = f"Expected text of type str, got {text}"
     except (AttributeError, ValueError):
-        error_msg = f"Selected language doesn't contain {lang_key}"
-
-    logger.error(error_msg)
+        msg = f"Selected language doesn't contain {lang_key}"
+    
+    logger.warning(msg)
     return lang_key
 
 
@@ -820,15 +772,8 @@ def try_append(collection: list, item: object) -> None:
 
 
 logger = logging.getLogger(__name__)
-logging.basicConfig(
-    filename="logs\\common.log",
-    filemode="w",
-    encoding="utf-8",
-    level=logging.DEBUG,
-)
 
 EVENT_TYPES = _EventTypes.new()
-WORLD_OBJECT_TYPES = _WorldObjectTypes.new()
 
 if __name__ == "__main__":
     # Tests

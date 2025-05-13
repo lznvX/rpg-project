@@ -56,7 +56,8 @@ class Label(NamedTuple):
         
         if is_top_level:
             set_element(pid, label)
-            logger.debug("Created new Label")
+        
+        logger.info("Created new Label")
         return label
     
     def config(self, is_top_level: bool = True, **kwargs) -> Label:
@@ -103,7 +104,8 @@ class SpriteRenderer(NamedTuple):
         
         if is_top_level:
             set_element(pid, sprite_renderer)
-            logger.debug("Created new SpriteRenderer")
+        
+        logger.info("Created new SpriteRenderer")
         return sprite_renderer
     
     def config(self, is_top_level: bool = True, **kwargs) -> SpriteRenderer:
@@ -138,7 +140,6 @@ class Rectangle(NamedTuple):
     
     @staticmethod
     def get_preset(preset: int = 0):
-        
         try:
             screen_height
             screen_width
@@ -191,7 +192,8 @@ class Rectangle(NamedTuple):
         
         if is_top_level:
             set_element(pid, rectangle)
-            logger.debug("Created new Rectangle")
+        
+        logger.info("Created new Rectangle")
         return rectangle
     
     def config(self, is_top_level: bool = True, **kwargs) -> Rectangle:
@@ -272,7 +274,8 @@ class TextBox(NamedTuple):
         
         if is_top_level:
             set_element(pid, text_box)
-            logger.debug("Created new TextBox")
+        
+        logger.info("Created new TextBox")
         return text_box
     
     def config(self, is_top_level: bool = True, **kwargs) -> TextBox:
@@ -291,14 +294,20 @@ class TextBox(NamedTuple):
     def draw(self) -> None:
         self.rectangle.draw()
         
-        if self.text is None: return
+        if self.text is None:
+            return
         
         text_y = self.y + 2
         text_x = self.x + 3
         wrap = self.width - 5
-        
-        for i, char in enumerate(self.text):
-            set_cell(text_y + i // wrap, text_x + i % wrap, char)
+        current_y = text_y
+
+        for line in self.text.split("\n"):
+            for i, char in enumerate(line):
+                row = current_y + i // wrap
+                col = text_x + i % wrap
+                set_cell(row, col, char)
+            current_y += (len(line) + wrap - 1) // wrap or 1
 
 
 class DialogBox(NamedTuple):
@@ -361,7 +370,8 @@ class DialogBox(NamedTuple):
         
         if is_top_level:
             set_element(pid, dialog_box)
-            logger.debug("Created new DialogBox")
+        
+        logger.info("Created new DialogBox")
         return dialog_box
     
     def config(self, is_top_level: bool = True, **kwargs) -> DialogBox:
@@ -470,7 +480,8 @@ class ChoiceBox(NamedTuple):
         
         if is_top_level:
             set_element(pid, choice_box)
-            logger.debug("Created new ChoiceBox")
+        
+        logger.info("Created new ChoiceBox")
         return choice_box
     
     def config(self, is_top_level: bool = True, **kwargs) -> ChoiceBox:

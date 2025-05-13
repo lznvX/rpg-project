@@ -82,7 +82,7 @@ class Grid(NamedTuple):
         else:
             sprite = None
         
-        return cls(
+        grid = cls(
             SpriteRenderer.new(
                 y,
                 x,
@@ -91,6 +91,9 @@ class Grid(NamedTuple):
             tileset,
             tilemap,
         )
+        
+        logger.info("Created new Grid")
+        return grid
     
     def config(self, **kwargs) -> Grid:
         tileset = kwargs.get("tileset", self.tileset)
@@ -108,7 +111,9 @@ class Grid(NamedTuple):
         )
     
     def load_tilemap(self, tilemap: tuple[str]) -> Grid:
-        return self.config(tilemap=tilemap)
+        grid = self.config(tilemap=tilemap)
+        logger.info("Loaded tilemap")
+        return grid
     
     def center(self, screen_height: int, screen_width: int) -> Grid:
         return self.config(
@@ -165,7 +170,7 @@ class GridSprite(NamedTuple):
     @classmethod
     def new(cls, grid: Grid, grid_y: int, grid_x: int, sprite: str = None, y_offset: int = 0,
             x_offset: int = 0) -> GridSprite:
-        return cls(
+        grid_sprite = cls(
             SpriteRenderer.new(
                 grid.grid_to_screen(y=grid_y) + y_offset,
                 grid.grid_to_screen(x=grid_x) + x_offset,
@@ -175,6 +180,9 @@ class GridSprite(NamedTuple):
             grid_y,
             grid_x,
         )
+        
+        logger.info("Created new GridSprite")
+        return grid_sprite
     
     def config(self, **kwargs) -> GridSprite:
         grid = kwargs.get("grid", self.grid)
@@ -230,7 +238,7 @@ class GridMultiSprite(NamedTuple):
         else:
             sprite = None
         
-        return cls(
+        grid_multi_sprite = cls(
             GridSprite.new(
                 grid,
                 grid_y,
@@ -242,6 +250,9 @@ class GridMultiSprite(NamedTuple):
             sprite_sheet,
             sprite_key,
         )
+        
+        logger.info("Created new GridMultiSprite")
+        return grid_multi_sprite
     
     def config(self, **kwargs) -> GridMultiSprite:
         sprite_sheet = kwargs.get("sprite_sheet", self.sprite_sheet)
@@ -281,7 +292,7 @@ class WorldCharacter(NamedTuple):
     @classmethod
     def new(cls, grid: Grid, grid_y: int, grid_x: int, character: Character,
             sprite_key: str = None, y_offset: int = 0, x_offset: int = 0) -> WorldCharacter:
-        return cls(
+        world_character = cls(
             character,
             GridMultiSprite.new(
                 grid,
@@ -293,6 +304,9 @@ class WorldCharacter(NamedTuple):
                 x_offset,
             ),
         )
+        
+        logger.info("Created new WorldCharacter")
+        return world_character
     
     def config(self, **kwargs) -> WorldCharacter:
         character = kwargs.get("character", self.character)
@@ -321,12 +335,15 @@ class WalkTrigger(NamedTuple):
     @classmethod
     def new(cls, grid_y: int, grid_x: int, on_trigger_event: EnumObject = None,
             key: int = None, grid: Grid = None) -> WalkTrigger:
-        return cls(
+        walk_trigger = cls(
             grid_y,
             grid_x,
             on_trigger_event,
             key,
         )
+        
+        logger.info("Created new WalkTrigger")
+        return walk_trigger
     
     def config(self, **kwargs) -> WalkTrigger: 
         return WalkTrigger(

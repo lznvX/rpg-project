@@ -13,7 +13,7 @@ def load_text(path: str) -> str:
     """Reads and returns the content of the text file at the provided path."""
     try:
         with open(path, "r", encoding="utf-8") as file:
-            logger.debug(f"Loaded text file: {path}")
+            logger.info(f"Loaded text file: {path}")
             return file.read()
 
     except FileNotFoundError:
@@ -39,15 +39,22 @@ def load_text_dir(path: str) -> dict[str, str]:
 
         texts[name] = load_text(full_path)
     
-    logger.debug(f"Loaded text file directory: {path}")
+    logger.info(f"Loaded text file directory: {path}")
     return texts
+
+
+def save_pickle(obj: object, path: str) -> None:
+    """Saves an object as a pickle file at the provided path."""
+    with open(path, "wb") as file:
+        logger.info(f"Saved pickle file: {path}")
+        pickle.dump(obj, file)
 
 
 def load_pickle(path: str) -> object:
     """Reads and returns the pickle object at the provided path."""
     try:
         with open(path, "rb") as file:
-            logger.debug(f"Loaded pickle file: {path}")
+            logger.info(f"Loaded pickle file: {path}")
             return pickle.load(file)
 
     except FileNotFoundError:

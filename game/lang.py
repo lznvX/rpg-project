@@ -22,8 +22,7 @@ class _LanguageEnum(NamedTuple):
 class _Lang(NamedTuple):
     # Dialog
     welcome: str = None
-    i_move_u_up: str = None
-    what: str = None
+    controls: str = None
 
     # Choice
     menu_back: str = None
@@ -34,7 +33,7 @@ class _Lang(NamedTuple):
     menu_close: str = None
     menu_save_quit: str = None
     menu_test_combat: str = None
-    
+
     settings_language: str = None
 
     # Combat
@@ -102,9 +101,8 @@ def f(fstring: str, *args: object) -> str:
 
 ENGLISH = _Lang(
     # Dialog
-    welcome = "Welcome to the game !",
-    i_move_u_up = "I am now going to move you up with my mind.",
-    what = "DID YOU JUST SEND BOTH A LOAD_ZONE AND A LOAD_UI_ELEMENT EVENT WITH A SINGLE WALKTRIGGER ???",
+    welcome = "Welcome adventurer ! ...asdf. \n(press Space or Enter)",
+    controls = "Controls:\n\nUp: W    Down: S    Left: A    Right: D\nConfirm: Space/Enter    Menu: M",
 
     # Choice
     menu_back = "Back",
@@ -178,6 +176,10 @@ ENGLISH = _Lang(
 
 
 FRENCH = _Lang(
+    # Dialog
+    welcome = "Bienvenue aventurier ! ...asdf. \n(appuyez sur Espace ou Entrée)",
+    controls = "Controles:\n\nHaut: W    Bas: S    Gauche: A    Droite: D\nConfirmer: Space/Enter    Menu: M",
+
     # Choice
     menu_back = "Retour",
     menu_inventory = "Inventaire",

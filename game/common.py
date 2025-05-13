@@ -17,6 +17,7 @@ from typing import NamedTuple, Callable
 from uuid import UUID, uuid4
 from lang import get_lang_choice
 
+
 lang_text = get_lang_choice()
 null_uuid = UUID('00000000-0000-0000-0000-000000000000')
 
@@ -41,6 +42,9 @@ class IncompatibleSlotError(ValueError):
     pass
 class TaskNotFoundError(ValueError):
     """raised by an Inventory.tasklist when referencing a nonexistant task."""
+    pass
+class CharacterNotFoundError(ValueError):
+    """Raised when a character with the given UUID doesn't exist"""
     pass
 
 
@@ -72,21 +76,6 @@ class Stats(NamedTuple):
     armor: int = None                # decreases PHYSICAL damage taken
     magical_resistance: int = None   # decreases MAGICAL damage taken
 
-
-    # def modify(self, changes: Stats) -> Stats:
-    #     """Generate new stat sheet based on an existing one.
-
-    #     Changes are represented as another stat sheet. A value of None (default
-    #     value for all stats) results in no change, allowing for modification
-    #     of 1, some, or all stats at the same time.
-    #     """
-    #     new_stats = []
-    #     for old, new in zip(self, changes):
-    #         if new is None:
-    #             new_stats.append(old)
-    #         else:
-    #             new_stats.append(new)
-    #     return Stats(*new_stats)
 
     def modify(self, **changes) -> Stats:
         """Generate new stat sheet based on an existing one.
@@ -178,21 +167,6 @@ class Item(NamedTuple):
                      null_uuid
                      )
 
-
-    # def modify(self, changes: Item) -> Item:
-    #     """Generate new item based on an existing one.
-
-    #     Used to get around the un-mofifiablility of NamedTuple.
-    #     Changes represents a second item, empty except for the values
-    #     to be changed.
-    #     """
-    #     new_item = []
-    #     for old, new in zip(self, changes):
-    #         if new is None:
-    #             new_item.append(old)
-    #         else:
-    #             new_item.append(new)
-    #     return Item(*new_item)
 
     def modify(self, **changes) -> Item:
         """Generate new item based on an existing one.
@@ -483,6 +457,8 @@ class Character(NamedTuple):
         except ItemNotEquippableError:
             ...
         else:
+            # self.actions[item_uuid] = item.actions
+
             self.bonuses[item_uuid] = item.stat_bonus
             new_stats = self.update_stats()
             updated_character = self.modify(current=new_stats)
@@ -499,27 +475,14 @@ class Character(NamedTuple):
         except SlotEmptyError:
             ...
         else:
+            # del self.actions[item_uuid]
+
             del self.bonuses[item_uuid]
             new_stats = self.update_stats()
             updated_character = self.modify(current=new_stats)
             # would've been better to update the character directly, but NamedTuple...
             return updated_character
 
-
-    # def modify(self, changes: Character) -> Character:
-        # """Generate new character sheet based on an existing one.
-
-        # Used to get around the un-mofifiablility of NamedTuple.
-        # Changes represents a second character sheet, empty except for the values
-        # to be changed.
-        # """
-    #     new_char = []
-    #     for old, new in zip(self, changes):
-    #         if new is None:
-    #             new_char.append(old)
-    #         else:
-    #             new_char.append(new)
-    #     return Character(*new_char)
 
     def modify(self, **changes) -> Character:
         """Generate new character sheet based on an existing one.
@@ -567,11 +530,12 @@ class Character(NamedTuple):
 
     def __repr__(self) -> str:
         """Proper text rendering of characters."""
-        for a in self.actions:
-            if a.get_damage() > 0:
-                return f"{self.name} (♥ {self.health} / ¤ {a.get_damage()})"
-            else:
-                continue
+        # for a in self.actions.values():
+        #     if a.get_damage() > 0:
+        #         return f"{self.name} (♥ {self.health} / ¤ {a.get_damage()})"
+        #     else:
+        #         continue
+
         return f"{self.name} (♥ {self.health})"
 
 
@@ -608,6 +572,20 @@ class Character(NamedTuple):
         assert testchar.current == Stats(  8,  16,   4,   8,  11,   4,   4,   4)
 
         print("Character tests passed")
+
+
+class Party(NamedTuple):
+    name: str
+    members: tuple[Character]
+    leader: UUID
+
+
+    def get_member(self, member_uuid: UUID) -> Character:
+        for member in self.members:
+            if member.uuid == member_uuid:
+                return member
+
+        raise CharacterNotFoundError(f"Cannot find character with UUID {member_uuid} in {self.name}")
 
 
 class Task(NamedTuple):
@@ -672,7 +650,7 @@ class DialogLine(NamedTuple):
                 translated(dialog_line[0]),
                 lang_text.character_names[dialog_line[1]],
             )
-        
+
         elif isinstance(dialog_line, (DialogLine, EnumObject)):
             return dialog_line
 
@@ -748,7 +726,7 @@ def translated(lang_key: str | tuple[str]) -> str | tuple[str]:
             msg = f"Expected text of type str, got {text}"
     except (AttributeError, ValueError):
         msg = f"Selected language doesn't contain {lang_key}"
-    
+
     logger.warning(msg)
     return lang_key
 

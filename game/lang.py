@@ -49,10 +49,10 @@ class _Lang(NamedTuple):
     battle_ko: str = None
     battle_action_choice: str = None
     battle_target_choice: str = None
-    
+
     # Characters
     character_names: dict[str, str] = None
-    
+
     # Items
     item_names: dict[str, str] = None
     # item_names = {
@@ -142,13 +142,15 @@ ENGLISH = _Lang(
         "potion_health": "Potion of Healing",
         "str_helmet": "Helmet of Strength",
         "sword": "Sword",
+        "dagger": "Dagger",
     },
     item_descriptions = {
     #   "item_name": "Item Description",
         "agi_boots": "A pair of boots with suspicious wings",
         "potion_health": "Heals ♥ 5 when consumed",
         "str_helmet": "A spartan helmet, enchanted with a strength spell",
-        "sword": "A pointy thing",
+        "sword": "An elegant weapon, from a more civilised time",
+        "dagger": "A pointy little thing",
     },
 
     # Actions

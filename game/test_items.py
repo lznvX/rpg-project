@@ -35,24 +35,33 @@ text = get_lang_choice()
 
 light_stab = Action("light_stab",
     "attack",
-    1, "physical",
+    2, "physical",
     None)
 
 stab = Action("stab",
     "attack",
-    2, "physical",
+    5, "physical",
     None)
 
 slash = Action("slash",
     "attack",
-    3, "physical",
+    10, "physical",
     None)
+
+
+Dagger = Item(
+    "dagger",
+    ("equippable", "weapon", "mainhand", "offhand"),
+    5,
+    Stats(),
+    (light_stab,),
+    null_uuid)
 
 
 Sword = Item(
     "sword",
     ("equippable", "weapon", "mainhand", "offhand"),
-    3,
+    10,
     Stats(),
     (stab, slash),
     null_uuid)
@@ -60,7 +69,7 @@ Sword = Item(
 StrHelmet = Item(
     "str_helmet",
     ("equippable", "head"),
-    5,
+    20,
     Stats(strength=5, armor=5),
     tuple(),
     null_uuid)
@@ -68,7 +77,7 @@ StrHelmet = Item(
 AgiBoots = Item(
     "agi_boots",
     ("equippable", "feet"),
-    2,
+    15,
     Stats(agility=5, armor=2),
     tuple(),
     null_uuid)
@@ -76,7 +85,7 @@ AgiBoots = Item(
 PotionHealth = Item(
     "potion_health",
     ("consumable", "potion"),
-    1,
+    4,
     Stats(),
     tuple(),
     null_uuid)

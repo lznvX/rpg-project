@@ -10,6 +10,7 @@ Contributors:
 
 from __future__ import annotations
 import logging
+import os
 import random
 import time
 from typing import NamedTuple
@@ -48,6 +49,8 @@ frame_count = 0
 tiles = load_text_dir("assets\\sprites\\tiles")
 tileset = remap_dict(tiles, world.TILE_NAME_TO_CHAR)
 
+nb_save = len(os.listdir("Saves\\Game_Saves"))
+actual_save = None
 grid = world.Grid.new(tileset)
 player = world.WorldCharacter.new(
     grid,
@@ -67,7 +70,7 @@ fps_label = cuinter.Label.new(0, 0)
 world_objects = []
 new_events = [
     EnumObject(
-        EVENT_TYPES.LOAD_ZONE,
+        EVENT_TYPES.LOAD_GAME,
         (
             "assets\\zones\\test_zone.pkl",
             3,
@@ -253,10 +256,30 @@ while 1:
                 logger.error(f"Not implemented: EVENT_TYPES.CONFIG_SETTINGS")
             
             case EVENT_TYPES.SAVE_GAME:
-                logger.error(f"Not implemented: EVENT_TYPES.SAVE_GAME")
+                save = Save(player.character, (grid, player.grid_x, player.grid_y))
+                save.save("save_1")
+
             
             case EVENT_TYPES.LOAD_GAME:
-                logger.error(f"Not implemented: EVENT_TYPES.LOAD_GAME")
+                if nb_save <=0:
+                    save = Save.new(Character.new("Hero",
+            "assets\\sprites\\characters\\player",
+            True,
+            #     MHP, MST, MMA, STR, AGI, ACU, ARM, RES
+            Stats(  8,  16,   4,   8,   6,   4,   2,   4),
+            [],
+            {}),
+            ("test_zone.pkl", 3, 3))
+                    save.save(save, "save_1")
+                actual_save = Save.load("Saves\\Game_Saves\\save_1", "save_1")
+                player = world.WorldCharacter(player.grid,
+                                              actual_save.worldPosition[1],
+                                              actual_save.worldPosition[2],
+                                              actual_save.character,
+                                              -1,
+                                              0,
+                                              )
+                try_append(new_events, EnumObject(EVENT_TYPES.LOAD_ZONE, save.worldPosition[0]))
             
             case EVENT_TYPES.QUIT:
                 quit()

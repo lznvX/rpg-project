@@ -23,24 +23,6 @@ class EnumObject(NamedTuple):
     value: object = None
 
 
-class _EventTypes(NamedTuple):
-    PRESS_KEY: int
-    MAKE_UI_ELEMENT: int
-    MAKE_WORLD_OBJECT: int
-    LOAD_UI_ELEMENT: int
-    LOAD_ZONE: int
-    LOAD_COMBAT: int
-    CONFIG_SETTINGS: int
-    SAVE_GAME: int
-    LOAD_GAME: int
-    QUIT: int
-    MULTI_EVENT: int
-
-    @classmethod
-    def new(cls) -> _EventTypes:
-        return cls(*range(len(cls.__annotations__)))
-
-
 def named_tuple_modifier(data_type: Callable, old_data: NamedTuple, **changes) -> NamedTuple:
     """Generate a new NamedTuple based on an existing one.
 
@@ -76,10 +58,3 @@ def try_append(collection: list, item: object) -> None:
 
 
 logger = logging.getLogger(__name__)
-
-EVENT_TYPES = _EventTypes.new()
-
-if __name__ == "__main__":
-    # Tests
-    Inventory._test()
-    Character._test()

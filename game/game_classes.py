@@ -1,10 +1,15 @@
 """Game classes for characters and actions
 
+Created on 2025.05.14
+Contributors:
+    Jakub
 """
 
 from __future__ import annotations
+from typing import NamedTuple
 from collections import Counter
 from uuid import UUID, uuid4
+from common import named_tuple_modifier
 
 null_uuid = UUID('00000000-0000-0000-0000-000000000000')
 
@@ -614,3 +619,9 @@ class Task(NamedTuple):
             return lang_text.task_descriptions[self.name]
         except KeyError:
             return ""
+
+
+if __name__ == "__main__":
+    # Tests
+    Inventory._test()
+    Character._test()

@@ -7,10 +7,12 @@ Contributors:
 """
 
 from __future__ import annotations
-from typing import NamedTuple, Callable
-from common import Character, EnumObject
-from cuinter import SpriteRenderer
 import logging
+from typing import NamedTuple, Callable
+from common import EnumObject
+from cuinter import SpriteRenderer
+from enums import WORLD_OBJECT_TYPES
+from game_classes import Character
 
 TILE_HEIGHT = 8
 TILE_WIDTH = 16
@@ -32,17 +34,6 @@ TILE_NAME_TO_CHAR = {
     "wall_down_right": "╔",
 }
 WALKABLE_TILE_CHARS = " │─┘└┐┌"
-
-
-class _WorldObjectTypes(NamedTuple):
-    GRID_SPRITE: int
-    GRID_MULTI_SPRITE: int
-    WORLD_CHARACTER: int
-    WALK_TRIGGER: int
-
-    @classmethod
-    def new(cls) -> _WorldObjectTypes:
-        return cls(*range(len(cls.__annotations__)))
 
 
 class Grid(NamedTuple):
@@ -361,7 +352,6 @@ class WalkTrigger(NamedTuple):
 
 logger = logging.getLogger(__name__)
 
-WORLD_OBJECT_TYPES = _WorldObjectTypes.new()
 WORLD_OBJECT_CLASSES = {
     WORLD_OBJECT_TYPES.GRID_SPRITE: GridSprite,
     WORLD_OBJECT_TYPES.GRID_MULTI_SPRITE: GridMultiSprite,

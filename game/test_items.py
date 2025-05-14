@@ -6,12 +6,7 @@ Contributors:
     Jakub
 """
 
-
-from common import Item, Action, Stats, null_uuid
-from lang import get_lang_choice
-
-
-text = get_lang_choice()
+from game_classes import Item, Action, Stats, null_uuid
 
 
 """ Item

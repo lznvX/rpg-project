@@ -7,8 +7,10 @@ Contributors:
 """
 
 from __future__ import annotations
+import logging
 from typing import NamedTuple
 from common import EnumObject
+from enums import LANGUAGE_ENUM
 import settings
 
 class DialogLine(NamedTuple):
@@ -24,14 +26,14 @@ class DialogLine(NamedTuple):
         unexpected types.
         """
         if isinstance(dialog_line, str):
-            return DialogLine(translated(dialog_line))
+            return DialogLine(translate(dialog_line))
 
         elif (isinstance(dialog_line, tuple)
         and len(dialog_line) == 2
         and isinstance(dialog_line[0], str)
         and isinstance(dialog_line[1], str)):
             return DialogLine(
-                translated(dialog_line[0]),
+                translate(dialog_line[0]),
                 lang_text.character_names[dialog_line[1]],
             )
 
@@ -48,15 +50,6 @@ class DialogLine(NamedTuple):
         dialog: tuple[str | DialogLine | EnumObject, ...]
     ) -> tuple[DialogLine | EnumObject, ...]:
         return tuple(map(DialogLine.process_dialog_line, dialog))
-
-
-class _LanguageEnum(NamedTuple):
-    ENGLISH: int
-    FRENCH: int
-
-    @classmethod
-    def new(cls) -> _LanguageEnum:
-        return cls(*range(len(cls.__annotations__)))
 
 
 class _Lang(NamedTuple):
@@ -124,13 +117,13 @@ class _Lang(NamedTuple):
     # }
 
 
-def translated(lang_key: str | tuple[str]) -> str | tuple[str]:
+def translate(lang_key: str | tuple[str]) -> str | tuple[str]:
     """
     Returns the text with the specified attribute name in the selected language
     from the settings.
     """
     if isinstance(lang_key, tuple):
-        return tuple(map(translated, lang_key))
+        return tuple(map(translate, lang_key))
     
     lang_text = LANGUAGES[settings.get("language")]
     try:
@@ -152,6 +145,8 @@ def f(fstring: str, *args: object) -> str:
     """Shorthand for fstring.format(*args)."""
     return fstring.format(*args)
 
+
+logger = logging.getLogger(__name__)
 
 ENGLISH = _Lang(
     # Dialog
@@ -230,7 +225,6 @@ ENGLISH = _Lang(
     },
 )
 
-
 FRENCH = _Lang(
     # Dialog
     welcome = "Bienvenue aventurier ! ...asdf. \n(appuyez sur Espace ou Entrée)",
@@ -306,8 +300,6 @@ FRENCH = _Lang(
     },
 )
 
-
-LANGUAGE_ENUM = _LanguageEnum.new()
 LANGUAGES = {
     LANGUAGE_ENUM.ENGLISH: ENGLISH,
     LANGUAGE_ENUM.FRENCH: FRENCH,

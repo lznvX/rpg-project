@@ -6,7 +6,7 @@ Created on Tue May 13 21:47:27 2025
 
 
 from typing import NamedTuple
-from common import Stats, Character, Inventory, Item
+from game_classes import Stats, Character, Inventory, Item
 import test_items as ti
 
 

@@ -7,10 +7,11 @@ Contributors:
 from __future__ import annotations
 import logging
 from typing import NamedTuple
-from lang import LANGUAGE_ENUM
+from enums import LANGUAGE_ENUM
 from files import save_pickle, load_pickle
 
 SETTINGS_PATH = "user_data\\settings.pkl"
+
 
 class Settings(NamedTuple):
     first_time: bool

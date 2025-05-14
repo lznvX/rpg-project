@@ -13,14 +13,16 @@ import logging
 import random
 import time
 from typing import NamedTuple
-from common import *
+from common import EnumObject, remap_dict, try_append
 import cuinter
-from cuinter import UI_ELEMENT_TYPES, UI_ELEMENT_CLASSES
+from cuinter import UI_ELEMENT_CLASSES
+from enums import EVENT_TYPES, UI_ELEMENT_TYPES
 from files import load_text_dir, load_pickle
-from lang import LANGUAGE_ENUM, DialogLine, translated
+from game_classes import Character
+from lang import DialogLine, translate
 import settings
 import world
-from world import WORLD_OBJECT_TYPES, WORLD_OBJECT_CLASSES
+from world import WORLD_OBJECT_CLASSES
 
 FPS_COUNTER_REFRESH = 1 # Time between each FPS counter update
 MOVE_MAP = {
@@ -169,7 +171,7 @@ while 1:
                                 args["dialog"] = DialogLine.process_dialog(args["dialog"])
                         case UI_ELEMENT_TYPES.CHOICE_BOX:
                             if "options" in args:
-                                args["options"] = translated(args["options"])
+                                args["options"] = translate(args["options"])
                 
                 try:
                     if isinstance(args, dict):

@@ -33,8 +33,8 @@ class CombatParty(NamedTuple):
         name = party.name
         leader = party.leader
         members = dict()
-        for m in party.members:
-            members[m.uuid] = (m, True)
+        for member in party.members:
+            members[member.uuid] = (member, True)
 
         return CombatParty(name, members, leader)
 
@@ -46,6 +46,7 @@ class CombatParty(NamedTuple):
             raise CharacterNotFoundError(f"Cannot find character with UUID {member_uuid} in {self.name}")
 
         return char
+
 
     def get_valid_targets(self) -> list[UUID]:
         """Generate a list of all attackable targets in this CombatParty.
@@ -60,6 +61,14 @@ class CombatParty(NamedTuple):
                 continue
 
         return targets
+
+
+    def __repr__(self):
+        return ", ".join([str(self.get_member(member_uuid)) for member_uuid in self.get_valid_targets()])
+
+
+    def __str__(self):
+        return repr(self)
 
 
 class Battle(NamedTuple):
@@ -88,7 +97,23 @@ class Battle(NamedTuple):
         """Find which team a given character belongs to."""
 
         try:
-            team1.get_member
+            # check if fighter in team1
+            self.team1.get_member(fighter_uuid)
+        except CharacterNotFoundError:
+            # not in team1 -> check team2
+            try:
+                # check if fighter in team2
+                self.team1.get_member(fighter_uuid)
+            except CharacterNotFoundError:
+                # not in team2 -> not in battle?
+                raise CharacterNotFoundError(f"Cannot find character with UUID {fighter_uuid} in the current battle")
+            else:
+                # in team2
+                return self.team2
+        else:
+            # in team1
+            return self.team1
+
 
 
     @staticmethod
@@ -99,19 +124,16 @@ class Battle(NamedTuple):
         Needed because NamedTuple.__init__ can't be modified.
         """
 
-        combat_team1 = CombatParty(team1)
-        combat_team2 = CombatParty(team2)
+        combat_team1 = CombatParty.new(team1)
+        combat_team2 = CombatParty.new(team2)
 
         targets1 = combat_team1.get_valid_targets()
         targets2 = combat_team2.get_valid_targets()
 
-        turn_order = sorted(targets1 + targets2,
-                            key=lambda x:
-                            # Couldn't think of a better way to do this
-                            team1[x[1]].current.agility if x[0] == 1
-                            else team2[x[1]].current.agility, reverse=True
-                            )
+        # doesn't need to be sorted until the battle begins
+        turn_order = targets1 + targets2
 
+        return Battle(combat_team1, combat_team2, turn_order)
 
         # team1_targets = []
         # for i, c in enumerate(team1):
@@ -145,7 +167,7 @@ class Battle(NamedTuple):
         return attacker, victim, damage_taken
 
 
-    def get_fighter(self, reference: (str, int)) -> Character:
+    def get_fighter(self, fighter_uuid: UUID) -> Character:
         """Find the relevant character by reference.
 
         reference:
@@ -153,17 +175,30 @@ class Battle(NamedTuple):
         - index within the team
         """
         try:
-            match reference[0]:
-                case "team1":
-                    fighter = self.team1[reference[1]]
-                case "team2":
-                    fighter = self.team2[reference[1]]
-                case _:
-                    raise ValueError(f"Unknown fighter reference: {reference}")
-        except IndexError:
-            raise ValueError(f"Unknown fighter reference: {reference}")
-        else:
-            return fighter
+            # check if fighter in team1
+            fighter = self.team1.get_member(fighter_uuid)
+        except CharacterNotFoundError:
+            # not in team1 -> check team2
+            try:
+                # check if fighter in team2
+                fighter = self.team1.get_member(fighter_uuid)
+            except CharacterNotFoundError:
+                # not in team2 -> not in battle?
+                raise CharacterNotFoundError(f"Cannot find character with UUID {fighter_uuid} in the current battle")
+        return fighter
+
+        # try:
+        #     match reference[0]:
+        #         case "team1":
+        #             fighter = self.team1[reference[1]]
+        #         case "team2":
+        #             fighter = self.team2[reference[1]]
+        #         case _:
+        #             raise ValueError(f"Unknown fighter reference: {reference}")
+        # except IndexError:
+        #     raise ValueError(f"Unknown fighter reference: {reference}")
+        # else:
+        #     return fighter
 
 
     def get_player_action(self, player: Character, allies: list[(str, int)],
@@ -258,17 +293,19 @@ class Battle(NamedTuple):
 
 
     def __repr__(self) -> str:
-        team1 = []
-        for a in self.team1:
-            team1.append(repr(a))
-        team1 = ", ".join(team1)
+        # team1 = []
+        # for a in self.team1:
+        #     team1.append(repr(a))
+        # team1 = ", ".join(team1)
 
-        team2 = []
-        for e in self.team2:
-            team2.append(repr(e))
-        team2 = ", ".join(team2)
+        # team2 = []
+        # for e in self.team2:
+        #     team2.append(repr(e))
+        # team2 = ", ".join(team2)
 
-        return f"{self.team1_name}\n{team1}\n\nVS\n\n{self.team2_name}\n{team2}"
+        # return f"{self.team1.name}\n{team1}\n\nVS\n\n{self.team2.name}\n{team2}"
+
+        return f"{self.team1.name}\n{self.team1}\n\nVS\n\n{self.team2.name}\n{self.team2}"
 
 
 def list_choices(choices: list | tuple, text: str="", start_from_1: bool=True,

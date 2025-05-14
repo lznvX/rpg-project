@@ -427,8 +427,8 @@ class Character(NamedTuple):
         Needed because NamedTuple.__init__ can't be modified.
         """
         return Character(name,
+                         uuid if (uuid is not None) else uuid4(),
                          sprite_sheet,
-                         uuid if uuid is not None else uuid4(),
                          is_player,
                          True,
 
@@ -552,6 +552,8 @@ class Character(NamedTuple):
             Stats(  8,  16,   4,   8,   6,   4,   2,   4),
             [],
             {})
+
+        assert testchar.uuid is not None
 
         testchar.inventory.add(ti.Sword, 2)
         testchar.inventory.add(ti.PotionHealth, 10)

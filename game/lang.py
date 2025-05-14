@@ -13,6 +13,7 @@ from common import EnumObject
 from enums import LANGUAGE_ENUM
 import settings
 
+
 class DialogLine(NamedTuple):
     text: str
     character_name: str = None
@@ -129,15 +130,15 @@ def translate(lang_key: str | tuple[str]) -> str | tuple[str]:
     try:
         text = getattr(lang_text, lang_key)
         if isinstance(text, str):
+            logger.debug(f"Translated {lang_key} into {text}")
             return text
         elif text is None:
             raise ValueError
         else:
-            msg = f"Expected text of type str, got {text}"
+            logger.warning(f"Expected text of type str, got {text}")
     except (AttributeError, ValueError):
-        msg = f"Selected language doesn't contain {lang_key}"
+        logger.warning(f"Selected language doesn't contain {lang_key}")
 
-    logger.warning(msg)
     return lang_key
 
 

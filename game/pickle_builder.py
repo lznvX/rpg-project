@@ -7,11 +7,15 @@ Contributors:
     Romain
 """
 
-from common import Character, EnumObject, EVENT_TYPES
-from cuinter import UI_ELEMENT_TYPES, RECTANGLE_PRESETS
+from common import EnumObject
+from enums import (
+    EVENT_TYPES,
+    UI_ELEMENT_TYPES,
+    RECTANGLE_PRESETS,
+    WORLD_OBJECT_TYPES,
+    LANGUAGE_ENUM,
+)
 from files import save_pickle
-from lang import LANGUAGE_ENUM
-from world import WORLD_OBJECT_TYPES
 
 objects = {
     "assets\\dialogs\\welcome_dialog.pkl": EnumObject(

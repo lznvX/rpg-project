@@ -83,7 +83,7 @@ class Grid(NamedTuple):
             tilemap,
         )
         
-        logger.info("Created new Grid")
+        logger.debug("Created new Grid")
         return grid
     
     def config(self, **kwargs) -> Grid:
@@ -103,7 +103,7 @@ class Grid(NamedTuple):
     
     def load_tilemap(self, tilemap: tuple[str]) -> Grid:
         grid = self.config(tilemap=tilemap)
-        logger.info("Loaded tilemap")
+        logger.debug("Loaded tilemap")
         return grid
     
     def center(self, screen_height: int, screen_width: int) -> Grid:
@@ -172,7 +172,7 @@ class GridSprite(NamedTuple):
             grid_x,
         )
         
-        logger.info("Created new GridSprite")
+        logger.debug("Created new GridSprite")
         return grid_sprite
     
     def config(self, **kwargs) -> GridSprite:
@@ -242,7 +242,7 @@ class GridMultiSprite(NamedTuple):
             sprite_key,
         )
         
-        logger.info("Created new GridMultiSprite")
+        logger.debug("Created new GridMultiSprite")
         return grid_multi_sprite
     
     def config(self, **kwargs) -> GridMultiSprite:
@@ -296,7 +296,7 @@ class WorldCharacter(NamedTuple):
             ),
         )
         
-        logger.info("Created new WorldCharacter")
+        logger.debug("Created new WorldCharacter")
         return world_character
     
     def config(self, **kwargs) -> WorldCharacter:
@@ -333,7 +333,7 @@ class WalkTrigger(NamedTuple):
             key,
         )
         
-        logger.info("Created new WalkTrigger")
+        logger.debug("Created new WalkTrigger")
         return walk_trigger
     
     def config(self, **kwargs) -> WalkTrigger: 

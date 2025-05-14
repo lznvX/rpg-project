@@ -273,7 +273,7 @@ while 1:
             
             case EVENT_TYPES.QUIT:
                 settings.save()
-                logger.info("Quitting")
+                logger.debug("Quitting")
                 quit()
             
             case EVENT_TYPES.MULTI_EVENT:

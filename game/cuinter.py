@@ -37,7 +37,7 @@ class Label(NamedTuple):
         if is_top_level:
             set_element(pid, label)
         
-        logger.info("Created new Label")
+        logger.debug("Created new Label")
         return label
     
     def config(self, is_top_level: bool = True, **kwargs) -> Label:
@@ -85,7 +85,7 @@ class SpriteRenderer(NamedTuple):
         if is_top_level:
             set_element(pid, sprite_renderer)
         
-        logger.info("Created new SpriteRenderer")
+        logger.debug("Created new SpriteRenderer")
         return sprite_renderer
     
     def config(self, is_top_level: bool = True, **kwargs) -> SpriteRenderer:
@@ -173,7 +173,7 @@ class Rectangle(NamedTuple):
         if is_top_level:
             set_element(pid, rectangle)
         
-        logger.info("Created new Rectangle")
+        logger.debug("Created new Rectangle")
         return rectangle
     
     def config(self, is_top_level: bool = True, **kwargs) -> Rectangle:
@@ -255,7 +255,7 @@ class TextBox(NamedTuple):
         if is_top_level:
             set_element(pid, text_box)
         
-        logger.info("Created new TextBox")
+        logger.debug("Created new TextBox")
         return text_box
     
     def config(self, is_top_level: bool = True, **kwargs) -> TextBox:
@@ -351,7 +351,7 @@ class DialogBox(NamedTuple):
         if is_top_level:
             set_element(pid, dialog_box)
         
-        logger.info("Created new DialogBox")
+        logger.debug("Created new DialogBox")
         return dialog_box
     
     def config(self, is_top_level: bool = True, **kwargs) -> DialogBox:
@@ -461,7 +461,7 @@ class ChoiceBox(NamedTuple):
         if is_top_level:
             set_element(pid, choice_box)
         
-        logger.info("Created new ChoiceBox")
+        logger.debug("Created new ChoiceBox")
         return choice_box
     
     def config(self, is_top_level: bool = True, **kwargs) -> ChoiceBox:

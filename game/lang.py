@@ -8,6 +8,46 @@ Contributors:
 
 from __future__ import annotations
 from typing import NamedTuple
+from common import EnumObject
+import settings
+
+class DialogLine(NamedTuple):
+    text: str
+    character_name: str = None
+
+    @staticmethod
+    def process_dialog_line(
+        dialog_line: str | DialogLine | EnumObject
+    ) -> DialogLine | EnumObject:
+        """
+        Turns any str or tuple into a DialogLine while letting events through and logging any
+        unexpected types.
+        """
+        if isinstance(dialog_line, str):
+            return DialogLine(translated(dialog_line))
+
+        elif (isinstance(dialog_line, tuple)
+        and len(dialog_line) == 2
+        and isinstance(dialog_line[0], str)
+        and isinstance(dialog_line[1], str)):
+            return DialogLine(
+                translated(dialog_line[0]),
+                lang_text.character_names[dialog_line[1]],
+            )
+
+        elif isinstance(dialog_line, (DialogLine, EnumObject)):
+            return dialog_line
+
+        else:
+            error_msg = "Expected value of type str | DialogLine | EnumObject, got {dialog_line}"
+            logger.error(error_msg)
+            return error_msg
+
+    @staticmethod
+    def process_dialog(
+        dialog: tuple[str | DialogLine | EnumObject, ...]
+    ) -> tuple[DialogLine | EnumObject, ...]:
+        return tuple(map(DialogLine.process_dialog_line, dialog))
 
 
 class _LanguageEnum(NamedTuple):
@@ -84,14 +124,28 @@ class _Lang(NamedTuple):
     # }
 
 
-def get_lang_choice() -> _Lang:
-    """Returns the class with text in the relevant language.
-
-    Language is specified in settings.pkl (not implemented)
-    If language is not specified, or settings.pkl file is missing, English is
-    used by default.
+def translated(lang_key: str | tuple[str]) -> str | tuple[str]:
     """
-    return ENGLISH
+    Returns the text with the specified attribute name in the selected language
+    from the settings.
+    """
+    if isinstance(lang_key, tuple):
+        return tuple(map(translated, lang_key))
+    
+    lang_text = LANGUAGES[settings.get("language")]
+    try:
+        text = getattr(lang_text, lang_key)
+        if isinstance(text, str):
+            return text
+        elif text is None:
+            raise ValueError
+        else:
+            msg = f"Expected text of type str, got {text}"
+    except (AttributeError, ValueError):
+        msg = f"Selected language doesn't contain {lang_key}"
+
+    logger.warning(msg)
+    return lang_key
 
 
 def f(fstring: str, *args: object) -> str:

@@ -16,8 +16,8 @@ from typing import NamedTuple
 from common import *
 import cuinter
 from cuinter import UI_ELEMENT_TYPES, UI_ELEMENT_CLASSES
-from files import *
-from lang import LANGUAGE_ENUM
+from files import load_text_dir, load_pickle
+from lang import LANGUAGE_ENUM, DialogLine, translated
 import settings
 import world
 from world import WORLD_OBJECT_TYPES, WORLD_OBJECT_CLASSES

@@ -13,14 +13,16 @@ import logging
 import random
 import time
 from typing import NamedTuple
-from common import *
+from common import EnumObject, remap_dict, try_append
 import cuinter
-from cuinter import UI_ELEMENT_TYPES, UI_ELEMENT_CLASSES
-from files import *
-from lang import LANGUAGE_ENUM
+from cuinter import UI_ELEMENT_CLASSES
+from enums import EVENT_TYPES, UI_ELEMENT_TYPES
+from files import load_text_dir, load_pickle
+from game_classes import Character
+from lang import DialogLine, translate
 import settings
 import world
-from world import WORLD_OBJECT_TYPES, WORLD_OBJECT_CLASSES
+from world import WORLD_OBJECT_CLASSES
 
 FPS_COUNTER_REFRESH = 1 # Time between each FPS counter update
 MOVE_MAP = {
@@ -29,6 +31,10 @@ MOVE_MAP = {
     ord("a"): (0, -1, "left"),
     ord("d"): (0, 1, "right"),
 }
+
+PLAYER_SPRITE_DIR_PATH = "assets\\sprites\\characters\\player"
+TILE_SPRITE_DIR_PATH = "assets\\sprites\\tiles"
+MENU_CHOICE_PATH = "assets\\choices\\menu_choice.pkl"
 
 ############ Code to run on startup
 
@@ -45,7 +51,9 @@ last_time = time.time()
 fps_timer = last_time  # Time of the last FPS update
 frame_count = 0
 
-tiles = load_text_dir("assets\\sprites\\tiles")
+settings.load()
+
+tiles = load_text_dir(TILE_SPRITE_DIR_PATH)
 tileset = remap_dict(tiles, world.TILE_NAME_TO_CHAR)
 
 grid = world.Grid.new(tileset)
@@ -55,7 +63,7 @@ player = world.WorldCharacter.new(
     0,
     Character(
         name="Player",
-        sprite_sheet=load_text_dir("assets\\sprites\\characters\\player"),
+        sprite_sheet=load_text_dir(PLAYER_SPRITE_DIR_PATH),
     ),
     "down",
     -1,
@@ -74,11 +82,12 @@ new_events = [
             5,
         ),
     ),
-    EnumObject(
-        EVENT_TYPES.LOAD_UI_ELEMENT,
-        "assets\\ui_elements\\dialogs\\welcome_dialog.pkl",
-    ),
 ]
+if settings.get("first_time"):
+    new_events.append(EnumObject(
+        EVENT_TYPES.LOAD_UI_ELEMENT,
+        "assets\\dialogs\\welcome_dialog.pkl",
+    ))
 
 ############
 
@@ -143,7 +152,7 @@ while 1:
                         new_events,
                         EnumObject(
                             EVENT_TYPES.LOAD_UI_ELEMENT,
-                            "assets\\ui_elements\\choices\\menu_choice.pkl",
+                            MENU_CHOICE_PATH,
                         ),
                     )
             
@@ -162,7 +171,7 @@ while 1:
                                 args["dialog"] = DialogLine.process_dialog(args["dialog"])
                         case UI_ELEMENT_TYPES.CHOICE_BOX:
                             if "options" in args:
-                                args["options"] = translated(args["options"])
+                                args["options"] = translate(args["options"])
                 
                 try:
                     if isinstance(args, dict):
@@ -250,7 +259,11 @@ while 1:
                 logger.error(f"Not implemented: EVENT_TYPES.LOAD_COMBAT")
             
             case EVENT_TYPES.CONFIG_SETTINGS:
-                logger.error(f"Not implemented: EVENT_TYPES.CONFIG_SETTINGS")
+                if not isinstance(value, dict):
+                    logger.error(f"Expected value of type dict, got {value}")
+                    continue
+                
+                settings.config(**value)
             
             case EVENT_TYPES.SAVE_GAME:
                 logger.error(f"Not implemented: EVENT_TYPES.SAVE_GAME")
@@ -259,6 +272,8 @@ while 1:
                 logger.error(f"Not implemented: EVENT_TYPES.LOAD_GAME")
             
             case EVENT_TYPES.QUIT:
+                settings.save()
+                logger.debug("Quitting")
                 quit()
             
             case EVENT_TYPES.MULTI_EVENT:

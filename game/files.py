@@ -43,6 +43,13 @@ def load_text_dir(path: str) -> dict[str, str]:
     return texts
 
 
+def save_pickle(obj: object, path: str) -> None:
+    """Saves an object as a pickle file at the provided path."""
+    with open(path, "wb") as file:
+        logger.debug(f"Saved pickle file: {path}")
+        pickle.dump(obj, file)
+
+
 def load_pickle(path: str) -> object:
     """Reads and returns the pickle object at the provided path."""
     try:

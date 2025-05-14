@@ -7,23 +7,56 @@ Contributors:
 """
 
 from __future__ import annotations
+import logging
 from typing import NamedTuple
+from common import EnumObject
+from enums import LANGUAGE_ENUM
+import settings
 
 
-class _LanguageEnum(NamedTuple):
-    ENGLISH: int
-    FRENCH: int
+class DialogLine(NamedTuple):
+    text: str
+    character_name: str = None
 
-    @classmethod
-    def new(cls) -> _LanguageEnum:
-        return cls(*range(len(cls.__annotations__)))
+    @staticmethod
+    def process_dialog_line(
+        dialog_line: str | DialogLine | EnumObject
+    ) -> DialogLine | EnumObject:
+        """
+        Turns any str or tuple into a DialogLine while letting events through and logging any
+        unexpected types.
+        """
+        if isinstance(dialog_line, str):
+            return DialogLine(translate(dialog_line))
+
+        elif (isinstance(dialog_line, tuple)
+        and len(dialog_line) == 2
+        and isinstance(dialog_line[0], str)
+        and isinstance(dialog_line[1], str)):
+            return DialogLine(
+                translate(dialog_line[0]),
+                lang_text.character_names[dialog_line[1]],
+            )
+
+        elif isinstance(dialog_line, (DialogLine, EnumObject)):
+            return dialog_line
+
+        else:
+            error_msg = "Expected value of type str | DialogLine | EnumObject, got {dialog_line}"
+            logger.error(error_msg)
+            return error_msg
+
+    @staticmethod
+    def process_dialog(
+        dialog: tuple[str | DialogLine | EnumObject, ...]
+    ) -> tuple[DialogLine | EnumObject, ...]:
+        return tuple(map(DialogLine.process_dialog_line, dialog))
 
 
 class _Lang(NamedTuple):
     # Dialog
     welcome: str = None
-    i_move_u_up: str = None
-    what: str = None
+    controls: str = None
 
     # Choice
     menu_back: str = None
@@ -85,14 +118,28 @@ class _Lang(NamedTuple):
     # }
 
 
-def get_lang_choice() -> _Lang:
-    """Returns the class with text in the relevant language.
-
-    Language is specified in settings.pkl (not implemented)
-    If language is not specified, or settings.pkl file is missing, English is
-    used by default.
+def translate(lang_key: str | tuple[str]) -> str | tuple[str]:
     """
-    return ENGLISH
+    Returns the text with the specified attribute name in the selected language
+    from the settings.
+    """
+    if isinstance(lang_key, tuple):
+        return tuple(map(translate, lang_key))
+    
+    lang_text = LANGUAGES[settings.get("language")]
+    try:
+        text = getattr(lang_text, lang_key)
+        if isinstance(text, str):
+            logger.debug(f"Translated {lang_key} into {text}")
+            return text
+        elif text is None:
+            raise ValueError
+        else:
+            logger.warning(f"Expected text of type str, got {text}")
+    except (AttributeError, ValueError):
+        logger.warning(f"Selected language doesn't contain {lang_key}")
+
+    return lang_key
 
 
 def f(fstring: str, *args: object) -> str:
@@ -100,11 +147,12 @@ def f(fstring: str, *args: object) -> str:
     return fstring.format(*args)
 
 
+logger = logging.getLogger(__name__)
+
 ENGLISH = _Lang(
     # Dialog
-    welcome = "Welcome to the game !",
-    i_move_u_up = "I am now going to move you up with my mind.",
-    what = "DID YOU JUST SEND BOTH A LOAD_ZONE AND A LOAD_UI_ELEMENT EVENT WITH A SINGLE WALKTRIGGER ???",
+    welcome = "Welcome adventurer ! ...asdf. \n(press Space or Enter)",
+    controls = "Controls:\n\nUp: W    Down: S    Left: A    Right: D\nConfirm: Space/Enter    Menu: M",
 
     # Choice
     menu_back = "Back",
@@ -178,8 +226,11 @@ ENGLISH = _Lang(
     },
 )
 
-
 FRENCH = _Lang(
+    # Dialog
+    welcome = "Bienvenue aventurier ! ...asdf. \n(appuyez sur Espace ou Entrée)",
+    controls = "Controles:\n\nHaut: W    Bas: S    Gauche: A    Droite: D\nConfirmer: Space/Enter    Menu: M",
+
     # Choice
     menu_back = "Retour",
     menu_inventory = "Inventaire",
@@ -250,8 +301,6 @@ FRENCH = _Lang(
     },
 )
 
-
-LANGUAGE_ENUM = _LanguageEnum.new()
 LANGUAGES = {
     LANGUAGE_ENUM.ENGLISH: ENGLISH,
     LANGUAGE_ENUM.FRENCH: FRENCH,

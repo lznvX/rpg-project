@@ -6,18 +6,60 @@ Contributors:
 """
 
 
+from __future__ import annotations
 from typing import NamedTuple
 from get_input import get_input
 import random as r
 import time
 from lang import get_lang_choice, f
-from common import Stats, DamageInstance, Character, Action, Party
+from common import Stats, DamageInstance, Character, Action, Party, CharacterNotFoundError
 import monsters as m
-import testitems as ti
+import test_items as ti
+from uuid import UUID
 
 
 text = get_lang_choice()
 auto_turn_delay = 0.5 # seconds
+
+
+class CombatParty(NamedTuple):
+    name: str
+    members: dict[UUID, (Character, bool)]
+    leader: UUID
+
+
+    @staticmethod
+    def new(party: Party) -> CombatParty:
+        name = party.name
+        leader = party.leader
+        members = dict()
+        for m in party.members:
+            members[m.uuid] = (m, True)
+
+        return CombatParty(name, members, leader)
+
+
+    def get_member(self, member_uuid: UUID) -> Character:
+        try:
+            char = self.members[member_uuid][0]
+        except KeyError:
+            raise CharacterNotFoundError(f"Cannot find character with UUID {member_uuid} in {self.name}")
+
+        return char
+
+    def get_valid_targets(self) -> list[UUID]:
+        """Generate a list of all attackable targets in this CombatParty.
+
+        i.e. any members that are alive
+        """
+        targets = []
+        for target_id in self.members.keys():
+            if self.get_member(target_id).is_alive:
+                targets.append(target_id)
+            else:
+                continue
+
+        return targets
 
 
 class Battle(NamedTuple):
@@ -25,44 +67,69 @@ class Battle(NamedTuple):
 
     Use Battle.new() instead of the default constructor.
     """
-    team1: list
-    team2: list
+    team1: CombatParty
+    team2: CombatParty
 
-    team1_name: str
-    team2_name: str
+    turn_order: list[UUID]
 
-    team1_targets: list
-    team2_targets: list
+    # team1: list
+    # team2: list
 
-    turn_order: list
+    # team1_name: str
+    # team2_name: str
+
+    # team1_targets: list
+    # team2_targets: list
+
+    # turn_order: list
+
+
+    def get_team_of_fighter(self, fighter_uuid: UUID) -> CombatParty:
+        """Find which team a given character belongs to."""
+
+        try:
+            team1.get_member
 
 
     @staticmethod
-    def new(team1: list[Character], team1_name: str,
-            team2: list[Character], team2_name: str) -> "Battle":
+    def new(team1: Party, team2: Party) -> Battle:
         """Initialize a new Battle instance.
 
         Custom constructor to properly initialize the necessary variables.
         Needed because NamedTuple.__init__ can't be modified.
         """
 
-        team1_targets = []
-        for i, c in enumerate(team1):
-            team1_targets.append(("team1", i))
+        combat_team1 = CombatParty(team1)
+        combat_team2 = CombatParty(team2)
 
-        team2_targets = []
-        for i, c in enumerate(team2):
-            team2_targets.append(("team2", i))
+        targets1 = combat_team1.get_valid_targets()
+        targets2 = combat_team2.get_valid_targets()
 
-        # Turn order is the two teams combined, sorted by agility
-        # (Character with highest AGI goes first)
-        turn_order = sorted(team1_targets + team2_targets, key=lambda x:
+        turn_order = sorted(targets1 + targets2,
+                            key=lambda x:
                             # Couldn't think of a better way to do this
                             team1[x[1]].current.agility if x[0] == 1
-                            else team2[x[1]].current.agility, reverse=True)
+                            else team2[x[1]].current.agility, reverse=True
+                            )
 
-        return Battle(team1, team2, team1_name, team2_name,
-                      team1_targets, team2_targets, turn_order)
+
+        # team1_targets = []
+        # for i, c in enumerate(team1):
+        #     team1_targets.append(("team1", i))
+
+        # team2_targets = []
+        # for i, c in enumerate(team2):
+        #     team2_targets.append(("team2", i))
+
+        # # Turn order is the two teams combined, sorted by agility
+        # # (Character with highest AGI goes first)
+        # turn_order = sorted(team1_targets + team2_targets, key=lambda x:
+        #                     # Couldn't think of a better way to do this
+        #                     team1[x[1]].current.agility if x[0] == 1
+        #                     else team2[x[1]].current.agility, reverse=True)
+
+        # return Battle(team1, team2, team1_name, team2_name,
+        #               team1_targets, team2_targets, turn_order)
 
 
     @staticmethod
@@ -239,18 +306,18 @@ def _test_pcs():
     bob.inventory.add(ti.Sword)
     bob.inventory.add(ti.StrHelmet)
     bob = bob.equip("mainhand", ti.Sword)
-    bob = bob.equip("feet", ti.StrHelmet)
+    bob = bob.equip("head", ti.StrHelmet)
 
     return alice, bob
 
 
 if __name__ == "__main__":
     alice, bob = _test_pcs()
-    player_party = Party("Adventuring Party", (alice, bob), bob.uuid)
+    player_party = Party("Adventuring Party", [alice, bob], bob.uuid)
 
 
     gg_leader = m.Hobgoblin()
-    goblin_gang = Party("Goblin Gang", (gg_leader, m.Goblin(), m.Goblin(), m.Goblin(), m.Goblin()), gg_leader.uuid)
+    goblin_gang = Party("Goblin Gang", [gg_leader, m.Goblin(), m.Goblin(), m.Goblin(), m.Goblin()], gg_leader.uuid)
 
 
     current_battle = Battle.new(player_party, goblin_gang)

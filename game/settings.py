@@ -7,15 +7,20 @@ Contributors:
 from __future__ import annotations
 import logging
 from typing import NamedTuple
-from lang import LANGUAGE_ENUM
+from enums import LANGUAGE_ENUM
+from files import save_pickle, load_pickle
+
+SETTINGS_PATH = "user_data\\settings.pkl"
 
 
 class Settings(NamedTuple):
-    language: int = None
+    first_time: bool
+    language: int
 
     @classmethod
     def new(cls) -> Settings:
         return cls(
+            first_time=True,
             language=LANGUAGE_ENUM.ENGLISH,
         )
 
@@ -23,38 +28,64 @@ class Settings(NamedTuple):
 def _make_setting_manager():
     cache = Settings.new()
 
-    def get_setting(setting_name: str) -> object:
+    def get(setting_name: str) -> object:
         try:
             return getattr(cache, setting_name)
         except AttributeError:
-            logger.error("Settings don't contain {setting_name}")
+            logger.error(f"Settings don't contain {setting_name}")
             return None
 
-    def config_settings(**kwargs) -> Settings:
+    def config(**kwargs) -> None:
         nonlocal cache
         cache = cache._replace(**kwargs)
-        return cache
+        logger.debug(f"Settings changed: {kwargs}")
 
-    def reset_settings() -> Settings:
+    def reset() -> None:
         nonlocal cache
         cache = Settings.new()
-        return cache
+        logger.debug("Settings reset")
 
-    return get_setting, config_settings, reset_settings
+    def save() -> None:
+        save_pickle(cache, SETTINGS_PATH)
+        logger.debug("Settings saved")
+
+    def load() -> None:
+        nonlocal cache
+        stored_settings = load_pickle(SETTINGS_PATH)
+        if stored_settings is not None:
+            cache = stored_settings
+            logger.debug("Settings loaded")
+            config(first_time=False)
+        else:
+            logger.warning("Settings file not found, using default")
+
+    return (
+        get,
+        config,
+        reset,
+        save,
+        load,
+    )
 
 
-def test():
-    assert get_setting("language") == LANGUAGE_ENUM.ENGLISH
-    config_settings(language=LANGUAGE_ENUM.FRENCH)
-    assert get_setting("language") == LANGUAGE_ENUM.FRENCH
-    reset_settings()
-    assert get_setting("language") == LANGUAGE_ENUM.ENGLISH
+def _test():
+    assert get("language") == LANGUAGE_ENUM.ENGLISH
+    config(language=LANGUAGE_ENUM.FRENCH)
+    assert get("language") == LANGUAGE_ENUM.FRENCH
+    reset()
+    assert get("language") == LANGUAGE_ENUM.ENGLISH
     print("Test passed")
 
 
 logger = logging.getLogger(__name__)
 
-get_setting, config_settings, reset_settings = _make_setting_manager()
+(
+    get,
+    config,
+    reset,
+    save,
+    load,
+) = _make_setting_manager()
 
 if __name__ == "__main__":
-    test()
+    _test()

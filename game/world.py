@@ -7,10 +7,12 @@ Contributors:
 """
 
 from __future__ import annotations
-from typing import NamedTuple, Callable
-from common import Character, EnumObject
-from cuinter import SpriteRenderer
 import logging
+from typing import NamedTuple, Callable
+from common import EnumObject
+from cuinter import SpriteRenderer
+from enums import WORLD_OBJECT_TYPES
+from game_classes import Character
 
 TILE_HEIGHT = 8
 TILE_WIDTH = 16
@@ -32,17 +34,6 @@ TILE_NAME_TO_CHAR = {
     "wall_down_right": "╔",
 }
 WALKABLE_TILE_CHARS = " │─┘└┐┌"
-
-
-class _WorldObjectTypes(NamedTuple):
-    GRID_SPRITE: int
-    GRID_MULTI_SPRITE: int
-    WORLD_CHARACTER: int
-    WALK_TRIGGER: int
-
-    @classmethod
-    def new(cls) -> _WorldObjectTypes:
-        return cls(*range(len(cls.__annotations__)))
 
 
 class Grid(NamedTuple):
@@ -82,7 +73,7 @@ class Grid(NamedTuple):
         else:
             sprite = None
         
-        return cls(
+        grid = cls(
             SpriteRenderer.new(
                 y,
                 x,
@@ -91,6 +82,9 @@ class Grid(NamedTuple):
             tileset,
             tilemap,
         )
+        
+        logger.debug("Created new Grid")
+        return grid
     
     def config(self, **kwargs) -> Grid:
         tileset = kwargs.get("tileset", self.tileset)
@@ -108,7 +102,9 @@ class Grid(NamedTuple):
         )
     
     def load_tilemap(self, tilemap: tuple[str]) -> Grid:
-        return self.config(tilemap=tilemap)
+        grid = self.config(tilemap=tilemap)
+        logger.debug("Loaded tilemap")
+        return grid
     
     def center(self, screen_height: int, screen_width: int) -> Grid:
         return self.config(
@@ -165,7 +161,7 @@ class GridSprite(NamedTuple):
     @classmethod
     def new(cls, grid: Grid, grid_y: int, grid_x: int, sprite: str = None, y_offset: int = 0,
             x_offset: int = 0) -> GridSprite:
-        return cls(
+        grid_sprite = cls(
             SpriteRenderer.new(
                 grid.grid_to_screen(y=grid_y) + y_offset,
                 grid.grid_to_screen(x=grid_x) + x_offset,
@@ -175,6 +171,9 @@ class GridSprite(NamedTuple):
             grid_y,
             grid_x,
         )
+        
+        logger.debug("Created new GridSprite")
+        return grid_sprite
     
     def config(self, **kwargs) -> GridSprite:
         grid = kwargs.get("grid", self.grid)
@@ -230,7 +229,7 @@ class GridMultiSprite(NamedTuple):
         else:
             sprite = None
         
-        return cls(
+        grid_multi_sprite = cls(
             GridSprite.new(
                 grid,
                 grid_y,
@@ -242,6 +241,9 @@ class GridMultiSprite(NamedTuple):
             sprite_sheet,
             sprite_key,
         )
+        
+        logger.debug("Created new GridMultiSprite")
+        return grid_multi_sprite
     
     def config(self, **kwargs) -> GridMultiSprite:
         sprite_sheet = kwargs.get("sprite_sheet", self.sprite_sheet)
@@ -281,7 +283,7 @@ class WorldCharacter(NamedTuple):
     @classmethod
     def new(cls, grid: Grid, grid_y: int, grid_x: int, character: Character,
             sprite_key: str = None, y_offset: int = 0, x_offset: int = 0) -> WorldCharacter:
-        return cls(
+        world_character = cls(
             character,
             GridMultiSprite.new(
                 grid,
@@ -293,6 +295,9 @@ class WorldCharacter(NamedTuple):
                 x_offset,
             ),
         )
+        
+        logger.debug("Created new WorldCharacter")
+        return world_character
     
     def config(self, **kwargs) -> WorldCharacter:
         character = kwargs.get("character", self.character)
@@ -321,12 +326,15 @@ class WalkTrigger(NamedTuple):
     @classmethod
     def new(cls, grid_y: int, grid_x: int, on_trigger_event: EnumObject = None,
             key: int = None, grid: Grid = None) -> WalkTrigger:
-        return cls(
+        walk_trigger = cls(
             grid_y,
             grid_x,
             on_trigger_event,
             key,
         )
+        
+        logger.debug("Created new WalkTrigger")
+        return walk_trigger
     
     def config(self, **kwargs) -> WalkTrigger: 
         return WalkTrigger(
@@ -344,7 +352,6 @@ class WalkTrigger(NamedTuple):
 
 logger = logging.getLogger(__name__)
 
-WORLD_OBJECT_TYPES = _WorldObjectTypes.new()
 WORLD_OBJECT_CLASSES = {
     WORLD_OBJECT_TYPES.GRID_SPRITE: GridSprite,
     WORLD_OBJECT_TYPES.GRID_MULTI_SPRITE: GridMultiSprite,

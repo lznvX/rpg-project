@@ -16,10 +16,11 @@ from typing import NamedTuple
 from common import EnumObject, remap_dict, try_append
 import cuinter
 from cuinter import UI_ELEMENT_CLASSES
-from enums import EVENT_TYPES, UI_ELEMENT_TYPES
+from enums import EVENT_TYPES, UI_ELEMENT_TYPES, RECTANGLE_PRESETS
 from files import load_text_dir, load_pickle
-from game_classes import Character
+from game_classes import Character, Stats
 from lang import DialogLine, translate
+import monsters
 import settings
 import world
 from world import WORLD_OBJECT_CLASSES
@@ -32,7 +33,6 @@ MOVE_MAP = {
     ord("d"): (0, 1, "right"),
 }
 
-PLAYER_SPRITE_DIR_PATH = "assets\\sprites\\characters\\player"
 TILE_SPRITE_DIR_PATH = "assets\\sprites\\tiles"
 MENU_CHOICE_PATH = "assets\\choices\\menu_choice.pkl"
 
@@ -58,16 +58,13 @@ tileset = remap_dict(tiles, world.TILE_NAME_TO_CHAR)
 
 grid = world.Grid.new(tileset)
 player = world.WorldCharacter.new(
-    grid,
-    0,
-    0,
-    Character(
-        name="Player",
-        sprite_sheet=load_text_dir(PLAYER_SPRITE_DIR_PATH),
-    ),
-    "down",
-    -1,
-    0,
+    grid=grid,
+    grid_y=0,
+    grid_x=0,
+    character=monsters.Player(),
+    sprite_key="down",
+    y_offset=-1,
+    x_offset=0,
 )
 
 fps_label = cuinter.Label.new(0, 0)
@@ -256,6 +253,7 @@ while 1:
                 combat_data = load_pickle(zone_path)
                 if combat_data is None:
                     continue
+                
                 logger.error(f"Not implemented: EVENT_TYPES.LOAD_COMBAT")
             
             case EVENT_TYPES.CONFIG_SETTINGS:
@@ -264,6 +262,25 @@ while 1:
                     continue
                 
                 settings.config(**value)
+            
+            case EVENT_TYPES.OPEN_BACKPACK:
+                logger.debug("Opened backpack")
+                
+                items = player.character.inventory.backpack.elements()
+                options = tuple(item.display_name for item in items)
+                options += (translate("menu_back"),)
+                on_confirm_events = {
+                    len(options) - 1: EnumObject(
+                        EVENT_TYPES.LOAD_UI_ELEMENT,
+                        "assets\\choices\\menu_choice.pkl",
+                    ),
+                }
+                
+                cuinter.ChoiceBox.new(
+                    options=options,
+                    on_confirm_events=on_confirm_events,
+                    rectangle_preset=RECTANGLE_PRESETS.MENU,
+                )
             
             case EVENT_TYPES.SAVE_GAME:
                 logger.error(f"Not implemented: EVENT_TYPES.SAVE_GAME")

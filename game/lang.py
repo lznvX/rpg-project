@@ -13,6 +13,8 @@ from common import EnumObject
 from enums import LANGUAGE_ENUM
 import settings
 
+SUB_DICT_SEPARATOR = "."
+
 
 class DialogLine(NamedTuple):
     text: str
@@ -60,7 +62,7 @@ class _Lang(NamedTuple):
 
     # Choice
     menu_back: str = None
-    menu_inventory: str = None
+    menu_backpack: str = None
     menu_settings: str = None
     menu_save: str = None
     menu_load: str = None
@@ -118,28 +120,65 @@ class _Lang(NamedTuple):
     # }
 
 
-def translate(lang_key: str | tuple[str]) -> str | tuple[str]:
+def _translate_simple(lang_key: str, sub_dict: dict = None) -> str:
     """
     Returns the text with the specified attribute name in the selected language
-    from the settings.
+    from the settings or the provided sub dict.
+    """
+    try:
+        if sub_dict is None:
+            lang_text = LANGUAGES[settings.get("language")]
+            lang_value = getattr(lang_text, lang_key)
+        else:
+            lang_value = sub_dict[lang_key]
+    
+        if isinstance(lang_value, str):
+            logger.debug(f"Translated {lang_key} into {lang_value}")
+            return lang_value
+        elif isinstance(lang_value, dict):
+            logger.error(f"Specify key of sub dict {lang_key} with dotted notation")
+        elif lang_value is None:
+            raise ValueError
+        else:
+            logger.error(f"LANGUAGES are made of STRINGS, not {lang_value}, you IDIOT")
+    
+    except (AttributeError, KeyError, ValueError):
+        logger.warning(f"Selected language doesn't contain {lang_key}, using that instead")
+    
+    return lang_key
+
+
+def _translate_nest(lang_key: str, sub_dict: dict = None) -> str:
+    """
+    Calls _translate_simple recursively (if it has to) for dicts in lang by
+    using dotted notation in the lang key, like
+    _translate_single("item_names.agi_boots").
+    """
+    if SUB_DICT_SEPARATOR in lang_key:
+        sub_dict_name, sub_dict_key = lang_key.split(SUB_DICT_SEPARATOR, 1)
+        if sub_dict is None:
+            lang_text = LANGUAGES[settings.get("language")]
+            next_sub_dict = getattr(lang_text, sub_dict_name)
+        else:
+            next_sub_dict = sub_dict[sub_dict_name]
+        
+        return _translate_nest(
+            sub_dict_key,
+            next_sub_dict,
+        )
+    
+    else:
+        return _translate_simple(lang_key, sub_dict)
+
+
+def translate(lang_key: str | tuple[str]) -> str | tuple[str]:
+    """
+    Calls _translate_nest recursively (if it has too) for tuples of lang keys.
     """
     if isinstance(lang_key, tuple):
         return tuple(map(translate, lang_key))
-    
-    lang_text = LANGUAGES[settings.get("language")]
-    try:
-        text = getattr(lang_text, lang_key)
-        if isinstance(text, str):
-            logger.debug(f"Translated {lang_key} into {text}")
-            return text
-        elif text is None:
-            raise ValueError
-        else:
-            logger.warning(f"Expected text of type str, got {text}")
-    except (AttributeError, ValueError):
-        logger.warning(f"Selected language doesn't contain {lang_key}")
-
-    return lang_key
+    elif isinstance(lang_key, str):
+        return _translate_nest(lang_key)
 
 
 def f(fstring: str, *args: object) -> str:
@@ -156,7 +195,7 @@ ENGLISH = _Lang(
 
     # Choice
     menu_back = "Back",
-    menu_inventory = "Inventory",
+    menu_backpack = "Backpack",
     menu_settings = "Settings",
     menu_save = "Save",
     menu_load = "Load",
@@ -233,7 +272,7 @@ FRENCH = _Lang(
 
     # Choice
     menu_back = "Retour",
-    menu_inventory = "Inventaire",
+    menu_backpack = "Sac à dos",
     menu_settings = "Options",
     menu_save = "Sauvegarder",
     menu_load = "Charger",

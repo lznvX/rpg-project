@@ -267,10 +267,9 @@ while 1:
             ("test_zone.pkl", 3, 3))
                     save.save(save, "save_1")
                 actual_save = Save.load("Saves\\Game_Saves\\save_1", "save_1")
-                player = player.config(player.grid,
-                                              grid_x = actual_save.worldPosition[1],
-                                              grid_y = actual_save.worldPosition[2],
-                                              character = actual_save.character,
+                player = player.config(grid_x = actual_save.worldPosition[1],
+                                       grid_y = actual_save.worldPosition[2],
+                                       character = actual_save.character,
                                               )
                 try_append(new_events, EnumObject(EVENT_TYPES.LOAD_ZONE, save.worldPosition[0]))
             

@@ -66,11 +66,8 @@ def delete(file : str, filepath : str):
 
 logger = logging.getLogger(__name__)
 
-
-EVENT_TYPES = _EventTypes.new()
-
 if __name__ == "__main__":
     #Tests
     Inventory._test()
     Character._test()
-    Save._test()
+    

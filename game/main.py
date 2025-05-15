@@ -6,6 +6,7 @@ terminal.
 
 Contributors:
     Romain
+    Adrien
 """
 
 from __future__ import annotations
@@ -18,9 +19,10 @@ from common import EnumObject, remap_dict, try_append
 import cuinter
 from cuinter import UI_ELEMENT_CLASSES
 from enums import EVENT_TYPES, UI_ELEMENT_TYPES
-from files import load_text_dir, load_pickle
-from game_classes import Character
+from files import load_text_dir, load_pickle, save_pickle, Save
+from game_classes import Character, Stats
 from lang import DialogLine, translate
+
 import settings
 import world
 from world import WORLD_OBJECT_CLASSES
@@ -57,9 +59,12 @@ settings.load()
 tiles = load_text_dir(TILE_SPRITE_DIR_PATH)
 tileset = remap_dict(tiles, world.TILE_NAME_TO_CHAR)
 
-nb_save = len(os.listdir("Saves\\Game_Saves"))
-actual_save = None
 grid = world.Grid.new(tileset)
+
+nb_save = len(os.listdir("Saves\\Game_Saves"))
+current_save = None
+
+current_zone_path = None
 player = world.WorldCharacter.new(
     grid,
     0,
@@ -78,14 +83,14 @@ fps_label = cuinter.Label.new(0, 0)
 world_objects = []
 new_events = [
     EnumObject(
-        EVENT_TYPES.LOAD_GAME, actual_save
+        EVENT_TYPES.LOAD_GAME, current_save
     ),
 ]
-if settings.get("first_time"):
-    new_events.append(EnumObject(
-        EVENT_TYPES.LOAD_UI_ELEMENT,
-        "assets\\dialogs\\welcome_dialog.pkl",
-    ))
+#if settings.get("first_time"):
+#    new_events.append(EnumObject(
+#        EVENT_TYPES.LOAD_UI_ELEMENT,
+#        "assets\\dialogs\\welcome_dialog.pkl",
+#    ))
 
 ############
 
@@ -229,6 +234,7 @@ while 1:
                 
                 zone_path, player_grid_y, player_grid_x = value
                 zone_data = load_pickle(zone_path)
+                logger.debug(f"{zone_path}")
                 if zone_data is None:
                     continue
                 
@@ -236,7 +242,10 @@ while 1:
                 
                 grid = grid.load_tilemap(tilemap)
                 grid = grid.center(cuinter.screen_height, cuinter.screen_width)
+                
+                current_zone_path = zone_path
                 player = player.config(grid=grid, grid_y=player_grid_y, grid_x=player_grid_x)
+                
                 
                 world_objects.clear()
                 for constructor in world_objects_constructors:
@@ -264,27 +273,29 @@ while 1:
                 settings.config(**value)
             
             case EVENT_TYPES.SAVE_GAME:
-                save = Save(player.character, (grid, player.grid_x, player.grid_y))
-                save.save("save_1")
+                current_save = Save(player.character, (current_zone_path, player.grid_x, player.grid_y))
+                save_pickle(current_save, "Saves\\Game_Saves\\save_1.pkl")
 
             
             case EVENT_TYPES.LOAD_GAME:
                 if nb_save <=0:
-                    save = Save.new(Character.new("Hero",
-            "assets\\sprites\\characters\\player",
-            True,
-            #     MHP, MST, MMA, STR, AGI, ACU, ARM, RES
-            Stats(  8,  16,   4,   8,   6,   4,   2,   4),
-            [],
-            {}),
-            ("test_zone.pkl", 3, 3))
-                    save.save(save, "save_1")
-                actual_save = Save.load("Saves\\Game_Saves\\save_1", "save_1")
-                player = player.config(grid_x = actual_save.worldPosition[1],
-                                       grid_y = actual_save.worldPosition[2],
-                                       character = actual_save.character,
+                    current_save = Save.new(Character.new("Hero",
+                                    "assets\\sprites\\characters\\player",
+                                    True,
+                                    #     MHP, MST, MMA, STR, AGI, ACU, ARM, RES
+                                    Stats(  8,  16,   4,   8,   6,   4,   2,   4),
+                                    [],
+                                    {}),
+                                    ("assets\\zones\\test_zone.pkl", 1, 2))
+                    save_pickle(current_save, "Saves\\Game_Saves\\save_1.pkl")
+                    current_zone_path = current_save.worldPosition[0]
+                current_save = load_pickle("Saves\\Game_Saves\\save_1.pkl")
+                player = player.config(grid_x = current_save.worldPosition[1],
+                                       grid_y = current_save.worldPosition[2],
+                                       #character = current_save.character,
                                               )
-                try_append(new_events, EnumObject(EVENT_TYPES.LOAD_ZONE, save.worldPosition[0]))
+                logger.debug((player.grid_x, player.grid_y))
+                try_append(new_events, EnumObject(EVENT_TYPES.LOAD_ZONE, current_save.worldPosition))
             
             case EVENT_TYPES.QUIT:
                 settings.save()

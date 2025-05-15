@@ -10,6 +10,7 @@ from typing import NamedTuple
 from enums import LANGUAGE_ENUM
 from files import save_pickle, load_pickle
 
+
 SETTINGS_PATH = "user_data\\settings.pkl"
 
 
@@ -23,8 +24,8 @@ class Settings(NamedTuple):
             first_time=True,
             language=LANGUAGE_ENUM.ENGLISH,
         )
-
-
+        
+        
 def _make_setting_manager():
     cache = Settings.new()
 
@@ -89,3 +90,4 @@ logger = logging.getLogger(__name__)
 
 if __name__ == "__main__":
     _test()
+    Save._test()

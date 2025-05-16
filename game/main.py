@@ -6,10 +6,12 @@ terminal.
 
 Contributors:
     Romain
+    Adrien
 """
 
 from __future__ import annotations
 import logging
+import os
 import random
 import time
 from typing import NamedTuple
@@ -17,7 +19,7 @@ from common import EnumObject, remap_dict, try_append
 import cuinter
 from cuinter import UI_ELEMENT_CLASSES
 from enums import EVENT_TYPES, UI_ELEMENT_TYPES, RECTANGLE_PRESETS
-from files import load_text_dir, load_pickle
+from files import load_text_dir, load_pickle, Save
 from game_classes import Character, Item, Stats
 from lang import DialogLine, translate
 import monsters
@@ -57,6 +59,11 @@ tiles = load_text_dir(TILE_SPRITE_DIR_PATH)
 tileset = remap_dict(tiles, world.TILE_NAME_TO_CHAR)
 
 grid = world.Grid.new(tileset)
+
+nb_save = len(os.listdir("Saves\\Game_Saves"))
+current_save = None
+
+current_zone_path = None
 player = world.WorldCharacter.new(
     grid=grid,
     grid_y=0,
@@ -72,19 +79,14 @@ fps_label = cuinter.Label.new(0, 0)
 world_objects = []
 new_events = [
     EnumObject(
-        EVENT_TYPES.LOAD_ZONE,
-        (
-            "assets\\zones\\test_zone.pkl",
-            3,
-            5,
-        ),
+        EVENT_TYPES.LOAD_GAME, current_save
     ),
 ]
-if settings.get("first_time"):
-    new_events.append(EnumObject(
-        EVENT_TYPES.LOAD_UI_ELEMENT,
-        "assets\\dialogs\\welcome_dialog.pkl",
-    ))
+#if settings.get("first_time"):
+#    new_events.append(EnumObject(
+#        EVENT_TYPES.LOAD_UI_ELEMENT,
+#        "assets\\dialogs\\welcome_dialog.pkl",
+#    ))
 
 ############
 
@@ -143,6 +145,7 @@ while 1:
                                 new_events,
                                 world_object.on_walk(player.grid_y, player.grid_x),
                             )
+                    logger.debug(f"Now the position is {(player.grid_x, player.grid_y)}")
                 
                 elif value == ord("m"):
                     try_append(
@@ -152,6 +155,7 @@ while 1:
                             MENU_CHOICE_PATH,
                         ),
                     )
+                
             
             case EVENT_TYPES.MAKE_UI_ELEMENT:
                 if not isinstance(value, EnumObject):
@@ -228,6 +232,7 @@ while 1:
                 
                 zone_path, player_grid_y, player_grid_x = value
                 zone_data = load_pickle(zone_path)
+                logger.debug(f"{zone_path}")
                 if zone_data is None:
                     continue
                 
@@ -235,7 +240,10 @@ while 1:
                 
                 grid = grid.load_tilemap(tilemap)
                 grid = grid.center(cuinter.screen_height, cuinter.screen_width)
+                
+                current_zone_path = zone_path
                 player = player.config(grid=grid, grid_y=player_grid_y, grid_x=player_grid_x)
+                
                 
                 world_objects.clear()
                 for constructor in world_objects_constructors:
@@ -319,10 +327,29 @@ while 1:
                 )
             
             case EVENT_TYPES.SAVE_GAME:
-                logger.error("Not implemented: EVENT_TYPES.SAVE_GAME")
+                current_save = Save(player.character, (current_zone_path, player.grid_y, player.grid_x))
+                save_pickle(current_save, "Saves\\Game_Saves\\save_1.pkl")
+                logger.debug(f"The position saved is {(player.grid_y, player.grid_x)}")
             
             case EVENT_TYPES.LOAD_GAME:
-                logger.error("Not implemented: EVENT_TYPES.LOAD_GAME")
+                if nb_save <=0:
+                    current_save = Save.new(Character.new("Hero",
+                                    "assets\\sprites\\characters\\player",
+                                    True,
+                                    #     MHP, MST, MMA, STR, AGI, ACU, ARM, RES
+                                    Stats(  8,  16,   4,   8,   6,   4,   2,   4),
+                                    [],
+                                    {}),
+                                    ("assets\\zones\\test_zone.pkl", 1, 2))
+                    save_pickle(current_save, "Saves\\Game_Saves\\save_1.pkl")
+                    current_zone_path = current_save.worldPosition[0]
+                current_save = load_pickle("Saves\\Game_Saves\\save_1.pkl")
+                player = player.config(grid_x = current_save.worldPosition[2],
+                                       grid_y = current_save.worldPosition[1],
+                                       character = current_save.character,
+                                              )
+                logger.debug(f"The position loaded is {(player.grid_y, player.grid_x)}, and the zone is {current_zone_path}")
+                try_append(new_events, EnumObject(EVENT_TYPES.LOAD_ZONE, current_save.worldPosition))
             
             case EVENT_TYPES.QUIT:
                 settings.save()

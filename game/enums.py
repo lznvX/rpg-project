@@ -18,6 +18,8 @@ class _EventTypes(NamedTuple):
     LOAD_UI_ELEMENT: int
     LOAD_ZONE: int
     LOAD_COMBAT: int
+    OPEN_ITEM: int
+    OPEN_EQUIPMENT: int
     OPEN_BACKPACK: int
     CONFIG_SETTINGS: int
     SAVE_GAME: int

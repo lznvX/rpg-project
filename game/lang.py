@@ -56,12 +56,15 @@ class DialogLine(NamedTuple):
 
 
 class _Lang(NamedTuple):
+    none: str = None
+
     # Dialog
     welcome: str = None
     controls: str = None
 
     # Choice
     menu_back: str = None
+    menu_equipment: str = None
     menu_backpack: str = None
     menu_settings: str = None
     menu_save: str = None
@@ -88,6 +91,9 @@ class _Lang(NamedTuple):
 
     # Characters
     character_names: dict[str, str] = None
+
+    # Slots
+    equipment_slots: dict[str, str] = None
 
     # Items
     item_names: dict[str, str] = None
@@ -189,12 +195,15 @@ def f(fstring: str, *args: object) -> str:
 logger = logging.getLogger(__name__)
 
 ENGLISH = _Lang(
+    none = "None",
+
     # Dialog
     welcome = "Welcome adventurer ! ...asdf. \n(press Space or Enter)",
     controls = "Controls:\n\nUp: W    Down: S    Left: A    Right: D\nConfirm: Space/Enter    Menu: M",
 
     # Choice
     menu_back = "Back",
+    menu_equipment = "Equipment",
     menu_backpack = "Backpack",
     menu_settings = "Settings",
     menu_save = "Save",
@@ -222,6 +231,15 @@ ENGLISH = _Lang(
     # Characters
     character_names = {
         "romain": "Romain",
+    },
+
+    # Slots
+    equipment_slots = {
+        "mainhand": "Mainhand",
+        "offhand": "Offhand",
+        "head": "Head",
+        "body": "Body",
+        "feet": "Feet",
     },
 
     # Items
@@ -266,12 +284,15 @@ ENGLISH = _Lang(
 )
 
 FRENCH = _Lang(
+    none = "Aucun",
+
     # Dialog
     welcome = "Bienvenue aventurier ! ...asdf. \n(appuyez sur Espace ou Entrée)",
     controls = "Controles:\n\nHaut: W    Bas: S    Gauche: A    Droite: D\nConfirmer: Space/Enter    Menu: M",
 
     # Choice
     menu_back = "Retour",
+    menu_equipment = "Équipement",
     menu_backpack = "Sac à dos",
     menu_settings = "Options",
     menu_save = "Sauvegarder",
@@ -299,6 +320,15 @@ FRENCH = _Lang(
     # Characters
     character_names = {
         "romain": "Romain",
+    },
+
+    # Slots
+    equipment_slots = {
+        "mainhand": "Main principale",
+        "offhand": "Main secondaire",
+        "head": "Tête",
+        "body": "Corps",
+        "feet": "Pieds",
     },
 
     # Items

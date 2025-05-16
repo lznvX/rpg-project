@@ -31,6 +31,7 @@ objects = {
         UI_ELEMENT_TYPES.CHOICE_BOX,
         {
             "options": (
+                "menu_equipment",
                 "menu_backpack",
                 "menu_settings",
                 "menu_save",
@@ -41,19 +42,22 @@ objects = {
             ),
             "on_confirm_events": {
                 0: EnumObject(
-                    EVENT_TYPES.OPEN_BACKPACK,
+                    EVENT_TYPES.OPEN_EQUIPMENT,
                 ),
                 1: EnumObject(
+                    EVENT_TYPES.OPEN_BACKPACK,
+                ),
+                2: EnumObject(
                     EVENT_TYPES.LOAD_UI_ELEMENT,
                     "assets\\choices\\settings_choice.pkl",
                 ),
-                2: EnumObject(
+                3: EnumObject(
                     EVENT_TYPES.SAVE_GAME,
                 ),
-                3: EnumObject(
+                4: EnumObject(
                     EVENT_TYPES.LOAD_GAME,
                 ),
-                4: EnumObject(
+                5: EnumObject(
                     EVENT_TYPES.MULTI_EVENT,
                     (
                         EnumObject(
@@ -64,7 +68,7 @@ objects = {
                         ),
                     ),
                 ),
-                5: EnumObject(
+                6: EnumObject(
                     EVENT_TYPES.LOAD_COMBAT,
                     "assets\\combats\\test_combat.pkl",
                 ),

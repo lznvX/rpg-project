@@ -263,6 +263,37 @@ while 1:
                 
                 settings.config(**value)
             
+            case EVENT_TYPES.OPEN_ITEM:
+                logger.debug("Opened item")
+            
+            case EVENT_TYPES.OPEN_EQUIPMENT:
+                logger.debug("Opened equipment")
+                
+                equipment = player.character.inventory.equipment
+                options = ()
+                for slot_name, equiped_item in equipment.items():
+                    slot_entry = translate("equipment_slots." + slot_name) + ": "
+                    if equiped_item is None:
+                        slot_entry += translate("none")
+                    else:
+                        slot_entry += equiped_item.display_name
+                    options += (slot_entry,)
+                    
+                options += (translate("menu_back"),)
+                
+                on_confirm_events = {
+                    len(options) - 1: EnumObject(
+                        EVENT_TYPES.LOAD_UI_ELEMENT,
+                        "assets\\choices\\menu_choice.pkl",
+                    ),
+                }
+                
+                cuinter.ChoiceBox.new(
+                    options=options,
+                    on_confirm_events=on_confirm_events,
+                    rectangle_preset=RECTANGLE_PRESETS.MENU,
+                )
+            
             case EVENT_TYPES.OPEN_BACKPACK:
                 logger.debug("Opened backpack")
                 

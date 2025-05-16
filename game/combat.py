@@ -16,10 +16,16 @@ from common import Stats, DamageInstance, Character, Action, Party, CharacterNot
 import monsters as m
 import test_items as ti
 from uuid import UUID
+import logging
 
 
+combat_log = logging.getLogger(__name__)
+logging.basicConfig(filename='last_combat.log', filemode='wt', encoding='utf-8', level=logging.DEBUG, force=True)
 text = get_lang_choice()
 auto_turn_delay = 0.5 # seconds
+
+
+combat_log.debug(" combat.py loaded")
 
 
 class CombatParty(NamedTuple):
@@ -36,23 +42,36 @@ class CombatParty(NamedTuple):
         for member in party.members:
             members[member.uuid] = (member, True)
 
+        combat_log.info(f" Creating CombatParty \"{name}\"")
+        combat_log.debug(f" {name} members:\n\n{members}\n\nleader: {leader}\n")
+
         return CombatParty(name, members, leader)
 
 
     def get_member(self, member_uuid: UUID) -> Character:
-        try:
+        if self.has_member(member_uuid):
             char = self.members[member_uuid][0]
-        except KeyError:
+            # combat_log.debug(f" {self.name} - found member {char}")
+            return char
+        else:
             raise CharacterNotFoundError(f"Cannot find character with UUID {member_uuid} in {self.name}")
 
-        return char
+
+    def has_member(self, member_uuid: UUID) -> bool:
+        """Check if a member with a given UUID exists in this CombatParty."""
+        if member_uuid in self.members.keys():
+            return True
+        else:
+            return False
 
 
-    def get_valid_targets(self) -> list[UUID]:
+    @property
+    def valid_targets(self) -> list[UUID]:
         """Generate a list of all attackable targets in this CombatParty.
 
         i.e. any members that are alive
         """
+        # combat_log.debug(f" {self.name} - collecting valid targets")
         targets = []
         for target_id in self.members.keys():
             if self.get_member(target_id).is_alive:
@@ -63,8 +82,12 @@ class CombatParty(NamedTuple):
         return targets
 
 
+    def update_member(self, member_uuid, new_member) -> None:
+        self.members[member_uuid] = (new_member, self.members[member_uuid][1])
+
+
     def __repr__(self):
-        return ", ".join([str(self.get_member(member_uuid)) for member_uuid in self.get_valid_targets()])
+        return ", ".join([str(self.get_member(member_uuid)) for member_uuid in self.valid_targets])
 
 
     def __str__(self):
@@ -81,39 +104,15 @@ class Battle(NamedTuple):
 
     turn_order: list[UUID]
 
-    # team1: list
-    # team2: list
 
-    # team1_name: str
-    # team2_name: str
-
-    # team1_targets: list
-    # team2_targets: list
-
-    # turn_order: list
-
-
-    def get_team_of_fighter(self, fighter_uuid: UUID) -> CombatParty:
-        """Find which team a given character belongs to."""
-
-        try:
-            # check if fighter in team1
-            self.team1.get_member(fighter_uuid)
-        except CharacterNotFoundError:
-            # not in team1 -> check team2
-            try:
-                # check if fighter in team2
-                self.team1.get_member(fighter_uuid)
-            except CharacterNotFoundError:
-                # not in team2 -> not in battle?
-                raise CharacterNotFoundError(f"Cannot find character with UUID {fighter_uuid} in the current battle")
-            else:
-                # in team2
-                return self.team2
+    def get_teams(self, fighter_uuid: UUID) -> (CombatParty, CombatParty):
+        """Find the ally and enemy party based on a character's UUID."""
+        if self.team1.has_member(fighter_uuid):
+            return self.team1, self.team2
+        elif self.team2.has_member(fighter_uuid):
+            return self.team2, self.team1
         else:
-            # in team1
-            return self.team1
-
+            raise CharacterNotFoundError(f"Cannot find character with UUID {fighter_uuid} in the current battle")
 
 
     @staticmethod
@@ -123,35 +122,18 @@ class Battle(NamedTuple):
         Custom constructor to properly initialize the necessary variables.
         Needed because NamedTuple.__init__ can't be modified.
         """
+        combat_log.info(f" Creating a Battle between '{team1.name}' and '{team2.name}'")
 
         combat_team1 = CombatParty.new(team1)
         combat_team2 = CombatParty.new(team2)
 
-        targets1 = combat_team1.get_valid_targets()
-        targets2 = combat_team2.get_valid_targets()
+        targets1 = combat_team1.valid_targets
+        targets2 = combat_team2.valid_targets
 
         # doesn't need to be sorted until the battle begins
         turn_order = targets1 + targets2
 
         return Battle(combat_team1, combat_team2, turn_order)
-
-        # team1_targets = []
-        # for i, c in enumerate(team1):
-        #     team1_targets.append(("team1", i))
-
-        # team2_targets = []
-        # for i, c in enumerate(team2):
-        #     team2_targets.append(("team2", i))
-
-        # # Turn order is the two teams combined, sorted by agility
-        # # (Character with highest AGI goes first)
-        # turn_order = sorted(team1_targets + team2_targets, key=lambda x:
-        #                     # Couldn't think of a better way to do this
-        #                     team1[x[1]].current.agility if x[0] == 1
-        #                     else team2[x[1]].current.agility, reverse=True)
-
-        # return Battle(team1, team2, team1_name, team2_name,
-        #               team1_targets, team2_targets, turn_order)
 
 
     @staticmethod
@@ -168,143 +150,124 @@ class Battle(NamedTuple):
 
 
     def get_fighter(self, fighter_uuid: UUID) -> Character:
-        """Find the relevant character by reference.
+        """Find the relevant character by UUID."""
+        # combat_log.debug(f" Looking for fighter {fighter_uuid}")
 
-        reference:
-        - "team1" (player) / "team2" (enemy),
-        - index within the team
-        """
-        try:
-            # check if fighter in team1
-            fighter = self.team1.get_member(fighter_uuid)
-        except CharacterNotFoundError:
-            # not in team1 -> check team2
-            try:
-                # check if fighter in team2
-                fighter = self.team1.get_member(fighter_uuid)
-            except CharacterNotFoundError:
-                # not in team2 -> not in battle?
-                raise CharacterNotFoundError(f"Cannot find character with UUID {fighter_uuid} in the current battle")
-        return fighter
-
-        # try:
-        #     match reference[0]:
-        #         case "team1":
-        #             fighter = self.team1[reference[1]]
-        #         case "team2":
-        #             fighter = self.team2[reference[1]]
-        #         case _:
-        #             raise ValueError(f"Unknown fighter reference: {reference}")
-        # except IndexError:
-        #     raise ValueError(f"Unknown fighter reference: {reference}")
-        # else:
-        #     return fighter
+        if self.team1.has_member(fighter_uuid):
+            return self.team1.get_member(fighter_uuid)
+        elif self.team2.has_member(fighter_uuid):
+            return self.team2.get_member(fighter_uuid)
+        else:
+            raise CharacterNotFoundError(f"Cannot find character with UUID {fighter_uuid} in the current battle")
 
 
-    def get_player_action(self, player: Character, allies: list[(str, int)],
-                          enemies: list[(str, int)]) -> (Action, (str, int)):
+    def _sort_turn_order(self):
+        sort_key = lambda uuid: self.get_fighter(uuid).current.agility
+        combat_log.debug(" Sorting turn order")
+        self.turn_order.sort(key=sort_key, reverse=True)
+        combat_log.debug(" Turn order sorted")
+
+
+    def get_player_action(self, player: Character, allies: CombatParty,
+                          enemies: CombatParty) -> (Action, UUID):
         """Get the player's choice of action and action target."""
+        combat_log.debug(" Getting player input")
 
-        list_choices(player.actions, text.battle_action_choice.format(player.name))
+        action_names = []
+        for action in player.actions:
+            action_names.append(action[1])
+        list_choices(action_names, text.battle_action_choice.format(player.name))
         action_index = get_input(int, True, (1, len(player.actions)))
-        action = player.actions[action_index-1]
+        action = player.actions[action_index-1][1]
+        combat_log.debug(f" Player chooses to use <{action.name}>")
 
         enemies_actual = []
-        for e in enemies:
-            enemies_actual.append(self.get_fighter(e))
+        for enemy in enemies.valid_targets:
+            enemies_actual.append(self.get_fighter(enemy))
         list_choices(enemies_actual, f(text.battle_target_choice, action))
         enemy_index = get_input(int, True, (1, len(enemies_actual)))
-        enemy_ref = enemies[enemy_index-1]
+        enemy_uuid = enemies.valid_targets[enemy_index-1]
+        combat_log.debug(f" Player chooses to attack {self.get_fighter(enemy_uuid)} ({enemy_uuid})")
 
-        return action, enemy_ref
+        return action, enemy_uuid
 
 
     def begin(self) -> None:
 
+        combat_log.info(" Battle started")
         print(text.battle_begin)
         print()
         print(self)
 
+        self._sort_turn_order()
         is_fight_on = True
         turn = 0
+        time.sleep(0.5)
 
         while is_fight_on:
             turn += 1
+            combat_log.info(f" Turn {turn} started")
 
             print()
             print("====================")
             print(f(text.battle_turn, turn))
             time.sleep(2*auto_turn_delay)
 
-            for fighter_ref in self.turn_order:
-                fighter = self.get_fighter(fighter_ref)
+            for fighter_uuid in self.turn_order:
+                allies, enemies = self.get_teams(fighter_uuid)
 
-                # Do we still need that?
-                if not fighter.is_alive:
-                    continue
+                fighter = allies.get_member(fighter_uuid)
+                combat_log.info(f" {fighter} starts their turn")
 
-                if fighter_ref[0] == "team1":
-                    allies = self.team1_targets
-                    enemies = self.team2_targets
-                else:
-                    allies = self.team2_targets
-                    enemies = self.team1_targets
-
+                # pick action and target
                 if fighter.is_player:
                     print()
-                    attack, target_ref = self.get_player_action(fighter, allies, enemies)
+                    attack, target_uuid = self.get_player_action(fighter, allies, enemies)
                 else:
                     # TODO: Implement better NPC AI
-                    attack = r.choice(fighter.actions)
-                    target_ref = r.choice(enemies)
+                    attack_action_source, attack = r.choice(fighter.actions)
+                    target_uuid = r.choice(enemies.valid_targets)
+                target = enemies.get_member(target_uuid)
 
-                target = self.get_fighter(target_ref)
+                # Resolve attack
+                combat_log.info(f" {fighter.name} uses <{attack.name}> on {target}")
+                print()
+                print(f(text.battle_attack, fighter, attack.display_name, target))
 
                 fighter, target, damage_dealt = Battle.attack(fighter, attack, target)
 
-                print()
-                print(f(text.battle_attack, fighter.name, attack.name, target.name))
+                combat_log.info(f" {target.name} takes ¤ {damage_dealt} damage -> ♥ {target.health}")
                 print(f(text.battle_damage, target.name, damage_dealt, target.health))
 
-                # overwrite the fighter and character saved in the Battle instance
-                if fighter_ref[0] == "team1":
-                    self.team1[fighter_ref[1]] = fighter
-                    self.team2[target_ref[1]] = target
-                else:
-                    self.team2[fighter_ref[1]] = fighter
-                    self.team1[target_ref[1]] = target
+                # update the fighter and character saved in the Battle instance
+                allies.update_member(fighter_uuid, fighter)
+                enemies.update_member(target_uuid, target)
 
+                # remove dead characters, check win/loss conditions
                 if not target.is_alive:
+                    combat_log.info(f" {target.name} dies")
                     print(f(text.battle_death, target.name))
-                    enemies.remove(target_ref)
+                    self.turn_order.remove(target_uuid)
 
-                    if len(self.team1_targets) == 0:
+                    if len(self.team1.valid_targets) == 0:
+                        combat_log.info(" Battle ends as player loss")
                         print()
                         print(text.battle_loss)
                         is_fight_on = False
                         break
-                    elif len(self.team2_targets) == 0:
+
+                    elif len(self.team2.valid_targets) == 0:
+                        combat_log.info(" Battle ends as player victory")
                         print()
                         print(text.battle_win)
                         print(f(text.battle_rewards, "0", "0"))
                         is_fight_on = False
                         break
+
                 time.sleep(auto_turn_delay)
 
 
     def __repr__(self) -> str:
-        # team1 = []
-        # for a in self.team1:
-        #     team1.append(repr(a))
-        # team1 = ", ".join(team1)
-
-        # team2 = []
-        # for e in self.team2:
-        #     team2.append(repr(e))
-        # team2 = ", ".join(team2)
-
-        # return f"{self.team1.name}\n{team1}\n\nVS\n\n{self.team2.name}\n{team2}"
-
         return f"{self.team1.name}\n{self.team1}\n\nVS\n\n{self.team2.name}\n{self.team2}"
 
 
@@ -324,7 +287,7 @@ def _test_pcs():
             sprite_sheet    = None,
             is_player       = False,
             base_stats      = m.DefaultStats.human,
-            actions         = {},
+            actions         = [],
             initial_effects = {}
             )
     alice.inventory.add(ti.Sword)
@@ -337,7 +300,7 @@ def _test_pcs():
             sprite_sheet    = None,
             is_player       = True,
             base_stats      = m.DefaultStats.human,
-            actions         = {},
+            actions         = [],
             initial_effects = {}
             )
     bob.inventory.add(ti.Sword)

@@ -414,7 +414,7 @@ class Character(NamedTuple):
     mana: int = None
 
     inventory: Inventory=None
-    actions: dict[UUID, Action] = None
+    actions: list[(UUID, Action)] = None
     effects: dict = None
 
 
@@ -457,6 +457,8 @@ class Character(NamedTuple):
         except ItemNotEquippableError:
             ...
         else:
+            for action in item.actions:
+                self.actions.append((item_uuid, action))
             # self.actions[item_uuid] = item.actions
 
             self.bonuses[item_uuid] = item.stat_bonus
@@ -464,6 +466,16 @@ class Character(NamedTuple):
             updated_character = self.modify(current=new_stats)
             # would've been better to update the character directly, but NamedTuple...
             return updated_character
+
+
+    def _remove_actions_from_source(self, uuid: UUID) -> None:
+        actions = []
+        for action in self.actions:
+            if action[0] == uuid:
+                continue
+            else:
+                actions.append(action)
+        return actions
 
 
     def unequip(self, slot: str) -> Character:
@@ -475,11 +487,11 @@ class Character(NamedTuple):
         except SlotEmptyError:
             ...
         else:
-            # del self.actions[item_uuid]
+            new_actions = self._remove_actions_from_source(item_uuid)
 
             del self.bonuses[item_uuid]
             new_stats = self.update_stats()
-            updated_character = self.modify(current=new_stats)
+            updated_character = self.modify(current=new_stats, actions=new_actions)
             # would've been better to update the character directly, but NamedTuple...
             return updated_character
 

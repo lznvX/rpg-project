@@ -394,7 +394,7 @@ class Character(NamedTuple):
     stamina: int = None
     mana: int = None
 
-    inventory: Inventory=None
+    inventory: Inventory = None
     actions: dict[UUID, Action] = None
     effects: dict = None
 

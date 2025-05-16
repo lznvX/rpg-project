@@ -6,6 +6,7 @@ Created on Tue May 13 21:47:27 2025
 
 
 from typing import NamedTuple
+from files import load_text_dir
 from game_classes import Stats, Character, Inventory, Item
 import test_items as ti
 
@@ -19,6 +20,8 @@ actions: dict[UUID, Action],
 initial_effects: dict
 """
 
+PLAYER_SPRITE_DIR_PATH = "assets\\sprites\\characters\\player"
+
 
 class DefaultStats(NamedTuple):
     """A collection of default stats for various character races."""
@@ -30,6 +33,21 @@ class DefaultStats(NamedTuple):
     goblin       = Stats(  5,  20,   0,   2,  14,   0,   1,   2)
     hobgoblin    = Stats( 10,  25,   0,   6,  11,   1,   2,   2)
     goblin_chief = Stats( 20,  30,   5,  10,   8,   5,   4,   4)
+
+
+def Player():
+    char = Character.new(
+        name            = "Player",
+        sprite_sheet    = load_text_dir(PLAYER_SPRITE_DIR_PATH),
+        is_player       = True,
+        base_stats      = DefaultStats.human,
+        actions         = {},
+        initial_effects = {}
+        )
+    char.inventory.add(ti.PotionHealth)
+    char.inventory.add(ti.Sword)
+    char = char.equip("mainhand", ti.Sword)
+    return char
 
 
 def Goblin():
@@ -45,6 +63,7 @@ def Goblin():
     char = char.equip("mainhand", ti.Dagger)
     return char
 
+
 def Hobgoblin():
     char = Character.new(
         name            = "Hobgoblin",
@@ -59,6 +78,7 @@ def Hobgoblin():
     char = char.equip("offhand", ti.Dagger)
     return char
 
+
 def GoblinChief():
     char = Character.new(
         name            = "Goblin Chieftain",
@@ -72,6 +92,7 @@ def GoblinChief():
     char = char.equip("mainhand", ti.Sword)
     return char
 
+
 def Bandit():
     char = Character.new(
         name            = "Bandit",
@@ -84,6 +105,7 @@ def Bandit():
     char.inventory.add(ti.Dagger)
     char = char.equip("mainhand", ti.Dagger)
     return char
+
 
 if __name__ == "__main__":
     print(Goblin())

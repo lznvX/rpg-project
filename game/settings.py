@@ -39,23 +39,23 @@ def _make_setting_manager():
     def config(**kwargs) -> None:
         nonlocal cache
         cache = cache._replace(**kwargs)
-        logger.debug(f"Settings changed: {kwargs}")
+        logger.debug(f"Changed settings: {kwargs}")
 
     def reset() -> None:
         nonlocal cache
         cache = Settings.new()
-        logger.debug("Settings reset")
+        logger.debug("Reset settings")
 
     def save() -> None:
         save_pickle(cache, SETTINGS_PATH)
-        logger.debug("Settings saved")
+        logger.debug("Saved settings")
 
     def load() -> None:
         nonlocal cache
         stored_settings = load_pickle(SETTINGS_PATH)
         if stored_settings is not None:
             cache = stored_settings
-            logger.debug("Settings loaded")
+            logger.debug("Loaded settings")
             config(first_time=False)
         else:
             logger.warning("Settings file not found, using default")
@@ -90,4 +90,3 @@ logger = logging.getLogger(__name__)
 
 if __name__ == "__main__":
     _test()
-    Save._test()

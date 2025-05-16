@@ -11,19 +11,29 @@ from typing import NamedTuple
 from game_classes import Character, Stats
 import monsters
 
+DEFAULT_ZONE_PATH = "assets\\zones\\test_zone.pkl"
 
-class Save(NamedTuple):
+
+class GameSave(NamedTuple):
     """Un fichier de sauvgarde"""
-    character : Character
-    worldPosition : tuple[str, int, int] #le premier int représente l'axe y et le deuxième l'axe x
+    character: Character
+    zone_path: str
+    player_grid_y: int
+    player_grid_x: int
     
     @classmethod
     def new(cls, character: Character = monsters.Player(),
-        worldPosition: tuple[str, int, int] = ("test_zone.pkl", 3, 3)
-    ) -> Save:
-        """Create a new Savefile"""
-        logger.debug(f"the save {Save(character, worldPosition)} is created ")
-        return Save(character, worldPosition)
+            zone_path: str = DEFAULT_ZONE_PATH, player_grid_y: int = 3,
+            player_grid_x: int = 5) -> GameSave:
+        game_save = cls(
+            character,
+            zone_path,
+            player_grid_y,
+            player_grid_x,
+        )
+        
+        logger.debug("Created new GameSave")
+        return game_save
         
 #     def _test():
 #         save1 = Save.new(worldPosition=("zone2.pkl", 5, 5))

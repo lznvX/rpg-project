@@ -44,9 +44,11 @@ def Player():
         actions         = {},
         initial_effects = {}
         )
-    char.inventory.add(ti.PotionHealth)
-    char.inventory.add(ti.Sword)
+    char.inventory.add(ti.PotionHealth, 3)
+    char.inventory.add(ti.Dagger)
+    char.inventory.add(ti.Sword, 2)
     char = char.equip("mainhand", ti.Sword)
+    char = char.equip("offhand", ti.Sword)
     return char
 
 

@@ -151,7 +151,6 @@ while 1:
                             MENU_CHOICE_PATH,
                         ),
                     )
-                
             
             case EVENT_TYPES.MAKE_UI_ELEMENT:
                 if not isinstance(value, EnumObject):
@@ -258,12 +257,57 @@ while 1:
                 
                 logger.error("Not implemented: EVENT_TYPES.LOAD_COMBAT")
             
-            case EVENT_TYPES.CONFIG_SETTINGS:
-                if not isinstance(value, dict):
-                    logger.error(f"Expected value of type dict, got {value}")
+            case EVENT_TYPES.EQUIP_ITEM:
+                if (not isinstance(value, tuple)
+                or len(value) != 2
+                or not isinstance(value[0], str)
+                or not isinstance(value[1], Item)):
+                    logger.error(f"Expected value of type tuple[str, Item], got {value}")
                     continue
                 
-                settings.config(**value)
+                player = player.config(character=player.character.equip(*value))
+            
+            case EVENT_TYPES.UNEQUIP_ITEM:
+                if not isinstance(value, str):
+                    logger.error(f"Expected value of type str, got {value}")
+                    continue
+                
+                player = player.config(character=player.character.unequip(value))
+            
+            case EVENT_TYPES.ADD_ITEM:
+                if (not isinstance(value, Item)
+                and (not isinstance(value, tuple)
+                or len(value) != 2
+                or not isinstance(value[0], Item)
+                or not isinstance(value[1], int))):
+                    logger.error(f"Expected value of type Item | tuple[Item, int], got {value}")
+                    continue
+                
+                if isinstance(value, tuple):
+                    player.character.inventory.add(*value)
+                else:
+                    player.character.inventory.add(value)
+            
+            case EVENT_TYPES.REMOVE_ITEM:
+                if (not isinstance(value, Item)
+                and (not isinstance(value, tuple)
+                or len(value) != 2
+                or not isinstance(value[0], Item)
+                or not isinstance(value[1], int))):
+                    logger.error(f"Expected value of type Item | tuple[Item, int], got {value}")
+                    continue
+                
+                if isinstance(value, tuple):
+                    player.character.inventory.remove(*value)
+                else:
+                    player.character.inventory.remove(value)
+            
+            case EVENT_TYPES.USE_ITEM:
+                if not isinstance(value, Item):
+                    logger.error(f"Expected value of type Item, got {value}")
+                    continue
+                
+                logger.error("Not implemented: EVENT_TYPES.USE_ITEM")
             
             case EVENT_TYPES.OPEN_ITEM:
                 if not isinstance(value, Item):
@@ -271,29 +315,112 @@ while 1:
                     continue
                 
                 logger.debug("Opened item")
-                logger.error("Not implemented: EVENT_TYPES.OPEN_ITEM")
+                
+                item = value
+                inventory = player.character.inventory
+                options = ()
+                on_confirm_events = {}
+                
+                if "equippable" in item.tags:
+                    for slot_name in inventory.slots:
+                        if slot_name not in item.tags:
+                            continue
+                        elif (inventory.equipment[slot_name] is not None
+                        and item.name == inventory.equipment[slot_name].name):
+                            equip_entry = translate("item_unequip")
+                            on_confirm_event = EnumObject(
+                                EVENT_TYPES.UNEQUIP_ITEM,
+                                slot_name,
+                            )
+                        else:
+                            for it, count in inventory.backpack.items():
+                                if it.name != item.name or count < 1:
+                                    continue
+                                equip_entry = translate("item_equip")
+                                on_confirm_event = EnumObject(
+                                    EVENT_TYPES.EQUIP_ITEM,
+                                    (
+                                        slot_name,
+                                        it,
+                                    ),
+                                )
+                                break
+                            else:
+                                continue
+                        
+                        equip_entry += f" {item.display_name}: {translate('equipment_slots.' + slot_name)}"
+                        options += (equip_entry,)
+                        on_confirm_events[len(options) - 1] = EnumObject(
+                            EVENT_TYPES.MULTI_EVENT,
+                            (
+                                on_confirm_event,
+                                EnumObject(
+                                    EVENT_TYPES.OPEN_ITEM,
+                                    item,
+                                ),
+                            ),
+                        )
+                            
+                elif "consumable" in item.tags:
+                    if inventory.backpack[item] > 1:
+                        on_use_event = EnumObject(
+                            EVENT_TYPES.OPEN_ITEM,
+                            item,
+                        )
+                    else:
+                        on_use_event = EnumObject(
+                            EVENT_TYPES.OPEN_BACKPACK,
+                        )
+                    options += (f"{translate('item_use')} {item.display_name}",)
+                    on_confirm_events[len(options) - 1] = EnumObject(
+                        EVENT_TYPES.MULTI_EVENT,
+                        (
+                            EnumObject(
+                                EVENT_TYPES.USE_ITEM,
+                                item,
+                            ),
+                            on_use_event,
+                        ),
+                    )
+                
+                options += (translate("menu_back"),)
+                on_confirm_events[len(options) - 1] = EnumObject(
+                    EVENT_TYPES.OPEN_BACKPACK,
+                )
+                
+                cuinter.ChoiceBox.new(
+                    options=options,
+                    on_confirm_events=on_confirm_events,
+                    rectangle_preset=RECTANGLE_PRESETS.MENU,
+                )
             
             case EVENT_TYPES.OPEN_EQUIPMENT:
                 logger.debug("Opened equipment")
                 
-                equipment = player.character.inventory.equipment
+                slot_items = player.character.inventory.equipment.items()
                 options = ()
-                for slot_name, equiped_item in equipment.items():
+                on_confirm_events = {}
+                
+                for i, (slot_name, item) in enumerate(slot_items):
                     slot_entry = translate("equipment_slots." + slot_name) + ": "
-                    if equiped_item is None:
-                        slot_entry += translate("none")
+                    if item is None:
+                        slot_entry += translate("equipment_none")
+                        on_confirm_events[i] = EnumObject(
+                            EVENT_TYPES.OPEN_BACKPACK,
+                        )
                     else:
-                        slot_entry += equiped_item.display_name
+                        slot_entry += item.display_name
+                        on_confirm_events[i] = EnumObject(
+                            EVENT_TYPES.OPEN_ITEM,
+                            item,
+                        )
                     options += (slot_entry,)
                     
                 options += (translate("menu_back"),)
-                
-                on_confirm_events = {
-                    len(options) - 1: EnumObject(
-                        EVENT_TYPES.LOAD_UI_ELEMENT,
-                        "assets\\choices\\menu_choice.pkl",
-                    ),
-                }
+                on_confirm_events[len(options) - 1] = EnumObject(
+                    EVENT_TYPES.LOAD_UI_ELEMENT,
+                    "assets\\choices\\menu_choice.pkl",
+                )
                 
                 cuinter.ChoiceBox.new(
                     options=options,
@@ -304,21 +431,38 @@ while 1:
             case EVENT_TYPES.OPEN_BACKPACK:
                 logger.debug("Opened backpack")
                 
-                items = player.character.inventory.backpack.elements()
-                options = tuple(item.display_name for item in items)
+                item_counts = sorted(player.character.inventory.backpack.items())
+                options = ()
+                on_confirm_events = {}
+                
+                for i, (item, count) in enumerate(item_counts):
+                    item_entry = item.display_name
+                    if count > 1:
+                        item_entry += f" × {count}"
+                    options += (item_entry,)
+                    on_confirm_events[i] = EnumObject(
+                        EVENT_TYPES.OPEN_ITEM,
+                        item,
+                    )
+                
                 options += (translate("menu_back"),)
-                on_confirm_events = {
-                    len(options) - 1: EnumObject(
-                        EVENT_TYPES.LOAD_UI_ELEMENT,
-                        "assets\\choices\\menu_choice.pkl",
-                    ),
-                }
+                on_confirm_events[len(options) - 1] = EnumObject(
+                    EVENT_TYPES.LOAD_UI_ELEMENT,
+                    "assets\\choices\\menu_choice.pkl",
+                )
                 
                 cuinter.ChoiceBox.new(
                     options=options,
                     on_confirm_events=on_confirm_events,
                     rectangle_preset=RECTANGLE_PRESETS.MENU,
                 )
+            
+            case EVENT_TYPES.CONFIG_SETTINGS:
+                if not isinstance(value, dict):
+                    logger.error(f"Expected value of type dict, got {value}")
+                    continue
+                
+                settings.config(**value)
             
             case EVENT_TYPES.SAVE_GAME:
                 logger.debug("Saved game")

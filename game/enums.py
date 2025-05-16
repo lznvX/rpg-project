@@ -18,6 +18,11 @@ class _EventTypes(NamedTuple):
     LOAD_UI_ELEMENT: int
     LOAD_ZONE: int
     LOAD_COMBAT: int
+    EQUIP_ITEM: int
+    UNEQUIP_ITEM: int
+    ADD_ITEM: int
+    REMOVE_ITEM: int
+    USE_ITEM: int
     OPEN_ITEM: int
     OPEN_EQUIPMENT: int
     OPEN_BACKPACK: int

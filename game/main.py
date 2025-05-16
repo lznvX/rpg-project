@@ -295,7 +295,7 @@ while 1:
                 current_save = load_pickle("Saves\\Game_Saves\\save_1.pkl")
                 player = player.config(grid_x = current_save.worldPosition[2],
                                        grid_y = current_save.worldPosition[1],
-                                       #character = current_save.character,
+                                       character = current_save.character,
                                               )
                 logger.debug(f"The position loaded is {(player.grid_y, player.grid_x)}, and the zone is {current_zone_path}")
                 try_append(new_events, EnumObject(EVENT_TYPES.LOAD_ZONE, current_save.worldPosition))

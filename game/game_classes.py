@@ -10,6 +10,7 @@ from typing import NamedTuple
 from collections import Counter
 from uuid import UUID, uuid4
 from common import named_tuple_modifier
+from lang import translate
 
 null_uuid = UUID('00000000-0000-0000-0000-000000000000')
 
@@ -93,20 +94,14 @@ class Action(NamedTuple):
     @property
     def display_name(self) -> str:
         """Fetch the action's name in the appropriate language."""
-        try:
-            return lang_text.action_names[self.name]
-        except KeyError:
-            return self.name
+        return translate("action_names." + self.name)
 
 
     @property
     def description(self) -> str:
         """Fetch the action's description in the appropriate language."""
         # will show up when inspecting the action (later)
-        try:
-            return lang_text.action_descriptions[self.name]
-        except:
-            return ""
+        return translate("action_descriptions." + self.name)
 
 
     def get_damage(self) -> float:
@@ -187,20 +182,14 @@ class Item(NamedTuple):
     @property
     def display_name(self) -> str:
         """Fetch the item's name in the appropriate language."""
-        try:
-            return lang_text.item_names[self.name]
-        except KeyError:
-            return self.name
+        return translate("item_names." + self.name)
 
 
     @property
     def description(self) -> str:
         """Fetch the item's description in the appropriate language."""
         # will show up when inspecting the item (later)
-        try:
-            return lang_text.item_descriptions[self.name]
-        except KeyError:
-            return ""
+        return translate("item_description." + self.name)
 
 
     def __repr__(self):
@@ -419,8 +408,8 @@ class Character(NamedTuple):
         Needed because NamedTuple.__init__ can't be modified.
         """
         return Character(name,
-                         sprite_sheet,
                          uuid if uuid is not None else uuid4(),
+                         sprite_sheet,
                          is_player,
                          True,
 

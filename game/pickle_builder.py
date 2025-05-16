@@ -31,7 +31,8 @@ objects = {
         UI_ELEMENT_TYPES.CHOICE_BOX,
         {
             "options": (
-                "menu_inventory",
+                "menu_equipment",
+                "menu_backpack",
                 "menu_settings",
                 "menu_save",
                 "menu_load",
@@ -41,20 +42,22 @@ objects = {
             ),
             "on_confirm_events": {
                 0: EnumObject(
-                    EVENT_TYPES.LOAD_UI_ELEMENT,
-                    "assets\\choices\\inventory_choice.pkl",
+                    EVENT_TYPES.OPEN_EQUIPMENT,
                 ),
                 1: EnumObject(
+                    EVENT_TYPES.OPEN_BACKPACK,
+                ),
+                2: EnumObject(
                     EVENT_TYPES.LOAD_UI_ELEMENT,
                     "assets\\choices\\settings_choice.pkl",
                 ),
-                2: EnumObject(
+                3: EnumObject(
                     EVENT_TYPES.SAVE_GAME,
                 ),
-                3: EnumObject(
+                4: EnumObject(
                     EVENT_TYPES.LOAD_GAME,
                 ),
-                4: EnumObject(
+                5: EnumObject(
                     EVENT_TYPES.MULTI_EVENT,
                     (
                         EnumObject(
@@ -65,7 +68,7 @@ objects = {
                         ),
                     ),
                 ),
-                5: EnumObject(
+                6: EnumObject(
                     EVENT_TYPES.LOAD_COMBAT,
                     "assets\\combats\\test_combat.pkl",
                 ),
@@ -78,8 +81,6 @@ objects = {
         {
             "options": (
                 "settings_language",
-                "settings_1",
-                "settings_2",
                 "menu_back",
             ),
             "on_confirm_events": {
@@ -87,7 +88,7 @@ objects = {
                     EVENT_TYPES.LOAD_UI_ELEMENT,
                     "assets\\choices\\language_choice.pkl",
                 ),
-                3: EnumObject(
+                1: EnumObject(
                     EVENT_TYPES.LOAD_UI_ELEMENT,
                     "assets\\choices\\menu_choice.pkl",
                 ),
@@ -105,16 +106,30 @@ objects = {
             ),
             "on_confirm_events": {
                 0: EnumObject(
-                    EVENT_TYPES.CONFIG_SETTINGS,
-                    {
-                        "language": LANGUAGE_ENUM.ENGLISH
-                    },
+                    EVENT_TYPES.MULTI_EVENT,
+                    (
+                        EnumObject(
+                            EVENT_TYPES.CONFIG_SETTINGS,
+                            {"language": LANGUAGE_ENUM.ENGLISH},
+                        ),
+                        EnumObject(
+                            EVENT_TYPES.LOAD_UI_ELEMENT,
+                            "assets\\choices\\settings_choice.pkl",
+                        ),
+                    ),
                 ),
                 1: EnumObject(
-                    EVENT_TYPES.CONFIG_SETTINGS,
-                    {
-                        "language": LANGUAGE_ENUM.FRENCH
-                    },
+                    EVENT_TYPES.MULTI_EVENT,
+                    (
+                        EnumObject(
+                            EVENT_TYPES.CONFIG_SETTINGS,
+                            {"language": LANGUAGE_ENUM.FRENCH},
+                        ),
+                        EnumObject(
+                            EVENT_TYPES.LOAD_UI_ELEMENT,
+                            "assets\\choices\\settings_choice.pkl",
+                        ),
+                    ),
                 ),
                 2: EnumObject(
                     EVENT_TYPES.LOAD_UI_ELEMENT,

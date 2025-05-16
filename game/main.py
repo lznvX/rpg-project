@@ -18,7 +18,7 @@ import cuinter
 from cuinter import UI_ELEMENT_CLASSES
 from enums import EVENT_TYPES, UI_ELEMENT_TYPES, RECTANGLE_PRESETS
 from files import load_text_dir, load_pickle
-from game_classes import Character, Stats
+from game_classes import Character, Item, Stats
 from lang import DialogLine, translate
 import monsters
 import settings
@@ -254,7 +254,7 @@ while 1:
                 if combat_data is None:
                     continue
                 
-                logger.error(f"Not implemented: EVENT_TYPES.LOAD_COMBAT")
+                logger.error("Not implemented: EVENT_TYPES.LOAD_COMBAT")
             
             case EVENT_TYPES.CONFIG_SETTINGS:
                 if not isinstance(value, dict):
@@ -264,7 +264,12 @@ while 1:
                 settings.config(**value)
             
             case EVENT_TYPES.OPEN_ITEM:
+                if not isinstance(value, Item):
+                    logger.error(f"Expected value of type Item, got {value}")
+                    continue
+                
                 logger.debug("Opened item")
+                logger.error("Not implemented: EVENT_TYPES.OPEN_ITEM")
             
             case EVENT_TYPES.OPEN_EQUIPMENT:
                 logger.debug("Opened equipment")
@@ -314,10 +319,10 @@ while 1:
                 )
             
             case EVENT_TYPES.SAVE_GAME:
-                logger.error(f"Not implemented: EVENT_TYPES.SAVE_GAME")
+                logger.error("Not implemented: EVENT_TYPES.SAVE_GAME")
             
             case EVENT_TYPES.LOAD_GAME:
-                logger.error(f"Not implemented: EVENT_TYPES.LOAD_GAME")
+                logger.error("Not implemented: EVENT_TYPES.LOAD_GAME")
             
             case EVENT_TYPES.QUIT:
                 settings.save()

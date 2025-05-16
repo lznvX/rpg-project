@@ -149,6 +149,7 @@ while 1:
                                 new_events,
                                 world_object.on_walk(player.grid_y, player.grid_x),
                             )
+                    logger.debug(f"Now the position is {(player.grid_x, player.grid_y)}")
                 
                 elif value == ord("m"):
                     try_append(
@@ -158,6 +159,7 @@ while 1:
                             MENU_CHOICE_PATH,
                         ),
                     )
+                
             
             case EVENT_TYPES.MAKE_UI_ELEMENT:
                 if not isinstance(value, EnumObject):
@@ -273,8 +275,9 @@ while 1:
                 settings.config(**value)
             
             case EVENT_TYPES.SAVE_GAME:
-                current_save = Save(player.character, (current_zone_path, player.grid_x, player.grid_y))
+                current_save = Save(player.character, (current_zone_path, player.grid_y, player.grid_x))
                 save_pickle(current_save, "Saves\\Game_Saves\\save_1.pkl")
+                logger.debug(f"The position saved is {(player.grid_y, player.grid_x)}")
 
             
             case EVENT_TYPES.LOAD_GAME:
@@ -290,11 +293,11 @@ while 1:
                     save_pickle(current_save, "Saves\\Game_Saves\\save_1.pkl")
                     current_zone_path = current_save.worldPosition[0]
                 current_save = load_pickle("Saves\\Game_Saves\\save_1.pkl")
-                player = player.config(grid_x = current_save.worldPosition[1],
-                                       grid_y = current_save.worldPosition[2],
+                player = player.config(grid_x = current_save.worldPosition[2],
+                                       grid_y = current_save.worldPosition[1],
                                        #character = current_save.character,
                                               )
-                logger.debug((player.grid_x, player.grid_y))
+                logger.debug(f"The position loaded is {(player.grid_y, player.grid_x)}, and the zone is {current_zone_path}")
                 try_append(new_events, EnumObject(EVENT_TYPES.LOAD_ZONE, current_save.worldPosition))
             
             case EVENT_TYPES.QUIT:

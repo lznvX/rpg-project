@@ -15,7 +15,7 @@ from enums import EVENT_TYPES
 class Save(NamedTuple):
     """Un fichier de sauvgarde"""
     character : Character
-    worldPosition : tuple[str, int, int] #le premier int représente l'axe x et le deuxième l'axe y
+    worldPosition : tuple[str, int, int] #le premier int représente l'axe y et le deuxième l'axe x
     
     @classmethod
     def new(cls,

@@ -58,7 +58,7 @@ def Goblin():
         sprite_sheet    = None,
         is_player       = False,
         base_stats      = DefaultStats.goblin,
-        actions         = {},
+        actions         = [],
         initial_effects = {}
         )
     char.inventory.add(ti.Dagger)
@@ -72,7 +72,7 @@ def Hobgoblin():
         sprite_sheet    = None,
         is_player       = False,
         base_stats      = DefaultStats.hobgoblin,
-        actions         = {},
+        actions         = [],
         initial_effects = {}
         )
     char.inventory.add(ti.Dagger, 2)
@@ -87,7 +87,7 @@ def GoblinChief():
         sprite_sheet    = None,
         is_player       = False,
         base_stats      = DefaultStats.goblin_chief,
-        actions         = {},
+        actions         = [],
         initial_effects = {}
         )
     char.inventory.add(ti.Sword)
@@ -101,7 +101,7 @@ def Bandit():
         sprite_sheet    = None,
         is_player       = False,
         base_stats      = DefaultStats.human,
-        actions         = {},
+        actions         = [],
         initial_effects = {}
         )
     char.inventory.add(ti.Dagger)

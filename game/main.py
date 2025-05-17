@@ -280,12 +280,15 @@ while 1:
                 try_append(new_events, battle.advance())
             
             case EVENT_TYPES.SET_BATTLE_ACTION:
-                if not isinstance(value, Action):
-                    logger.error(f"Expected value of type Action, got {value}")
+                if (not isinstance(value, tuple)
+                or len(value) != 2
+                or not isinstance(value[0], Action)
+                or not isinstance(value[1], Item)):
+                    logger.error(f"Expected value of type tuple[Action, Item], got {value}")
                     continue
                 
                 if battle_target is not None:
-                    try_append(new_events, battle.advance(value, battle_target))
+                    try_append(new_events, battle.advance((*value, battle_target)))
                     battle_target = None
                 else:
                     battle_action = value
@@ -296,7 +299,7 @@ while 1:
                     continue
                 
                 if battle_action is not None:
-                    try_append(new_events, battle.advance(battle_action, value))
+                    try_append(new_events, battle.advance((*battle_action, value)))
                     battle_action = None
                 else:
                     battle_target = value
@@ -425,7 +428,7 @@ while 1:
                         ),
                     )
                 
-                options += (translate("menu_back"),)
+                options += (translate("menu.back"),)
                 on_confirm_events[len(options) - 1] = EnumObject(
                     EVENT_TYPES.OPEN_BACKPACK,
                 )
@@ -458,7 +461,7 @@ while 1:
                         )
                     options += (slot_entry,)
                     
-                options += (translate("menu_back"),)
+                options += (translate("menu.back"),)
                 on_confirm_events[len(options) - 1] = EnumObject(
                     EVENT_TYPES.LOAD_UI_ELEMENT,
                     "assets\\choices\\menu_choice.pkl",
@@ -487,7 +490,7 @@ while 1:
                         item,
                     )
                 
-                options += (translate("menu_back"),)
+                options += (translate("menu.back"),)
                 on_confirm_events[len(options) - 1] = EnumObject(
                     EVENT_TYPES.LOAD_UI_ELEMENT,
                     "assets\\choices\\menu_choice.pkl",

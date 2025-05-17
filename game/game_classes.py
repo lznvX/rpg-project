@@ -485,8 +485,13 @@ class Character(NamedTuple):
     mana: int = None
 
     inventory: Inventory = None
-    actions: list[(UUID, Action)] = None
+    actions: list[tuple[UUID, Action]] = None
     effects: dict = None
+
+
+    @property
+    def display_name(self) -> str:
+        return translate("character_names." + self.name)
 
 
     @staticmethod
@@ -620,7 +625,7 @@ class Character(NamedTuple):
         #     else:
         #         continue
 
-        return f"{self.name} (♥ {self.health})"
+        return f"{self.display_name} (♥ {self.health})"
 
 
     @staticmethod

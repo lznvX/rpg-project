@@ -37,8 +37,8 @@ class CombatParty(NamedTuple):
         for member in party.members:
             members[member.uuid] = (member, True)
 
-        combat_log.info(f" Creating CombatParty \"{name}\"")
-        combat_log.debug(f" {name} members:\n\n{members}\n\nleader: {leader}\n")
+        combat_log.info(f"Creating CombatParty \"{name}\"")
+        combat_log.debug(f"{name} members:\n\n{members}\n\nleader: {leader}\n")
 
         return CombatParty(name, members, leader)
 
@@ -48,11 +48,12 @@ class CombatParty(NamedTuple):
         leader = self.leader
 
         members = []
-        for member in self.members:
-            if member[1]:
-                members.append(member[0])
+        for character, is_alive in self.members.values():
+            if is_alive:
+                members.append(character)
             else:
                 continue
+
         return Party(name, tuple(members), leader)
 
 
@@ -133,7 +134,7 @@ class Battle(NamedTuple):
         Custom constructor to properly initialize the necessary variables.
         Needed because NamedTuple.__init__ can't be modified.
         """
-        combat_log.info(f" Creating a Battle between '{team1.name}' and '{team2.name}'")
+        combat_log.info(f"Creating a Battle between '{team1.name}' and '{team2.name}'")
 
         combat_team1 = CombatParty.new(team1)
         combat_team2 = CombatParty.new(team2)
@@ -300,18 +301,72 @@ class Battle(NamedTuple):
                         if __name__ == "__main__":
                             attack, weapon, target_uuid = self.get_player_action(fighter, allies, enemies)
                         else:
+                            # HAHAHA  U G L I E R
+                            target_options = ()
+                            target_on_confirm_events = {}
+
+                            for enemy_uuid in enemies.valid_targets:
+                                target_options += (self.get_fighter(enemy_uuid).__repr__(),)
+                                target_on_confirm_events[len(target_options) - 1] = EnumObject(
+                                    EVENT_TYPES.SET_BATTLE_TARGET,
+                                    enemy_uuid,
+                                )
+
+                            target_choice_constructor = EnumObject(
+                                UI_ELEMENT_TYPES.CHOICE_BOX,
+                                {
+                                    "options": target_options,
+                                    "on_confirm_events": target_on_confirm_events,
+                                    "rectangle_preset": RECTANGLE_PRESETS.MENU,
+                                },
+                            )
+                            target_choice_event = EnumObject(
+                                EVENT_TYPES.MAKE_UI_ELEMENT,
+                                target_choice_constructor,
+                            )
+
+                            action_options = ()
+                            action_on_confirm_events = {}
+
+                            for weapon_uuid, action in fighter.actions:
+                                weapon = fighter.inventory.find_equipped_item(weapon_uuid)
+                                action_options += (action.display(weapon, fighter.current),)
+                                action_on_confirm_events[len(action_options) - 1] = EnumObject(
+                                    EVENT_TYPES.SET_BATTLE_ACTION,
+                                    (action, weapon),
+                                )
+
+                            action_choice_constructor = EnumObject(
+                                UI_ELEMENT_TYPES.CHOICE_BOX,
+                                {
+                                    "options": action_options,
+                                    "on_confirm_events": action_on_confirm_events,
+                                    "rectangle_preset": RECTANGLE_PRESETS.MENU,
+                                },
+                            )
+                            action_choice_event = EnumObject(
+                                EVENT_TYPES.MAKE_UI_ELEMENT,
+                                action_choice_constructor,
+                            )
+
+                            self.return_dialog.append(target_choice_event)
+                            self.return_dialog.append(action_choice_event)
                             return_dialog = tuple(self.return_dialog)
                             self.return_dialog.clear()
-                            return EnumObject(
-                                EVENT_TYPES.MAKE_UI_ELEMENT,
-                                EnumObject(
-                                    UI_ELEMENT_TYPES.DIALOG_BOX,
-                                    {
-                                        "dialog": return_dialog,
-                                        "rectangle_preset": RECTANGLE_PRESETS.MENU,
-                                    },
-                                ),
+
+                            dialog_constructor = EnumObject(
+                                UI_ELEMENT_TYPES.DIALOG_BOX,
+                                {
+                                    "dialog": return_dialog,
+                                    "rectangle_preset": RECTANGLE_PRESETS.MENU,
+                                },
                             )
+                            dialog_event = EnumObject(
+                                EVENT_TYPES.MAKE_UI_ELEMENT,
+                                dialog_constructor,
+                            )
+
+                            return dialog_event
 
                     else:
                         attack, weapon, target_uuid = player_choice
@@ -333,7 +388,7 @@ class Battle(NamedTuple):
                 fighter, target, damage_dealt = Battle.attack(fighter, weapon, attack, target)
 
                 combat_log.info(f"{target.name} takes ¤ {damage_dealt} damage -> ♥ {target.health}")
-                self.output(f(translate("combat.damage"), target.name, damage_dealt, target.health))
+                self.output(f(translate("combat.damage"), target.display_name, damage_dealt, target.health))
 
                 # update the fighter and character saved in the Battle instance
                 allies.update_member(fighter_uuid, fighter)
@@ -342,7 +397,7 @@ class Battle(NamedTuple):
                 # remove dead characters, check win/loss conditions
                 if not target.is_alive:
                     combat_log.info(f"{target.name} dies")
-                    self.output(f(translate("combat.death"), target.name))
+                    self.output(f(translate("combat.death"), target.display_name))
                     # self.turn_order.remove(target_uuid)
 
                     match self.check_win_loss_conditions():

@@ -37,7 +37,7 @@ class DefaultStats(NamedTuple):
 
 def Player():
     char = Character.new(
-        name            = "Player",
+        name            = "player",
         sprite_sheet    = load_text_dir(PLAYER_SPRITE_DIR_PATH),
         is_player       = True,
         base_stats      = DefaultStats.human,
@@ -54,7 +54,7 @@ def Player():
 
 def Goblin():
     char = Character.new(
-        name            = "Goblin",
+        name            = "goblin",
         sprite_sheet    = None,
         is_player       = False,
         base_stats      = DefaultStats.goblin,
@@ -68,7 +68,7 @@ def Goblin():
 
 def Hobgoblin():
     char = Character.new(
-        name            = "Hobgoblin",
+        name            = "hobgoblin",
         sprite_sheet    = None,
         is_player       = False,
         base_stats      = DefaultStats.hobgoblin,
@@ -83,7 +83,7 @@ def Hobgoblin():
 
 def GoblinChief():
     char = Character.new(
-        name            = "Goblin Chieftain",
+        name            = "goblin_chieftain",
         sprite_sheet    = None,
         is_player       = False,
         base_stats      = DefaultStats.goblin_chief,
@@ -97,7 +97,7 @@ def GoblinChief():
 
 def Bandit():
     char = Character.new(
-        name            = "Bandit",
+        name            = "bandit",
         sprite_sheet    = None,
         is_player       = False,
         base_stats      = DefaultStats.human,

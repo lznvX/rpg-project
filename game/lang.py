@@ -61,16 +61,6 @@ class _Lang(NamedTuple):
     controls: str = None
 
     # Choice
-    menu_back: str = None
-    menu_equipment: str = None
-    menu_backpack: str = None
-    menu_settings: str = None
-    menu_save: str = None
-    menu_load: str = None
-    menu_close: str = None
-    menu_save_quit: str = None
-    menu_test_combat: str = None
-
     settings_language: str = None
     
     equipment_none: str = None
@@ -78,6 +68,9 @@ class _Lang(NamedTuple):
     item_equip: str = None
     item_unequip: str = None
     item_use: str = None
+
+    # Menu
+    menu: dict[str, str] = None
 
     # Combat
     combat: dict[str, str] = None
@@ -194,24 +187,25 @@ ENGLISH = _Lang(
     welcome = "Welcome adventurer ! ...asdf. \n(press Space or Enter)",
     controls = "Controls:\n\nUp: W    Down: S    Left: A    Right: D\nConfirm: Space/Enter    Menu: M",
 
-    # Choice
-    menu_back = "Back",
-    menu_equipment = "Equipment",
-    menu_backpack = "Backpack",
-    menu_settings = "Settings",
-    menu_save = "Save",
-    menu_load = "Load",
-    menu_close = "Close menu",
-    menu_save_quit = "Save and quit",
-    menu_test_combat = "Start combat test",
-
     settings_language = "Language",
-    
+
     equipment_none = "None",
-    
+
     item_equip = "Equip",
     item_unequip = "Unequip",
     item_use = "Use",
+
+    menu = {
+        "back": "Back",
+        "equipment": "Equipment",
+        "backpack": "Backpack",
+        "settings": "Settings",
+        "save": "Save",
+        "load": "Load",
+        "close": "Close menu",
+        "save_quit": "Save and quit",
+        "test_combat": "Start combat test",
+    },
 
     # Combat
     combat = {
@@ -231,7 +225,11 @@ ENGLISH = _Lang(
 
     # Characters
     character_names = {
-        "romain": "Romain",
+        "player": "Player",
+        "goblin": "Goblin",
+        "hobgoblin": "Hobgoblin",
+        "goblin_chieftain": "Goblin chieftain",
+        "bandit": "Bandit",
     },
 
     # Slots
@@ -289,17 +287,6 @@ FRENCH = _Lang(
     welcome = "Bienvenue aventurier ! ...asdf. \n(appuyez sur Espace ou Entrée)",
     controls = "Controles:\n\nHaut: W    Bas: S    Gauche: A    Droite: D\nConfirmer: Space/Enter    Menu: M",
 
-    # Choice
-    menu_back = "Retour",
-    menu_equipment = "Équipement",
-    menu_backpack = "Sac à dos",
-    menu_settings = "Options",
-    menu_save = "Sauvegarder",
-    menu_load = "Charger",
-    menu_close = "Fermer le menu",
-    menu_save_quit = "Sauvegarder et quitter",
-    menu_test_combat = "Commencer combat de test",
-
     settings_language = "Langue",
 
     equipment_none = "Aucun",
@@ -307,6 +294,18 @@ FRENCH = _Lang(
     item_equip = "Équiper",
     item_unequip = "Déséquiper",
     item_use = "Utiliser",
+
+    menu = {
+        "back": "Retour",
+        "equipment": "Équipement",
+        "backpack": "Sac à dos",
+        "settings": "Options",
+        "save": "Sauvegarder",
+        "load": "Charger",
+        "close": "Fermer le menu",
+        "save_quit": "Sauvegarder et quitter",
+        "test_combat": "Commencer combat de test",
+    },
 
     # Combat
     combat = {
@@ -326,7 +325,11 @@ FRENCH = _Lang(
 
     # Characters
     character_names = {
-        "romain": "Romain",
+        "player": "Joueur",
+        "goblin": "Goblin",
+        "hobgoblin": "Hobgoblin",
+        "goblin_chieftain": "Chef goblin",
+        "bandit": "Bandit",
     },
 
     # Slots

@@ -16,8 +16,8 @@ class Inventory(NamedTuple):
 
     Not necessarily the player.
     """
-    equipment: dict[str: Item]
-    backpack: Counter[Item: int]
+    equipment: dict[str, Item]
+    backpack: Counter[Item, int]
     slots = ("mainhand", "offhand", "head", "body", "feet")
 
 

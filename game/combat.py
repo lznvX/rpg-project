@@ -12,7 +12,7 @@ from get_input import get_input
 import random as r
 import time
 from lang import translate, f
-from game_classes import Stats, DamageInstance, Character, Action, Party, Item, CharacterNotFoundError
+from game_classes import Stats, DamageInstance, Character, Action, Party, CharacterNotFoundError
 import monsters as m
 import test_items as ti
 from uuid import UUID
@@ -137,16 +137,13 @@ class Battle(NamedTuple):
 
 
     @staticmethod
-    def attack(attacker: Character, weapon: Item, attack: Action, victim: Character
+    def attack(attacker: Character, attack: Action, victim: Character
                ) -> (Character, Character, int):
         """Determine the result of an intercation during combat."""
 
-        # combat_log.debug(f" {attack.get_damage}")
-        # combat_log.debug(f" {attack.get_damage(weapon, attacker.current)}, {attack.damage_type}, {attack.effects}")
 
-        hit = DamageInstance(attack.get_damage(weapon, attacker.current), attack.damage_type, attack.effects)
-
-        victim, damage_taken = victim.hit(hit)
+        victim, damage_taken = victim.hit(DamageInstance(attack.get_damage(),
+                               attack.damage_type, attack.effects))
 
         # returning the attacker too if we ever do thorns damage
         return attacker, victim, damage_taken
@@ -178,12 +175,10 @@ class Battle(NamedTuple):
 
         action_names = []
         for action in player.actions:
-            weapon = player.inventory.find_equipped_item(action[0])
-            action_names.append(action[1].display(weapon, player.current))
+            action_names.append(action[1])
         list_choices(action_names, translate("combat.action_choice").format(player.name))
         action_index = get_input(int, True, (1, len(player.actions)))
         action = player.actions[action_index-1][1]
-        weapon = player.inventory.find_equipped_item(player.actions[action_index-1][0])
         combat_log.debug(f" Player chooses to use <{action.name}>")
 
         enemies_actual = []
@@ -194,7 +189,7 @@ class Battle(NamedTuple):
         enemy_uuid = enemies.valid_targets[enemy_index-1]
         combat_log.debug(f" Player chooses to attack {self.get_fighter(enemy_uuid)} ({enemy_uuid})")
 
-        return action, weapon, enemy_uuid
+        return action, enemy_uuid
 
 
     def begin(self) -> None:
@@ -227,12 +222,11 @@ class Battle(NamedTuple):
                 # pick action and target
                 if fighter.is_player:
                     print()
-                    attack, weapon, target_uuid = self.get_player_action(fighter, allies, enemies)
+                    attack, target_uuid = self.get_player_action(fighter, allies, enemies)
                 else:
                     # TODO: Implement better NPC AI
                     attack_action_source, attack = r.choice(fighter.actions)
                     target_uuid = r.choice(enemies.valid_targets)
-                    weapon = fighter.inventory.find_equipped_item(attack_action_source)
                 target = enemies.get_member(target_uuid)
 
                 # Resolve attack
@@ -240,7 +234,7 @@ class Battle(NamedTuple):
                 print()
                 print(f(translate("combat.attack"), fighter, attack.display_name, target))
 
-                fighter, target, damage_dealt = Battle.attack(fighter, weapon, attack, target)
+                fighter, target, damage_dealt = Battle.attack(fighter, attack, target)
 
                 combat_log.info(f" {target.name} takes ¤ {damage_dealt} damage -> ♥ {target.health}")
                 print(f(translate("combat.damage"), target.name, damage_dealt, target.health))

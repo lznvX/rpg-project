@@ -18,7 +18,7 @@ def auto_integer(func: Callable) -> Callable:
     """Convert output of func to int if appropriate."""
     def wrapper(*args, **kwargs):
         result = func(*args, **kwargs)
-        if type(result) is float:
+        if isinstance(result, float):
             if result.is_integer():
                 return int(result)
         return result

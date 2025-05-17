@@ -41,7 +41,7 @@ def Player():
         sprite_sheet    = load_text_dir(PLAYER_SPRITE_DIR_PATH),
         is_player       = True,
         base_stats      = DefaultStats.human,
-        actions         = {},
+        actions         = [],
         initial_effects = {}
         )
     char.inventory.add(ti.PotionHealth, 3)

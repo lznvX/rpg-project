@@ -2,12 +2,14 @@
 
 Contributors:
     Romain
+    Adrien
 """
 
 from __future__ import annotations
 import logging
 import os
 import pickle
+
 from typing import NamedTuple
 from enums import EVENT_TYPES
 
@@ -66,15 +68,30 @@ def load_pickle(path: str) -> object:
         return None
 
 
-def delete(file : str, filepath : str):
+def delete(file : str, filepath : str = None):
+    if filepath is None:
+        os.remove(file)
+        return
     liste_file = os.listdir(filepath)
     if file in liste_file:
-        os.remove(filepath+"\\"+file)
+        os.remove(filepath+"\\"+ file)
     else:
         print(f"Le fichier {file} n'est pas dans le bon dossier.") 
+
+
+def _test():
+    file_1 = "10"
+    save_pickle(file_1, "test")
+    assert load_pickle("test") == "10"
+    with open("test", "w") as file:
+        file.write(file_1)
+    assert load_text("test") == "10"
+    delete("test")
+    assert "test" not in os.listdir()
+    print("all Tests passed")
 
 
 logger = logging.getLogger(__name__)
 
 if __name__ == "__main__":
-    pass
+    _test()

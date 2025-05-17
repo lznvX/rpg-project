@@ -25,15 +25,14 @@ class GameSave(NamedTuple):
     def new(cls, character: Character = monsters.Player(),
             zone_path: str = DEFAULT_ZONE_PATH, player_grid_y: int = 3,
             player_grid_x: int = 5) -> GameSave:
-        game_save = cls(
+        logger.debug("Creating new GameSave")
+
+        return cls(
             character,
             zone_path,
             player_grid_y,
             player_grid_x,
         )
-        
-        logger.debug("Created new GameSave")
-        return game_save
         
 #     def _test():
 #         save1 = Save.new(worldPosition=("zone2.pkl", 5, 5))

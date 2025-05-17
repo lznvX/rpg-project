@@ -31,13 +31,14 @@ class Label(NamedTuple):
     
     @classmethod
     def new(cls, y: int, x: int, text: str = None, is_top_level: bool = True) -> Label:
+        logger.debug("Creating new Label")
+        
         pid = int(uuid4())
         label = cls(pid, y, x, text)
         
         if is_top_level:
             set_element(pid, label)
         
-        logger.debug("Created new Label")
         return label
     
     def config(self, is_top_level: bool = True, **kwargs) -> Label:
@@ -79,13 +80,14 @@ class SpriteRenderer(NamedTuple):
     
     @classmethod
     def new(cls, y: int, x: int, sprite: str = None, is_top_level: bool = True) -> SpriteRenderer:
+        logger.debug("Creating new SpriteRenderer")
+        
         pid = int(uuid4())
         sprite_renderer = cls(pid, y, x, sprite)
         
         if is_top_level:
             set_element(pid, sprite_renderer)
         
-        logger.debug("Created new SpriteRenderer")
         return sprite_renderer
     
     def config(self, is_top_level: bool = True, **kwargs) -> SpriteRenderer:
@@ -160,6 +162,8 @@ class Rectangle(NamedTuple):
     def new(cls, y: int = None, x: int = None, height: int = None,
             width: int = None, rectangle_preset: int = 0,
             is_top_level: bool = True) -> Rectangle:
+        logger.debug("Creating new Rectangle")
+        
         preset = Rectangle.get_preset(rectangle_preset)
         pid = int(uuid4())
         rectangle = cls(
@@ -173,7 +177,6 @@ class Rectangle(NamedTuple):
         if is_top_level:
             set_element(pid, rectangle)
         
-        logger.debug("Created new Rectangle")
         return rectangle
     
     def config(self, is_top_level: bool = True, **kwargs) -> Rectangle:
@@ -238,6 +241,8 @@ class TextBox(NamedTuple):
     def new(cls, y: int = None, x: int = None, height: int = None,
             width: int = None, text: str = None, rectangle_preset: int = 0,
             is_top_level: bool = True) -> TextBox:
+        logger.debug("Creating new TextBox")
+        
         pid = int(uuid4())
         text_box = cls(
             pid,
@@ -255,7 +260,6 @@ class TextBox(NamedTuple):
         if is_top_level:
             set_element(pid, text_box)
         
-        logger.debug("Created new TextBox")
         return text_box
     
     def config(self, is_top_level: bool = True, **kwargs) -> TextBox:
@@ -331,6 +335,8 @@ class DialogBox(NamedTuple):
             width: int = None,
             dialog: tuple[DialogLine | EnumObject, ...] = None,
             rectangle_preset: int = 0, is_top_level: bool = True) -> DialogBox:
+        logger.debug("Creating new DialogBox")
+        
         pid = int(uuid4())
         dialog_box = cls(
             pid,
@@ -351,7 +357,6 @@ class DialogBox(NamedTuple):
         if is_top_level:
             set_element(pid, dialog_box)
         
-        logger.debug("Created new DialogBox")
         return dialog_box
     
     def config(self, is_top_level: bool = True, **kwargs) -> DialogBox:
@@ -441,6 +446,8 @@ class ChoiceBox(NamedTuple):
             on_confirm_events: dict[int, EnumObject] = {},
             selected_index: int = 0, rectangle_preset: int = 0,
             is_top_level: bool = True) -> ChoiceBox:
+        logger.debug("Creating new ChoiceBox")
+        
         pid = int(uuid4())
         choice_box = cls(
             pid,
@@ -461,7 +468,6 @@ class ChoiceBox(NamedTuple):
         if is_top_level:
             set_element(pid, choice_box)
         
-        logger.debug("Created new ChoiceBox")
         return choice_box
     
     def config(self, is_top_level: bool = True, **kwargs) -> ChoiceBox:
@@ -514,6 +520,8 @@ class ChoiceBox(NamedTuple):
 
 def _fullscreen() -> None:
     """Simulates the F11 key being pressed."""
+    logger.debug("Fullscreening terminal")
+    
     user32 = ctypes.windll.user32
     user32.keybd_event(0x7A, 0, 0, 0)
     user32.keybd_event(0x7A, 0, 0x0002, 0)

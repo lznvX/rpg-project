@@ -15,16 +15,18 @@ import os
 import random
 import time
 from typing import NamedTuple
+from combat import Battle
 from common import EnumObject, remap_dict, try_append
 import cuinter
 from cuinter import UI_ELEMENT_CLASSES
 from enums import EVENT_TYPES, UI_ELEMENT_TYPES, RECTANGLE_PRESETS
 from files import load_text_dir, load_pickle, save_pickle
-from game_classes import Character, Item, Stats
+from game_classes import Action, Character, Item, Party
 from game_save import GameSave
 from lang import DialogLine, translate
 import monsters
 import settings
+from uuid import UUID
 import world
 from world import WORLD_OBJECT_CLASSES
 
@@ -57,6 +59,8 @@ frame_count = 0
 settings.load()
 current_save = None
 current_zone_path = None
+battle_action = None
+battle_target = None
 
 tiles = load_text_dir(TILE_SPRITE_DIR_PATH)
 tileset = remap_dict(tiles, world.TILE_NAME_TO_CHAR)
@@ -232,11 +236,14 @@ while 1:
                 
                 tilemap, world_objects_constructors = zone_data
                 
+                current_zone_path = zone_path
                 grid = grid.load_tilemap(tilemap)
                 grid = grid.center(cuinter.screen_height, cuinter.screen_width)
-                
-                current_zone_path = zone_path
-                player = player.config(grid=grid, grid_y=player_grid_y, grid_x=player_grid_x)
+                player = player.config(
+                    grid=grid,
+                    grid_y=player_grid_y,
+                    grid_x=player_grid_x,
+                )
                 
                 world_objects.clear()
                 for constructor in world_objects_constructors:
@@ -246,16 +253,61 @@ while 1:
                     )
                     try_append(new_events, new_event)
             
-            case EVENT_TYPES.LOAD_COMBAT:
+            case EVENT_TYPES.LOAD_BATTLE:
                 if not isinstance(value, str):
                     logger.error(f"Expected value of type str, got {value}")
                     continue
                 
-                combat_data = load_pickle(zone_path)
-                if combat_data is None:
+                #TODO load battle_data and plug into Battle.new()
+                
+                grid = grid.config(
+                    y=cuinter.screen_height,
+                    x=cuinter.screen_width,
+                )
+                world_objects = [world_object.config(grid=grid) for world_object in world_objects]
+                player = player.config(grid=grid)
+                
+                chief = monsters.GoblinChief()
+                battle = Battle.new(
+                    Party(
+                        name="Player party",
+                        members=(player.character,),
+                        leader=player.character.uuid,
+                    ),
+                    Party(
+                        name="Goblin squad",
+                        members=(
+                            chief,
+                            monsters.Hobgoblin(),
+                            monsters.Goblin(),
+                        ),
+                        leader=chief.uuid,
+                    ),
+                )
+                
+                #try_append(new_events, battle.advance())
+            
+            case EVENT_TYPES.SET_BATTLE_ACTION:
+                if not isinstance(value, Action):
+                    logger.error(f"Expected value of type Action, got {value}")
                     continue
                 
-                logger.error("Not implemented: EVENT_TYPES.LOAD_COMBAT")
+                if battle_target is not None:
+                    #try_append(new_events, battle.advance(value, battle_target))
+                    battle_target = None
+                else:
+                    battle_action = value
+            
+            case EVENT_TYPES.SET_BATTLE_TARGET:
+                if not isinstance(value, UUID):
+                    logger.error(f"Expected value of type UUID, got {value}")
+                    continue
+                
+                if battle_action is not None:
+                    #try_append(new_events, battle.advance(battle_action, value))
+                    battle_action = None
+                else:
+                    battle_target = value
             
             case EVENT_TYPES.EQUIP_ITEM:
                 if (not isinstance(value, tuple)
@@ -314,7 +366,7 @@ while 1:
                     logger.error(f"Expected value of type Item, got {value}")
                     continue
                 
-                logger.debug("Opened item")
+                logger.debug("Opening item")
                 
                 item = value
                 inventory = player.character.inventory
@@ -395,7 +447,7 @@ while 1:
                 )
             
             case EVENT_TYPES.OPEN_EQUIPMENT:
-                logger.debug("Opened equipment")
+                logger.debug("Opening equipment")
                 
                 slot_items = player.character.inventory.equipment.items()
                 options = ()
@@ -429,7 +481,7 @@ while 1:
                 )
             
             case EVENT_TYPES.OPEN_BACKPACK:
-                logger.debug("Opened backpack")
+                logger.debug("Opening backpack")
                 
                 item_counts = sorted(player.character.inventory.backpack.items())
                 options = ()
@@ -465,7 +517,7 @@ while 1:
                 settings.config(**value)
             
             case EVENT_TYPES.SAVE_GAME:
-                logger.debug("Saved game")
+                logger.debug("Saving game")
                 
                 current_save = GameSave(
                     player.character,
@@ -476,7 +528,7 @@ while 1:
                 save_pickle(current_save, "user_data\\game_saves\\save_1.pkl")
             
             case EVENT_TYPES.LOAD_GAME:
-                logger.debug("Loaded game")
+                logger.debug("Loading game")
                 
                 if os.path.exists("user_data\\game_saves\\save_1.pkl"):
                     current_save = load_pickle("user_data\\game_saves\\save_1.pkl")

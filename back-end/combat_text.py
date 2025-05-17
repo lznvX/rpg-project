@@ -3,12 +3,12 @@
 Created on 2025.03.12
 Contributors:
     Jakub
-    Romain (just did implementation with the rest)
 """
 
 
 from __future__ import annotations
 from typing import NamedTuple
+from get_input import get_input
 import random as r
 import time
 from lang import translate, f

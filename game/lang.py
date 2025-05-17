@@ -132,7 +132,6 @@ def _translate_simple(lang_key: str, sub_dict: dict = None) -> str:
             lang_value = sub_dict[lang_key]
 
         if isinstance(lang_value, str):
-            logger.debug(f"Translated {lang_key} into {lang_value}")
             return lang_value
         elif isinstance(lang_value, dict):
             logger.error(f"Specify key of sub dict {lang_key} with dotted notation")
@@ -151,8 +150,10 @@ def _translate_nest(lang_key: str, sub_dict: dict = None) -> str:
     """
     Calls _translate_simple recursively (if it has to) for dicts in lang by
     using dotted notation in the lang key, like
-    _translate_single("item_names.agi_boots").
+    _translate_nest("item_names.agi_boots").
     """
+    logger.debug(f"Translating {lang_key}")
+    
     if SUB_DICT_SEPARATOR in lang_key:
         sub_dict_name, sub_dict_key = lang_key.split(SUB_DICT_SEPARATOR, 1)
         if sub_dict is None:

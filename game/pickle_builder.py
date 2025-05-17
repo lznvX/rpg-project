@@ -69,8 +69,8 @@ objects = {
                     ),
                 ),
                 6: EnumObject(
-                    EVENT_TYPES.LOAD_COMBAT,
-                    "assets\\combats\\test_combat.pkl",
+                    EVENT_TYPES.LOAD_BATTLE,
+                    "assets\\combats\\test_battle.pkl",
                 ),
             },
             "rectangle_preset": RECTANGLE_PRESETS.MENU,

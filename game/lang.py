@@ -4,11 +4,13 @@ Created on 2025.03.17
 Contributors:
     Jakub
     Romain
+    Adrien
 """
 
 from __future__ import annotations
 import logging
 from typing import NamedTuple
+
 from common import EnumObject
 from enums import LANGUAGE_ENUM
 import settings
@@ -78,6 +80,9 @@ class _Lang(NamedTuple):
     item_equip: str = None
     item_unequip: str = None
     item_use: str = None
+    
+    task_accept : str = None
+    task_decline : str = None
 
     # Combat
     combat: dict[str, str] = None
@@ -186,6 +191,12 @@ def f(fstring: str, *args: object) -> str:
     return fstring.format(*args)
 
 
+def _test():
+    assert FRENCH.action_descriptions["slash"] == "Brandissez votre épée sur votre ennemi"
+    assert _translate_simple("feet", ENGLISH.equipment_slots) == "Feet"
+    print("all Tests passed")
+    
+    
 logger = logging.getLogger(__name__)
 
 ENGLISH = _Lang(
@@ -212,6 +223,9 @@ ENGLISH = _Lang(
     item_unequip = "Unequip",
     item_use = "Use",
 
+    task_accept = "Accept",
+    task_decline = "Decline",
+    
     # Combat
     combat = {
         "begin"    : "You are now in battle!",
@@ -278,6 +292,7 @@ ENGLISH = _Lang(
     task_names = {
         # "task_name": "Task Name"
     },
+    
     task_descriptions = {
         # "task_name": "Task Description"
     },
@@ -307,6 +322,9 @@ FRENCH = _Lang(
     item_unequip = "Déséquiper",
     item_use = "Utiliser",
 
+    task_accept = "Accepter",
+    task_decline = "Refuser",
+    
     # Combat
     combat = {
         "begin"    : "Vous êtes maintenant en combat !",
@@ -370,6 +388,7 @@ FRENCH = _Lang(
     # Tasks
     task_names = {
         # "task_name": "Task Name"
+    
     },
     task_descriptions = {
         # "task_name": "Task Description"
@@ -381,5 +400,7 @@ LANGUAGES = {
     LANGUAGE_ENUM.FRENCH: FRENCH,
 }
 
+
+
 if __name__ == "__main__":
-    pass
+    _test()

@@ -110,6 +110,7 @@ def Bandit():
 
 
 if __name__ == "__main__":
+    #Test
     print(Goblin())
     print(Hobgoblin())
     print(GoblinChief())

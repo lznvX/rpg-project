@@ -5,7 +5,7 @@ ressources to easily modify them.
 
 Contributors:
     Romain
-"""
+""" ...
 
 from common import EnumObject
 from enums import (

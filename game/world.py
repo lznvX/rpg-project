@@ -358,3 +358,6 @@ WORLD_OBJECT_CLASSES = {
     WORLD_OBJECT_TYPES.WORLD_CHARACTER: WorldCharacter,
     WORLD_OBJECT_TYPES.WALK_TRIGGER: WalkTrigger,
 }
+
+if __name__ == "__main__":
+    pass

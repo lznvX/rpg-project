@@ -84,3 +84,6 @@ LANGUAGE_ENUM = _LanguageEnum.new()
 UI_ELEMENT_TYPES = _UIElementTypes.new()
 RECTANGLE_PRESETS = _RectanglePresets.new()
 WORLD_OBJECT_TYPES = _WorldObjectTypes.new()
+
+if __name__ == "__main__":
+    pass

@@ -666,3 +666,6 @@ empty_buffer = [[" " for _ in range(screen_width)] for _ in range(screen_height)
 get_buffer, set_cell, clear_buffer = _make_buffer_manager()
 get_elements, set_element, remove_element = _make_element_manager()
 get_events, add_event, clear_events = _make_event_manager()
+
+if __name__ == "__main__":
+    pass

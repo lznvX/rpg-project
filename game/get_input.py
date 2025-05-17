@@ -45,3 +45,6 @@ def get_input(desired_type: type=str, check_bounds=False,
                     continue
 
         return typed_in
+
+if __name__ == "__main__":
+    pass

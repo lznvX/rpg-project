@@ -380,3 +380,6 @@ LANGUAGES = {
     LANGUAGE_ENUM.ENGLISH: ENGLISH,
     LANGUAGE_ENUM.FRENCH: FRENCH,
 }
+
+if __name__ == "__main__":
+    pass

@@ -20,7 +20,7 @@ import logging
 
 
 combat_log = logging.getLogger(__name__)
-#auto_turn_delay = 0.5 # seconds
+auto_turn_delay = 0.5 # seconds
 
 
 combat_log.debug(" combat.py loaded")

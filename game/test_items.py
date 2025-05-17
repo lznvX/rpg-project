@@ -51,7 +51,7 @@ slash = Action("slash",
 Dagger = Item(
     "dagger",
     ("equippable", "weapon", "mainhand", "offhand"),
-    5,
+    3,
     None,
     Stats(),
     (light_stab,),

@@ -84,8 +84,8 @@ new_events = [
     ),
 ]
 if settings.get("first_time"):
-   new_events.append(EnumObject(
-       EVENT_TYPES.LOAD_UI_ELEMENT,
+    new_events.append(EnumObject(
+        EVENT_TYPES.LOAD_UI_ELEMENT,
         "assets\\dialogs\\welcome_dialog.pkl",
     ))
 

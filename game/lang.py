@@ -345,6 +345,7 @@ FRENCH = _Lang(
         "potion_health": "Potion de Guérison",
         "str_helmet": "Heaume de Force",
         "sword": "Épée",
+        "dagger": "Dague",
     },
     item_descriptions = {
     #   "item_name": "Item Description",
@@ -352,6 +353,7 @@ FRENCH = _Lang(
         "potion_health": "Guérit ♥ 5 lors de consommation",
         "str_helmet": "Une heaume spartane, enchantée avec un sort de force",
         "sword": "Un truc pointu",
+        "dagger": "Un autre truc pointu",
     },
 
     # Actions

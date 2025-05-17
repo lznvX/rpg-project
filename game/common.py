@@ -13,6 +13,7 @@ import os
 import pickle
 from typing import NamedTuple, Callable
 
+
 class EnumObject(NamedTuple):
     """
     Stores an object with an associated int. Usually used to define how the object is used, such as
@@ -67,7 +68,5 @@ def delete(file : str, filepath : str):
 logger = logging.getLogger(__name__)
 
 if __name__ == "__main__":
-    #Tests
-    Inventory._test()
-    Character._test()
-    
+    # Tests
+    ...

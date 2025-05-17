@@ -3,6 +3,8 @@
 Created on 2025.05.14
 Contributors:
     Jakub
+    Adrien
+    Romain
 """
 
 from __future__ import annotations
@@ -11,6 +13,7 @@ from collections import Counter
 from uuid import UUID, uuid4
 from common import named_tuple_modifier
 from lang import translate
+
 
 null_uuid = UUID('00000000-0000-0000-0000-000000000000')
 
@@ -395,13 +398,13 @@ class Character(NamedTuple):
     mana: int = None
 
     inventory: Inventory = None
-    actions: dict[UUID, Action] = None
+    actions: list[(UUID, Action)] = None
     effects: dict = None
 
 
     @staticmethod
     def new(name: str, sprite_sheet: dict[str, str], is_player: bool,
-            base_stats: Stats, actions: dict[UUID, Action],
+            base_stats: Stats, actions: list[(UUID, Action)],
             initial_effects: dict, uuid: UUID=None) -> Character:
         """Character constructor.
 
@@ -438,13 +441,25 @@ class Character(NamedTuple):
         except ItemNotEquippableError:
             ...
         else:
-            # self.actions[item_uuid] = item.actions
+            for action in item.actions:
+                self.actions.append((item_uuid, action))
+
 
             self.bonuses[item_uuid] = item.stat_bonus
             new_stats = self.update_stats()
             updated_character = self.modify(current=new_stats)
             # would've been better to update the character directly, but NamedTuple...
             return updated_character
+
+
+    def _remove_actions_from_source(self, uuid: UUID) -> None:
+        actions = []
+        for action in self.actions:
+            if action[0] == uuid:
+                continue
+            else:
+                actions.append(action)
+        return actions
 
 
     def unequip(self, slot: str) -> Character:
@@ -456,11 +471,12 @@ class Character(NamedTuple):
         except SlotEmptyError:
             ...
         else:
-            # del self.actions[item_uuid]
+            new_actions = self._remove_actions_from_source(item_uuid)
 
             del self.bonuses[item_uuid]
             new_stats = self.update_stats()
-            updated_character = self.modify(current=new_stats)
+            updated_character = self.modify(current=new_stats, actions=new_actions)
+
             # would've been better to update the character directly, but NamedTuple...
             return updated_character
 
@@ -594,20 +610,15 @@ class Task(NamedTuple):
     @property
     def display_name(self) -> str:
         """Fetch the task's name in the appropriate language."""
-        try:
-            return lang_text.task_names[self.name]
-        except KeyError:
-            return self.name
+        return translate("task_names." + self.name)
+
 
 
     @property
     def description(self) -> str:
         """Fetch the task's description in the appropriate language."""
         # will show up when inspecting the task (later)
-        try:
-            return lang_text.task_descriptions[self.name]
-        except KeyError:
-            return ""
+        return translate("action_descriptions." + self.name)
 
 
 if __name__ == "__main__":

@@ -76,18 +76,7 @@ class _Lang(NamedTuple):
     settings_language: str = None
 
     # Combat
-    battle_begin: str = None
-    battle_win: str = None
-    battle_loss: str = None
-    battle_rewards: str = None
-    battle_turn: str = None
-
-    battle_attack: str = None
-    battle_damage: str = None
-    battle_death: str = None
-    battle_ko: str = None
-    battle_action_choice: str = None
-    battle_target_choice: str = None
+    combat: dict[str, str] = None
 
     # Characters
     character_names: dict[str, str] = None
@@ -137,7 +126,7 @@ def _translate_simple(lang_key: str, sub_dict: dict = None) -> str:
             lang_value = getattr(lang_text, lang_key)
         else:
             lang_value = sub_dict[lang_key]
-    
+
         if isinstance(lang_value, str):
             logger.debug(f"Translated {lang_key} into {lang_value}")
             return lang_value
@@ -147,10 +136,10 @@ def _translate_simple(lang_key: str, sub_dict: dict = None) -> str:
             raise ValueError
         else:
             logger.error(f"LANGUAGES are made of STRINGS, not {lang_value}, you IDIOT")
-    
+
     except (AttributeError, KeyError, ValueError):
         logger.warning(f"Selected language doesn't contain {lang_key}, using that instead")
-    
+
     return lang_key
 
 
@@ -167,12 +156,13 @@ def _translate_nest(lang_key: str, sub_dict: dict = None) -> str:
             next_sub_dict = getattr(lang_text, sub_dict_name)
         else:
             next_sub_dict = sub_dict[sub_dict_name]
-        
+
+
         return _translate_nest(
             sub_dict_key,
             next_sub_dict,
         )
-    
+
     else:
         return _translate_simple(lang_key, sub_dict)
 
@@ -215,18 +205,20 @@ ENGLISH = _Lang(
     settings_language = "Language",
 
     # Combat
-    battle_begin    = "You are now in battle!",
-    battle_win      = "You won the battle!",
-    battle_loss     = "You lost the battle :(",
-    battle_rewards  = "You gain {} gold and {} xp!",
-    battle_turn     = "Turn {} begins!",
+    combat = {
+        "begin"    : "You are now in battle!",
+        "win"      : "You won the battle!",
+        "loss"     : "You lost the battle :(",
+        "rewards"  : "You gain {} gold and {} xp!",
+        "turn"     : "Turn {} begins!",
 
-    battle_attack   = "{} uses {} on {}",
-    battle_damage   = "{} takes ¤ {} damage! (♥ {} left)",
-    battle_death    = "{} dies!",
-    battle_ko       = "{} is knocked out!",
-    battle_action_choice    = "What should {} do?",
-    battle_target_choice    = "Choose target for {}:",
+        "attack"   : "{} uses {} on {}",
+        "damage"   : "{} takes ¤ {} damage! (♥ {} left)",
+        "death"    : "{} dies!",
+        "ko"       : "{} is knocked out!",
+        "action_choice"    : "What should {} do?",
+        "target_choice"    : "Choose target for {}:",
+    },
 
     # Characters
     character_names = {
@@ -304,18 +296,20 @@ FRENCH = _Lang(
     settings_language = "Langue",
 
     # Combat
-    battle_begin    = "Vous êtes maintenant en combat !",
-    battle_win      = "Vous avez gagné le combat !",
-    battle_loss     = "Vous avez perdu le combat :(",
-    battle_rewards  = "Vous gagnez {} pièces d'or et {} xp !",
-    battle_turn     = "Le tour {} commence !",
+    combat = {
+        "begin"    : "Vous êtes maintenant en combat !",
+        "win"      : "Vous avez gagné le combat !",
+        "loss"     : "Vous avez perdu le combat :(",
+        "rewards"  : "Vous gagnez {} pièces d'or et {} xp !",
+        "turn"     : "Le tour {} commence !",
 
-    battle_attack   = "{} utilise {} sur {}",
-    battle_damage   = "{} prend ¤ {} dégats ! (il lui reste ♥ {})",
-    battle_death    = "{} meurt !",
-    battle_ko       = "{} est assommé !",
-    battle_action_choice    = "Que'est-ce que {} devrait faire ?",
-    battle_target_choice    = "Choisissez la cible de {}:",
+        "attack"   : "{} utilise {} sur {}",
+        "damage"   : "{} prend ¤ {} dégats ! (il lui reste ♥ {})",
+        "death"    : "{} meurt !",
+        "ko"       : "{} est assommé !",
+        "action_choice"    : "Que'est-ce que {} devrait faire ?",
+        "target_choice"    : "Choisissez la cible de {}:",
+    },
 
     # Characters
     character_names = {

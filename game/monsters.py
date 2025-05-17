@@ -16,11 +16,11 @@ name: str,
 sprite_sheet: dict[str, str],
 is_player: bool,
 base_stats: Stats,
-actions: dict[UUID, Action],
+actions: tuple(UUID, Action),
 initial_effects: dict
 """
 
-PLAYER_SPRITE_DIR_PATH = "assets\\sprites\\characters\\player"
+PLAYER_SPRITE_DIR_PATH = r"assets\sprites\characters\player"
 
 
 class DefaultStats(NamedTuple):
@@ -41,7 +41,7 @@ def Player():
         sprite_sheet    = load_text_dir(PLAYER_SPRITE_DIR_PATH),
         is_player       = True,
         base_stats      = DefaultStats.human,
-        actions         = {},
+        actions         = [],
         initial_effects = {}
         )
     char.inventory.add(ti.PotionHealth)

@@ -14,19 +14,18 @@ import logging
 import os
 import random
 import time
-from typing import NamedTuple
+from uuid import UUID
 from combat import Battle
 from common import EnumObject, remap_dict, try_append
 import cuinter
 from cuinter import UI_ELEMENT_CLASSES
 from enums import EVENT_TYPES, UI_ELEMENT_TYPES, RECTANGLE_PRESETS
 from files import load_text_dir, load_pickle, save_pickle
-from game_classes import Action, Character, Item, Party
+from game_classes import Action, Item, Party
 from game_save import GameSave
 from lang import DialogLine, translate
 import monsters
 import settings
-from uuid import UUID
 import world
 from world import WORLD_OBJECT_CLASSES
 
@@ -370,7 +369,7 @@ while 1:
                     for slot_name in inventory.slots:
                         if slot_name not in item.tags:
                             continue
-                        elif (inventory.equipment[slot_name] is not None
+                        if (inventory.equipment[slot_name] is not None
                         and item.name == inventory.equipment[slot_name].name):
                             equip_entry = translate("item_unequip")
                             on_confirm_event = EnumObject(

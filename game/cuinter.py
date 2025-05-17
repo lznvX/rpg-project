@@ -7,40 +7,20 @@ Contributors:
 """
 
 from __future__ import annotations
-import copy
+from copy import deepcopy
 import ctypes
 import curses
 import logging
 import math
 import time
 from typing import NamedTuple
-import uuid
-from common import *
+from uuid import uuid4
+from common import EnumObject, move_toward
+from enums import EVENT_TYPES, RECTANGLE_PRESETS, UI_ELEMENT_TYPES
+from lang import DialogLine
 
 X_CORRECTION = 2.6 # Hauteur / largeur d'un caractère
 CHARACTER_TIME = 0.025 # Délai d'affichage de chaque caractère dans les textes
-
-
-class _UIElementTypes(NamedTuple):
-    LABEL: int
-    SPRITE_RENDERER: int
-    RECTANGLE: int
-    TEXT_BOX: int
-    DIALOG_BOX: int
-    CHOICE_BOX: int
-
-    @classmethod
-    def new(cls) -> _UIElementTypes:
-        return cls(*range(len(cls.__annotations__)))
-
-
-class _RectanglePresets(NamedTuple):
-    DIALOG: int
-    MENU: int
-
-    @classmethod
-    def new(cls) -> _UIElementTypes:
-        return cls(*range(len(cls.__annotations__)))
 
 
 class Label(NamedTuple):
@@ -51,12 +31,13 @@ class Label(NamedTuple):
     
     @classmethod
     def new(cls, y: int, x: int, text: str = None, is_top_level: bool = True) -> Label:
-        pid = int(uuid.uuid4())
+        pid = int(uuid4())
         label = cls(pid, y, x, text)
         
         if is_top_level:
             set_element(pid, label)
-            logger.debug("Created new Label")
+        
+        logger.debug("Created new Label")
         return label
     
     def config(self, is_top_level: bool = True, **kwargs) -> Label:
@@ -98,12 +79,13 @@ class SpriteRenderer(NamedTuple):
     
     @classmethod
     def new(cls, y: int, x: int, sprite: str = None, is_top_level: bool = True) -> SpriteRenderer:
-        pid = int(uuid.uuid4())
+        pid = int(uuid4())
         sprite_renderer = cls(pid, y, x, sprite)
         
         if is_top_level:
             set_element(pid, sprite_renderer)
-            logger.debug("Created new SpriteRenderer")
+        
+        logger.debug("Created new SpriteRenderer")
         return sprite_renderer
     
     def config(self, is_top_level: bool = True, **kwargs) -> SpriteRenderer:
@@ -138,7 +120,6 @@ class Rectangle(NamedTuple):
     
     @staticmethod
     def get_preset(preset: int = 0):
-        
         try:
             screen_height
             screen_width
@@ -180,7 +161,7 @@ class Rectangle(NamedTuple):
             width: int = None, rectangle_preset: int = 0,
             is_top_level: bool = True) -> Rectangle:
         preset = Rectangle.get_preset(rectangle_preset)
-        pid = int(uuid.uuid4())
+        pid = int(uuid4())
         rectangle = cls(
             pid,
             preset.y if y is None else y,
@@ -191,7 +172,8 @@ class Rectangle(NamedTuple):
         
         if is_top_level:
             set_element(pid, rectangle)
-            logger.debug("Created new Rectangle")
+        
+        logger.debug("Created new Rectangle")
         return rectangle
     
     def config(self, is_top_level: bool = True, **kwargs) -> Rectangle:
@@ -256,7 +238,7 @@ class TextBox(NamedTuple):
     def new(cls, y: int = None, x: int = None, height: int = None,
             width: int = None, text: str = None, rectangle_preset: int = 0,
             is_top_level: bool = True) -> TextBox:
-        pid = int(uuid.uuid4())
+        pid = int(uuid4())
         text_box = cls(
             pid,
             Rectangle.new(
@@ -272,7 +254,8 @@ class TextBox(NamedTuple):
         
         if is_top_level:
             set_element(pid, text_box)
-            logger.debug("Created new TextBox")
+        
+        logger.debug("Created new TextBox")
         return text_box
     
     def config(self, is_top_level: bool = True, **kwargs) -> TextBox:
@@ -291,14 +274,20 @@ class TextBox(NamedTuple):
     def draw(self) -> None:
         self.rectangle.draw()
         
-        if self.text is None: return
+        if self.text is None:
+            return
         
         text_y = self.y + 2
         text_x = self.x + 3
         wrap = self.width - 5
-        
-        for i, char in enumerate(self.text):
-            set_cell(text_y + i // wrap, text_x + i % wrap, char)
+        current_y = text_y
+
+        for line in self.text.split("\n"):
+            for i, char in enumerate(line):
+                row = current_y + i // wrap
+                col = text_x + i % wrap
+                set_cell(row, col, char)
+            current_y += (len(line) + wrap - 1) // wrap or 1
 
 
 class DialogBox(NamedTuple):
@@ -342,7 +331,7 @@ class DialogBox(NamedTuple):
             width: int = None,
             dialog: tuple[DialogLine | EnumObject, ...] = None,
             rectangle_preset: int = 0, is_top_level: bool = True) -> DialogBox:
-        pid = int(uuid.uuid4())
+        pid = int(uuid4())
         dialog_box = cls(
             pid,
             TextBox.new(
@@ -361,7 +350,8 @@ class DialogBox(NamedTuple):
         
         if is_top_level:
             set_element(pid, dialog_box)
-            logger.debug("Created new DialogBox")
+        
+        logger.debug("Created new DialogBox")
         return dialog_box
     
     def config(self, is_top_level: bool = True, **kwargs) -> DialogBox:
@@ -451,7 +441,7 @@ class ChoiceBox(NamedTuple):
             on_confirm_events: dict[int, EnumObject] = {},
             selected_index: int = 0, rectangle_preset: int = 0,
             is_top_level: bool = True) -> ChoiceBox:
-        pid = int(uuid.uuid4())
+        pid = int(uuid4())
         choice_box = cls(
             pid,
             TextBox.new(
@@ -470,7 +460,8 @@ class ChoiceBox(NamedTuple):
         
         if is_top_level:
             set_element(pid, choice_box)
-            logger.debug("Created new ChoiceBox")
+        
+        logger.debug("Created new ChoiceBox")
         return choice_box
     
     def config(self, is_top_level: bool = True, **kwargs) -> ChoiceBox:
@@ -558,7 +549,7 @@ def _display_buffer(stdscr) -> None:
 
 
 def _make_buffer_manager():
-    cache = copy.deepcopy(empty_buffer)
+    cache = deepcopy(empty_buffer)
     
     def get_buffer() -> list[list[str]]:
         return cache
@@ -570,7 +561,7 @@ def _make_buffer_manager():
     
     def clear_buffer() -> None:
         nonlocal cache
-        cache = copy.deepcopy(empty_buffer)
+        cache = deepcopy(empty_buffer)
     
     return get_buffer, set_cell, clear_buffer
 
@@ -650,7 +641,6 @@ def update() -> list[EnumObject]:
 
 logger = logging.getLogger(__name__)
 
-UI_ELEMENT_TYPES = _UIElementTypes.new()
 UI_ELEMENT_CLASSES = {
     UI_ELEMENT_TYPES.LABEL: Label,
     UI_ELEMENT_TYPES.SPRITE_RENDERER: SpriteRenderer,
@@ -659,7 +649,6 @@ UI_ELEMENT_CLASSES = {
     UI_ELEMENT_TYPES.DIALOG_BOX: DialogBox,
     UI_ELEMENT_TYPES.CHOICE_BOX: ChoiceBox,
 }
-RECTANGLE_PRESETS = _RectanglePresets.new()
 
 time.sleep(0.5)
 _fullscreen()

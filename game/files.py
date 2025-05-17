@@ -4,9 +4,12 @@ Contributors:
     Romain
 """
 
+from __future__ import annotations
 import logging
 import os
 import pickle
+from typing import NamedTuple
+from enums import EVENT_TYPES
 
 
 def load_text(path: str) -> str:
@@ -43,6 +46,13 @@ def load_text_dir(path: str) -> dict[str, str]:
     return texts
 
 
+def save_pickle(obj: object, path: str) -> None:
+    """Saves an object as a pickle file at the provided path."""
+    with open(path, "wb") as file:
+        logger.debug(f"Saved pickle file: {path}")
+        pickle.dump(obj, file)
+
+
 def load_pickle(path: str) -> object:
     """Reads and returns the pickle object at the provided path."""
     try:
@@ -54,6 +64,14 @@ def load_pickle(path: str) -> object:
         error_msg = f"File missing: {path}"
         logger.error(error_msg)
         return None
+
+
+def delete(file : str, filepath : str):
+    liste_file = os.listdir(filepath)
+    if file in liste_file:
+        os.remove(filepath+"\\"+file)
+    else:
+        print(f"Le fichier {file} n'est pas dans le bon dossier.") 
 
 
 logger = logging.getLogger(__name__)

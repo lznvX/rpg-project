@@ -157,6 +157,7 @@ def _translate_nest(lang_key: str, sub_dict: dict = None) -> str:
         else:
             next_sub_dict = sub_dict[sub_dict_name]
 
+
         return _translate_nest(
             sub_dict_key,
             next_sub_dict,

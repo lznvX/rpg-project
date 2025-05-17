@@ -7,40 +7,32 @@ Contributors:
     Romain
 """
 
-import pickle
-from common import Character, EnumObject, EVENT_TYPES
-from world import WORLD_OBJECT_TYPES
-from cuinter import UI_ELEMENT_TYPES, RECTANGLE_PRESETS
-from settings import SETTING_TYPES
-from lang import LANGUAGE_ENUM
+from common import EnumObject
+from enums import (
+    EVENT_TYPES,
+    UI_ELEMENT_TYPES,
+    RECTANGLE_PRESETS,
+    WORLD_OBJECT_TYPES,
+    LANGUAGE_ENUM,
+)
+from files import save_pickle
 
 objects = {
-    "assets\\ui_elements\\dialogs\\welcome_dialog.pkl": EnumObject(
+    "assets\\dialogs\\welcome_dialog.pkl": EnumObject(
         UI_ELEMENT_TYPES.DIALOG_BOX,
         {
             "dialog": (
                 "welcome",
-                ("i_move_u_up", "romain"),
-                EnumObject(
-                    EVENT_TYPES.PRESS_KEY,
-                    ord("w"),
-                ),
+                "controls",
             ),
         },
     ),
-    "assets\\ui_elements\\dialogs\\what_dialog.pkl": EnumObject(
-        UI_ELEMENT_TYPES.DIALOG_BOX,
-        {
-            "dialog": (
-                "what",
-            ),
-        },
-    ),
-    "assets\\ui_elements\\choices\\menu_choice.pkl": EnumObject(
+    "assets\\choices\\menu_choice.pkl": EnumObject(
         UI_ELEMENT_TYPES.CHOICE_BOX,
         {
             "options": (
-                "menu_inventory",
+                "menu_equipment",
+                "menu_backpack",
                 "menu_settings",
                 "menu_save",
                 "menu_load",
@@ -50,20 +42,22 @@ objects = {
             ),
             "on_confirm_events": {
                 0: EnumObject(
-                    EVENT_TYPES.LOAD_UI_ELEMENT,
-                    "assets\\ui_elements\\choices\\inventory_choice.pkl",
+                    EVENT_TYPES.OPEN_EQUIPMENT,
                 ),
                 1: EnumObject(
-                    EVENT_TYPES.LOAD_UI_ELEMENT,
-                    "assets\\ui_elements\\choices\\settings_choice.pkl",
+                    EVENT_TYPES.OPEN_BACKPACK,
                 ),
                 2: EnumObject(
-                    EVENT_TYPES.SAVE_GAME,
+                    EVENT_TYPES.LOAD_UI_ELEMENT,
+                    "assets\\choices\\settings_choice.pkl",
                 ),
                 3: EnumObject(
-                    EVENT_TYPES.LOAD_GAME,
+                    EVENT_TYPES.SAVE_GAME,
                 ),
                 4: EnumObject(
+                    EVENT_TYPES.LOAD_GAME,
+                ),
+                5: EnumObject(
                     EVENT_TYPES.MULTI_EVENT,
                     (
                         EnumObject(
@@ -74,7 +68,7 @@ objects = {
                         ),
                     ),
                 ),
-                5: EnumObject(
+                6: EnumObject(
                     EVENT_TYPES.LOAD_COMBAT,
                     "assets\\combats\\test_combat.pkl",
                 ),
@@ -82,29 +76,27 @@ objects = {
             "rectangle_preset": RECTANGLE_PRESETS.MENU,
         },
     ),
-    "assets\\ui_elements\\choices\\settings_choice.pkl": EnumObject(
+    "assets\\choices\\settings_choice.pkl": EnumObject(
         UI_ELEMENT_TYPES.CHOICE_BOX,
         {
             "options": (
                 "settings_language",
-                "settings_1",
-                "settings_2",
                 "menu_back",
             ),
             "on_confirm_events": {
                 0: EnumObject(
                     EVENT_TYPES.LOAD_UI_ELEMENT,
-                    "assets\\ui_elements\\choices\\language_choice.pkl",
+                    "assets\\choices\\language_choice.pkl",
                 ),
-                3: EnumObject(
+                1: EnumObject(
                     EVENT_TYPES.LOAD_UI_ELEMENT,
-                    "assets\\ui_elements\\choices\\menu_choice.pkl",
+                    "assets\\choices\\menu_choice.pkl",
                 ),
             },
             "rectangle_preset": RECTANGLE_PRESETS.MENU,
         },
     ),
-    "assets\\ui_elements\\choices\\language_choice.pkl": EnumObject(
+    "assets\\choices\\language_choice.pkl": EnumObject(
         UI_ELEMENT_TYPES.CHOICE_BOX,
         {
             "options": (
@@ -114,20 +106,34 @@ objects = {
             ),
             "on_confirm_events": {
                 0: EnumObject(
-                    EVENT_TYPES.CONFIG_SETTINGS,
-                    {
-                        "language": LANGUAGE_ENUM.ENGLISH
-                    },
+                    EVENT_TYPES.MULTI_EVENT,
+                    (
+                        EnumObject(
+                            EVENT_TYPES.CONFIG_SETTINGS,
+                            {"language": LANGUAGE_ENUM.ENGLISH},
+                        ),
+                        EnumObject(
+                            EVENT_TYPES.LOAD_UI_ELEMENT,
+                            "assets\\choices\\settings_choice.pkl",
+                        ),
+                    ),
                 ),
                 1: EnumObject(
-                    EVENT_TYPES.CONFIG_SETTINGS,
-                    {
-                        "language": LANGUAGE_ENUM.FRENCH
-                    },
+                    EVENT_TYPES.MULTI_EVENT,
+                    (
+                        EnumObject(
+                            EVENT_TYPES.CONFIG_SETTINGS,
+                            {"language": LANGUAGE_ENUM.FRENCH},
+                        ),
+                        EnumObject(
+                            EVENT_TYPES.LOAD_UI_ELEMENT,
+                            "assets\\choices\\settings_choice.pkl",
+                        ),
+                    ),
                 ),
                 2: EnumObject(
                     EVENT_TYPES.LOAD_UI_ELEMENT,
-                    "assets\\ui_elements\\choices\\settings_choice.pkl",
+                    "assets\\choices\\settings_choice.pkl",
                 ),
             },
             "rectangle_preset": RECTANGLE_PRESETS.MENU,
@@ -182,20 +188,11 @@ objects = {
                     1,
                     0,
                     EnumObject(
-                        EVENT_TYPES.MULTI_EVENT,
+                        EVENT_TYPES.LOAD_ZONE,
                         (
-                            EnumObject(
-                                EVENT_TYPES.LOAD_ZONE,
-                                (
-                                    "assets\\zones\\test_zone_2.pkl",
-                                    1,
-                                    11,
-                                ),
-                            ),
-                            EnumObject(
-                                EVENT_TYPES.LOAD_UI_ELEMENT,
-                                "assets\\ui_elements\\dialogs\\what_dialog.pkl",
-                            ),
+                            "assets\\zones\\test_zone_2.pkl",
+                            1,
+                            11,
                         ),
                     ),
                     ord("a"),
@@ -298,8 +295,7 @@ objects = {
     ),
 }
 
-for path, object_to_save in objects.items():
-    with open(path, "wb") as file:
-        pickle.dump(object_to_save, file)
+for path, obj in objects.items():
+    save_pickle(obj, path)
 
 print(f"{len(objects)} objects built and saved successfully")

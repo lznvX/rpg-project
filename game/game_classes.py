@@ -4,6 +4,7 @@ Created on 2025.05.14
 Contributors:
     Jakub
     Adrien
+    Romain
 """
 
 from __future__ import annotations
@@ -443,6 +444,7 @@ class Character(NamedTuple):
             for action in item.actions:
                 self.actions.append((item_uuid, action))
 
+
             self.bonuses[item_uuid] = item.stat_bonus
             new_stats = self.update_stats()
             updated_character = self.modify(current=new_stats)
@@ -474,6 +476,7 @@ class Character(NamedTuple):
             del self.bonuses[item_uuid]
             new_stats = self.update_stats()
             updated_character = self.modify(current=new_stats, actions=new_actions)
+
             # would've been better to update the character directly, but NamedTuple...
             return updated_character
 
@@ -608,6 +611,7 @@ class Task(NamedTuple):
     def display_name(self) -> str:
         """Fetch the task's name in the appropriate language."""
         return translate("task_names." + self.name)
+
 
 
     @property

@@ -7,27 +7,65 @@ Contributors:
 """
 
 from __future__ import annotations
+import logging
 from typing import NamedTuple
+from common import EnumObject
+from enums import LANGUAGE_ENUM
+import settings
+
+SUB_DICT_SEPARATOR = "."
 
 
-class _LanguageEnum(NamedTuple):
-    ENGLISH: int
-    FRENCH: int
+class DialogLine(NamedTuple):
+    text: str
+    character_name: str = None
 
-    @classmethod
-    def new(cls) -> _LanguageEnum:
-        return cls(*range(len(cls.__annotations__)))
+    @staticmethod
+    def process_dialog_line(
+        dialog_line: str | DialogLine | EnumObject
+    ) -> DialogLine | EnumObject:
+        """
+        Turns any str or tuple into a DialogLine while letting events through and logging any
+        unexpected types.
+        """
+        if isinstance(dialog_line, str):
+            return DialogLine(translate(dialog_line))
+
+        elif (isinstance(dialog_line, tuple)
+        and len(dialog_line) == 2
+        and isinstance(dialog_line[0], str)
+        and isinstance(dialog_line[1], str)):
+            return DialogLine(
+                translate(dialog_line[0]),
+                lang_text.character_names[dialog_line[1]],
+            )
+
+        elif isinstance(dialog_line, (DialogLine, EnumObject)):
+            return dialog_line
+
+        else:
+            error_msg = "Expected value of type str | DialogLine | EnumObject, got {dialog_line}"
+            logger.error(error_msg)
+            return error_msg
+
+    @staticmethod
+    def process_dialog(
+        dialog: tuple[str | DialogLine | EnumObject, ...]
+    ) -> tuple[DialogLine | EnumObject, ...]:
+        return tuple(map(DialogLine.process_dialog_line, dialog))
 
 
 class _Lang(NamedTuple):
+    none: str = None
+
     # Dialog
     welcome: str = None
-    i_move_u_up: str = None
-    what: str = None
+    controls: str = None
 
     # Choice
     menu_back: str = None
-    menu_inventory: str = None
+    menu_equipment: str = None
+    menu_backpack: str = None
     menu_settings: str = None
     menu_save: str = None
     menu_load: str = None
@@ -38,21 +76,13 @@ class _Lang(NamedTuple):
     settings_language: str = None
 
     # Combat
-    battle_begin: str = None
-    battle_win: str = None
-    battle_loss: str = None
-    battle_rewards: str = None
-    battle_turn: str = None
-
-    battle_attack: str = None
-    battle_damage: str = None
-    battle_death: str = None
-    battle_ko: str = None
-    battle_action_choice: str = None
-    battle_target_choice: str = None
+    combat: dict[str, str] = None
 
     # Characters
     character_names: dict[str, str] = None
+
+    # Slots
+    equipment_slots: dict[str, str] = None
 
     # Items
     item_names: dict[str, str] = None
@@ -85,14 +115,65 @@ class _Lang(NamedTuple):
     # }
 
 
-def get_lang_choice() -> _Lang:
-    """Returns the class with text in the relevant language.
-
-    Language is specified in settings.pkl (not implemented)
-    If language is not specified, or settings.pkl file is missing, English is
-    used by default.
+def _translate_simple(lang_key: str, sub_dict: dict = None) -> str:
     """
-    return ENGLISH
+    Returns the text with the specified attribute name in the selected language
+    from the settings or the provided sub dict.
+    """
+    try:
+        if sub_dict is None:
+            lang_text = LANGUAGES[settings.get("language")]
+            lang_value = getattr(lang_text, lang_key)
+        else:
+            lang_value = sub_dict[lang_key]
+
+        if isinstance(lang_value, str):
+            logger.debug(f"Translated {lang_key} into {lang_value}")
+            return lang_value
+        elif isinstance(lang_value, dict):
+            logger.error(f"Specify key of sub dict {lang_key} with dotted notation")
+        elif lang_value is None:
+            raise ValueError
+        else:
+            logger.error(f"LANGUAGES are made of STRINGS, not {lang_value}, you IDIOT")
+
+    except (AttributeError, KeyError, ValueError):
+        logger.warning(f"Selected language doesn't contain {lang_key}, using that instead")
+
+    return lang_key
+
+
+def _translate_nest(lang_key: str, sub_dict: dict = None) -> str:
+    """
+    Calls _translate_simple recursively (if it has to) for dicts in lang by
+    using dotted notation in the lang key, like
+    _translate_single("item_names.agi_boots").
+    """
+    if SUB_DICT_SEPARATOR in lang_key:
+        sub_dict_name, sub_dict_key = lang_key.split(SUB_DICT_SEPARATOR, 1)
+        if sub_dict is None:
+            lang_text = LANGUAGES[settings.get("language")]
+            next_sub_dict = getattr(lang_text, sub_dict_name)
+        else:
+            next_sub_dict = sub_dict[sub_dict_name]
+
+        return _translate_nest(
+            sub_dict_key,
+            next_sub_dict,
+        )
+
+    else:
+        return _translate_simple(lang_key, sub_dict)
+
+
+def translate(lang_key: str | tuple[str]) -> str | tuple[str]:
+    """
+    Calls _translate_nest recursively (if it has too) for tuples of lang keys.
+    """
+    if isinstance(lang_key, tuple):
+        return tuple(map(translate, lang_key))
+    elif isinstance(lang_key, str):
+        return _translate_nest(lang_key)
 
 
 def f(fstring: str, *args: object) -> str:
@@ -100,15 +181,19 @@ def f(fstring: str, *args: object) -> str:
     return fstring.format(*args)
 
 
+logger = logging.getLogger(__name__)
+
 ENGLISH = _Lang(
+    none = "None",
+
     # Dialog
-    welcome = "Welcome to the game !",
-    i_move_u_up = "I am now going to move you up with my mind.",
-    what = "DID YOU JUST SEND BOTH A LOAD_ZONE AND A LOAD_UI_ELEMENT EVENT WITH A SINGLE WALKTRIGGER ???",
+    welcome = "Welcome adventurer ! ...asdf. \n(press Space or Enter)",
+    controls = "Controls:\n\nUp: W    Down: S    Left: A    Right: D\nConfirm: Space/Enter    Menu: M",
 
     # Choice
     menu_back = "Back",
-    menu_inventory = "Inventory",
+    menu_equipment = "Equipment",
+    menu_backpack = "Backpack",
     menu_settings = "Settings",
     menu_save = "Save",
     menu_load = "Load",
@@ -119,22 +204,33 @@ ENGLISH = _Lang(
     settings_language = "Language",
 
     # Combat
-    battle_begin    = "You are now in battle!",
-    battle_win      = "You won the battle!",
-    battle_loss     = "You lost the battle :(",
-    battle_rewards  = "You gain {} gold and {} xp!",
-    battle_turn     = "Turn {} begins!",
+    combat = {
+        "begin"    : "You are now in battle!",
+        "win"      : "You won the battle!",
+        "loss"     : "You lost the battle :(",
+        "rewards"  : "You gain {} gold and {} xp!",
+        "turn"     : "Turn {} begins!",
 
-    battle_attack   = "{} uses {} on {}",
-    battle_damage   = "{} takes ¤ {} damage! (♥ {} left)",
-    battle_death    = "{} dies!",
-    battle_ko       = "{} is knocked out!",
-    battle_action_choice    = "What should {} do?",
-    battle_target_choice    = "Choose target for {}:",
+        "attack"   : "{} uses {} on {}",
+        "damage"   : "{} takes ¤ {} damage! (♥ {} left)",
+        "death"    : "{} dies!",
+        "ko"       : "{} is knocked out!",
+        "action_choice"    : "What should {} do?",
+        "target_choice"    : "Choose target for {}:",
+    },
 
     # Characters
     character_names = {
         "romain": "Romain",
+    },
+
+    # Slots
+    equipment_slots = {
+        "mainhand": "Mainhand",
+        "offhand": "Offhand",
+        "head": "Head",
+        "body": "Body",
+        "feet": "Feet",
     },
 
     # Items
@@ -178,11 +274,17 @@ ENGLISH = _Lang(
     },
 )
 
-
 FRENCH = _Lang(
+    none = "Aucun",
+
+    # Dialog
+    welcome = "Bienvenue aventurier ! ...asdf. \n(appuyez sur Espace ou Entrée)",
+    controls = "Controles:\n\nHaut: W    Bas: S    Gauche: A    Droite: D\nConfirmer: Space/Enter    Menu: M",
+
     # Choice
     menu_back = "Retour",
-    menu_inventory = "Inventaire",
+    menu_equipment = "Équipement",
+    menu_backpack = "Sac à dos",
     menu_settings = "Options",
     menu_save = "Sauvegarder",
     menu_load = "Charger",
@@ -193,22 +295,33 @@ FRENCH = _Lang(
     settings_language = "Langue",
 
     # Combat
-    battle_begin    = "Vous êtes maintenant en combat !",
-    battle_win      = "Vous avez gagné le combat !",
-    battle_loss     = "Vous avez perdu le combat :(",
-    battle_rewards  = "Vous gagnez {} pièces d'or et {} xp !",
-    battle_turn     = "Le tour {} commence !",
+    combat = {
+        "begin"    : "Vous êtes maintenant en combat !",
+        "win"      : "Vous avez gagné le combat !",
+        "loss"     : "Vous avez perdu le combat :(",
+        "rewards"  : "Vous gagnez {} pièces d'or et {} xp !",
+        "turn"     : "Le tour {} commence !",
 
-    battle_attack   = "{} utilise {} sur {}",
-    battle_damage   = "{} prend ¤ {} dégats ! (il lui reste ♥ {})",
-    battle_death    = "{} meurt !",
-    battle_ko       = "{} est assommé !",
-    battle_action_choice    = "Que'est-ce que {} devrait faire ?",
-    battle_target_choice    = "Choisissez la cible de {}:",
+        "attack"   : "{} utilise {} sur {}",
+        "damage"   : "{} prend ¤ {} dégats ! (il lui reste ♥ {})",
+        "death"    : "{} meurt !",
+        "ko"       : "{} est assommé !",
+        "action_choice"    : "Que'est-ce que {} devrait faire ?",
+        "target_choice"    : "Choisissez la cible de {}:",
+    },
 
     # Characters
     character_names = {
         "romain": "Romain",
+    },
+
+    # Slots
+    equipment_slots = {
+        "mainhand": "Main principale",
+        "offhand": "Main secondaire",
+        "head": "Tête",
+        "body": "Corps",
+        "feet": "Pieds",
     },
 
     # Items
@@ -250,8 +363,6 @@ FRENCH = _Lang(
     },
 )
 
-
-LANGUAGE_ENUM = _LanguageEnum.new()
 LANGUAGES = {
     LANGUAGE_ENUM.ENGLISH: ENGLISH,
     LANGUAGE_ENUM.FRENCH: FRENCH,

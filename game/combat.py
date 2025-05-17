@@ -11,8 +11,8 @@ from typing import NamedTuple
 from get_input import get_input
 import random as r
 import time
-from lang import get_lang_choice, f
-from common import Stats, DamageInstance, Character, Action, Party, CharacterNotFoundError
+from lang import translate, f
+from game_classes import Stats, DamageInstance, Character, Action, Party, CharacterNotFoundError
 import monsters as m
 import test_items as ti
 from uuid import UUID
@@ -21,7 +21,7 @@ import logging
 
 combat_log = logging.getLogger(__name__)
 logging.basicConfig(filename='last_combat.log', filemode='wt', encoding='utf-8', level=logging.DEBUG, force=True)
-text = get_lang_choice()
+# text = get_lang_choice()
 auto_turn_delay = 0.5 # seconds
 
 
@@ -176,7 +176,7 @@ class Battle(NamedTuple):
         action_names = []
         for action in player.actions:
             action_names.append(action[1])
-        list_choices(action_names, text.battle_action_choice.format(player.name))
+        list_choices(action_names, translate("combat.action_choice").format(player.name))
         action_index = get_input(int, True, (1, len(player.actions)))
         action = player.actions[action_index-1][1]
         combat_log.debug(f" Player chooses to use <{action.name}>")
@@ -184,7 +184,7 @@ class Battle(NamedTuple):
         enemies_actual = []
         for enemy in enemies.valid_targets:
             enemies_actual.append(self.get_fighter(enemy))
-        list_choices(enemies_actual, f(text.battle_target_choice, action))
+        list_choices(enemies_actual, f(translate("combat.target_choice"), action))
         enemy_index = get_input(int, True, (1, len(enemies_actual)))
         enemy_uuid = enemies.valid_targets[enemy_index-1]
         combat_log.debug(f" Player chooses to attack {self.get_fighter(enemy_uuid)} ({enemy_uuid})")
@@ -195,7 +195,7 @@ class Battle(NamedTuple):
     def begin(self) -> None:
 
         combat_log.info(" Battle started")
-        print(text.battle_begin)
+        print(translate("combat.begin"))
         print()
         print(self)
 
@@ -210,7 +210,7 @@ class Battle(NamedTuple):
 
             print()
             print("====================")
-            print(f(text.battle_turn, turn))
+            print(f(translate("combat.turn"), turn))
             time.sleep(2*auto_turn_delay)
 
             for fighter_uuid in self.turn_order:
@@ -232,12 +232,12 @@ class Battle(NamedTuple):
                 # Resolve attack
                 combat_log.info(f" {fighter.name} uses <{attack.name}> on {target}")
                 print()
-                print(f(text.battle_attack, fighter, attack.display_name, target))
+                print(f(translate("combat.attack"), fighter, attack.display_name, target))
 
                 fighter, target, damage_dealt = Battle.attack(fighter, attack, target)
 
                 combat_log.info(f" {target.name} takes ¤ {damage_dealt} damage -> ♥ {target.health}")
-                print(f(text.battle_damage, target.name, damage_dealt, target.health))
+                print(f(translate("combat.damage"), target.name, damage_dealt, target.health))
 
                 # update the fighter and character saved in the Battle instance
                 allies.update_member(fighter_uuid, fighter)
@@ -246,21 +246,21 @@ class Battle(NamedTuple):
                 # remove dead characters, check win/loss conditions
                 if not target.is_alive:
                     combat_log.info(f" {target.name} dies")
-                    print(f(text.battle_death, target.name))
+                    print(f(translate("combat.death"), target.name))
                     self.turn_order.remove(target_uuid)
 
                     if len(self.team1.valid_targets) == 0:
                         combat_log.info(" Battle ends as player loss")
                         print()
-                        print(text.battle_loss)
+                        print(translate("combat.loss"))
                         is_fight_on = False
                         break
 
                     elif len(self.team2.valid_targets) == 0:
                         combat_log.info(" Battle ends as player victory")
                         print()
-                        print(text.battle_win)
-                        print(f(text.battle_rewards, "0", "0"))
+                        print(translate("combat.win"))
+                        print(f(translate("combat.rewards"), "0", "0"))
                         is_fight_on = False
                         break
 

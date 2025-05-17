@@ -300,7 +300,8 @@ class Inventory(NamedTuple):
     def find_equipped_item(self, item_uuid: UUID) -> Item:
         """Look through equipment slots to find an Item."""
         for slot in self.equipment.keys():
-            if self.equipment[slot].uuid == item_uuid:
+            if (self.equipment[slot] is not None
+            and self.equipment[slot].uuid == item_uuid):
                 return self.equipment[slot]
             else:
                 continue

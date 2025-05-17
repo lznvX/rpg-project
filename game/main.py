@@ -30,7 +30,7 @@ from uuid import UUID
 import world
 from world import WORLD_OBJECT_CLASSES
 
-FPS_COUNTER_REFRESH = 1 # Time between each FPS counter update
+HUD_COUNTER_REFRESH = 1 # Time between each HUD counter update
 MOVE_MAP = {
     ord("w"): (-1, 0, "up"),
     ord("s"): (1, 0, "down"),
@@ -83,11 +83,11 @@ new_events = [
         EVENT_TYPES.LOAD_GAME, current_save
     ),
 ]
-#if settings.get("first_time"):
-#    new_events.append(EnumObject(
-#        EVENT_TYPES.LOAD_UI_ELEMENT,
-#        "assets\\dialogs\\welcome_dialog.pkl",
-#    ))
+if settings.get("first_time"):
+   new_events.append(EnumObject(
+       EVENT_TYPES.LOAD_UI_ELEMENT,
+        "assets\\dialogs\\welcome_dialog.pkl",
+    ))
 
 ############
 
@@ -99,7 +99,7 @@ while 1:
     last_time = current_time
     
     frame_count += 1
-    if current_time - fps_timer >= FPS_COUNTER_REFRESH:
+    if current_time - fps_timer >= HUD_COUNTER_REFRESH:
         average_fps = frame_count / (current_time - fps_timer)
         fps_label.config(text=f"FPS : {round(average_fps)}")
         fps_timer = current_time
@@ -165,7 +165,7 @@ while 1:
                 ui_element_class = UI_ELEMENT_CLASSES[ui_element_type]
                 
                 if isinstance(args, dict):
-                    match constructor.enum:
+                    match ui_element_type:
                         case UI_ELEMENT_TYPES.DIALOG_BOX:
                             if "dialog" in args:
                                 args["dialog"] = DialogLine.process_dialog(args["dialog"])
@@ -208,9 +208,7 @@ while 1:
                     continue
                 
                 constructor = load_pickle(value)
-                if constructor is None:
-                    continue
-                elif not isinstance(constructor, EnumObject):
+                if not isinstance(constructor, EnumObject):
                     logger.error(f"Expected constructor of type EnumObject, got {constructor}")
                     continue
                 
@@ -260,13 +258,6 @@ while 1:
                 
                 #TODO load battle_data and plug into Battle.new()
                 
-                grid = grid.config(
-                    y=cuinter.screen_height,
-                    x=cuinter.screen_width,
-                )
-                world_objects = [world_object.config(grid=grid) for world_object in world_objects]
-                player = player.config(grid=grid)
-                
                 chief = monsters.GoblinChief()
                 battle = Battle.new(
                     Party(
@@ -285,7 +276,8 @@ while 1:
                     ),
                 )
                 
-                #try_append(new_events, battle.advance())
+                battle.begin()
+                try_append(new_events, battle.advance())
             
             case EVENT_TYPES.SET_BATTLE_ACTION:
                 if not isinstance(value, Action):
@@ -293,7 +285,7 @@ while 1:
                     continue
                 
                 if battle_target is not None:
-                    #try_append(new_events, battle.advance(value, battle_target))
+                    try_append(new_events, battle.advance(value, battle_target))
                     battle_target = None
                 else:
                     battle_action = value
@@ -304,7 +296,7 @@ while 1:
                     continue
                 
                 if battle_action is not None:
-                    #try_append(new_events, battle.advance(battle_action, value))
+                    try_append(new_events, battle.advance(battle_action, value))
                     battle_action = None
                 else:
                     battle_target = value
@@ -355,18 +347,16 @@ while 1:
                     player.character.inventory.remove(value)
             
             case EVENT_TYPES.USE_ITEM:
+                logger.error("Not implemented: EVENT_TYPES.USE_ITEM")
                 if not isinstance(value, Item):
                     logger.error(f"Expected value of type Item, got {value}")
                     continue
-                
-                logger.error("Not implemented: EVENT_TYPES.USE_ITEM")
             
             case EVENT_TYPES.OPEN_ITEM:
+                logger.debug("Opening item")
                 if not isinstance(value, Item):
                     logger.error(f"Expected value of type Item, got {value}")
                     continue
-                
-                logger.debug("Opening item")
                 
                 item = value
                 inventory = player.character.inventory

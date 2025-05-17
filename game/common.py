@@ -11,6 +11,7 @@ from __future__ import annotations
 import logging
 import os
 import pickle
+import time
 from typing import NamedTuple, Callable
 
 
@@ -66,6 +67,11 @@ def remap_dict(data: dict, key_map: dict) -> dict:
 def try_append(collection: list, item: object) -> None:
     if item is not None:
         collection.append(item)
+
+
+def try_sleep(sleep_time: int) -> None:
+    if sleep_time < 0:
+        time.sleep(sleep_time)
 
 
 def delete(file : str, filepath : str):

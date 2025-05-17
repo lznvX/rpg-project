@@ -8,21 +8,18 @@ Contributors:
 
 
 from __future__ import annotations
-from typing import NamedTuple
+import logging
 import random as r
-import time
-from lang import translate, f
+from typing import NamedTuple
+from uuid import UUID
+from common import EnumObject, try_sleep
+from enums import EVENT_TYPES, UI_ELEMENT_TYPES, RECTANGLE_PRESETS
 from game_classes import Stats, DamageInstance, Character, Action, Party, Item, CharacterNotFoundError
+from lang import DialogLine, f, translate
 import monsters as m
 import test_items as ti
-from uuid import UUID
-import logging
-
 
 combat_log = logging.getLogger(__name__)
-auto_turn_delay = 0.5 # seconds
-
-
 combat_log.debug(" combat.py loaded")
 
 
@@ -116,6 +113,8 @@ class Battle(NamedTuple):
     turn_order: list[UUID]
     progress: dict[str, int]
 
+    return_dialog: list[str | DialogLine | EnumObject]
+
 
     def get_teams(self, fighter_uuid: UUID) -> (CombatParty, CombatParty):
         """Find the ally and enemy party based on a character's UUID."""
@@ -150,7 +149,13 @@ class Battle(NamedTuple):
             "turn_progress": 0,
             }
 
-        return Battle(combat_team1, combat_team2, turn_order, progress)
+        return Battle(
+            team1=combat_team1,
+            team2=combat_team2,
+            turn_order=turn_order,
+            progress=progress,
+            return_dialog=[],
+        )
 
 
     @staticmethod
@@ -183,15 +188,15 @@ class Battle(NamedTuple):
 
     def _sort_turn_order(self):
         sort_key = lambda uuid: self.get_fighter(uuid).current.agility
-        combat_log.debug(" Sorting turn order")
+        combat_log.debug("Sorting turn order")
         self.turn_order.sort(key=sort_key, reverse=True)
-        combat_log.debug(" Turn order sorted")
+        combat_log.debug("Turn order sorted")
 
 
     def get_player_action(self, player: Character, allies: CombatParty,
                           enemies: CombatParty) -> (Action, UUID):
         """Get the player's choice of action and action target."""
-        combat_log.debug(" Getting player input")
+        combat_log.debug("Getting player input")
 
         print()
 
@@ -204,7 +209,7 @@ class Battle(NamedTuple):
         action_index = get_input(int, True, (1, len(player.actions)))
         action = player.actions[action_index-1][1]
         weapon = player.inventory.find_equipped_item(player.actions[action_index-1][0])
-        combat_log.debug(f" Player chooses to use <{action.name}>")
+        combat_log.debug(f"Player chooses to use <{action.name}>")
 
         enemies_actual = []
         for enemy in enemies.valid_targets:
@@ -212,36 +217,34 @@ class Battle(NamedTuple):
         list_choices(enemies_actual, f(translate("combat.target_choice"), action))
         enemy_index = get_input(int, True, (1, len(enemies_actual)))
         enemy_uuid = enemies.valid_targets[enemy_index-1]
-        combat_log.debug(f" Player chooses to attack {self.get_fighter(enemy_uuid)} ({enemy_uuid})")
+        combat_log.debug(f"Player chooses to attack {self.get_fighter(enemy_uuid)} ({enemy_uuid})")
 
         return action, weapon, enemy_uuid
 
 
     def begin(self) -> None:
-
-        combat_log.info(" Battle started")
-        print(translate("combat.begin"))
-        print()
-        print(self)
+        combat_log.info("Battle started")
+        self.output(f"{translate('combat.begin')}\n\n{self}")
 
         self._sort_turn_order()
         is_fight_on = True
-        time.sleep(auto_turn_delay)
+        try_sleep(auto_turn_delay)
         self.new_turn()
 
-        # is this allowed?
-        if __name__ == "__main__":
+        # is this allowed? no prob for me, dunno if Kessler will get angry
+        if is_main:
             while is_fight_on:
                 self.advance(None)
-                # why is the delay broken?
-                time.sleep(auto_turn_delay)
+                # why is the delay broken? was commented out
+                try_sleep(auto_turn_delay)
 
 
     def new_turn(self) -> int:
         self.progress["turn"] += 1
         self.progress["turn_progress"] = 0
         turn = self.progress["turn"]
-        combat_log.info(f" Turn {turn} started")
+        combat_log.info(f"Turn {turn} started")
+        self.output(f(translate("combat.turn"), turn))
 
         for fighter_uuid in self.turn_order:
             if self.get_fighter(fighter_uuid).is_alive:
@@ -249,31 +252,27 @@ class Battle(NamedTuple):
             else:
                 self.turn_order.remove(fighter_uuid)
 
-        print()
-        print("====================")
-        print(f(translate("combat.turn"), turn))
-        time.sleep(2*auto_turn_delay)
+        try_sleep(2*auto_turn_delay)
 
 
     def check_win_loss_conditions(self) -> int:
         if len(self.team1.valid_targets) == 0:
-            combat_log.info(" Battle ends as player loss")
-            print()
-            print(translate("combat.loss"))
+            combat_log.info("Battle ends as player loss")
+            self.output(translate("combat.loss"))
             is_fight_on = False
             return -1
         elif len(self.team2.valid_targets) == 0:
-            combat_log.info(" Battle ends as player victory")
-            print()
-            print(translate("combat.win"))
-            print(f(translate("combat.rewards"), "0", "0"))
+            combat_log.info("Battle ends as player victory")
+            combat_win = translate("combat.win")
+            combat_rewards = f(translate("combat.rewards"), "0", "0")
+            self.output(f"{translate('combat.begin')}\n\n{self}")
             is_fight_on = False
             return 1
         else:
             return 0
 
 
-    def advance(self, player_choice) -> object:
+    def advance(self, player_choice: tuple[Action, Item, UUID] = None) -> EnumObject:
         player_action_resolved = False
 
         while True:
@@ -289,7 +288,7 @@ class Battle(NamedTuple):
                     self.progress["turn_progress"] += 1
                     continue
 
-                combat_log.info(f" {fighter} starts their turn")
+                combat_log.info(f"{fighter} starts their turn")
 
                 if fighter.is_player:
                     # TODO: Handle player
@@ -298,12 +297,22 @@ class Battle(NamedTuple):
                     # player_action_resolved dictates whether the data in...
                     # player_choice is for this turn or the previous one
                     if player_action_resolved or player_choice is None:
-                        # here, fighter is the current state of the player character
-                        return_data = (fighter, allies, enemies)
-                        raise NotImplementedError("Ask Mr. Frontend for player choice")
+                        if __name__ == "__main__":
+                            attack, weapon, target_uuid = self.get_player_action(fighter, allies, enemies)
+                        else:
+                            return_dialog = tuple(self.return_dialog)
+                            self.return_dialog.clear()
+                            return EnumObject(
+                                EVENT_TYPES.MAKE_UI_ELEMENT,
+                                EnumObject(
+                                    UI_ELEMENT_TYPES.DIALOG_BOX,
+                                    {
+                                        "dialog": return_dialog,
+                                        "rectangle_preset": RECTANGLE_PRESETS.MENU,
+                                    },
+                                ),
+                            )
 
-                        # built-in player input handler (fallback?)
-                        attack, weapon, target_uuid = self.get_player_action(fighter, allies, enemies)
                     else:
                         attack, weapon, target_uuid = player_choice
                         player_action_resolved = True
@@ -318,14 +327,13 @@ class Battle(NamedTuple):
                 target = enemies.get_member(target_uuid)
 
                 # Resolve attack
-                combat_log.info(f" {fighter.name} uses <{attack.name}> on {target}")
-                print()
-                print(f(translate("combat.attack"), fighter, attack.display_name, target))
+                combat_log.info(f"{fighter.name} uses <{attack.name}> on {target}")
+                self.output(f(translate("combat.attack"), fighter, attack.display_name, target))
 
                 fighter, target, damage_dealt = Battle.attack(fighter, weapon, attack, target)
 
-                combat_log.info(f" {target.name} takes ¤ {damage_dealt} damage -> ♥ {target.health}")
-                print(f(translate("combat.damage"), target.name, damage_dealt, target.health))
+                combat_log.info(f"{target.name} takes ¤ {damage_dealt} damage -> ♥ {target.health}")
+                self.output(f(translate("combat.damage"), target.name, damage_dealt, target.health))
 
                 # update the fighter and character saved in the Battle instance
                 allies.update_member(fighter_uuid, fighter)
@@ -333,8 +341,8 @@ class Battle(NamedTuple):
 
                 # remove dead characters, check win/loss conditions
                 if not target.is_alive:
-                    combat_log.info(f" {target.name} dies")
-                    print(f(translate("combat.death"), target.name))
+                    combat_log.info(f"{target.name} dies")
+                    self.output(f(translate("combat.death"), target.name))
                     # self.turn_order.remove(target_uuid)
 
                     match self.check_win_loss_conditions():
@@ -355,6 +363,13 @@ class Battle(NamedTuple):
             else:
                 self.new_turn()
                 continue
+
+
+    def output(self, text: str) -> None:
+        if is_main:
+            print("\n" + text)
+        else:
+            self.return_dialog.append(text)
 
 
     def __repr__(self) -> str:
@@ -403,7 +418,9 @@ def _test_pcs():
     return alice, bob
 
 
-if __name__ == "__main__":
+is_main = __name__ == "__main__"
+auto_turn_delay = 0.5 if is_main else 0 # seconds
+if is_main:
     alice, bob = _test_pcs()
     player_party = Party("Adventuring Party", [alice, bob], bob.uuid)
 

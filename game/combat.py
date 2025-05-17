@@ -46,6 +46,19 @@ class CombatParty(NamedTuple):
         return CombatParty(name, members, leader)
 
 
+    def to_party(self) -> Party:
+        name = self.name
+        leader = self.leader
+
+        members = []
+        for member in self.members:
+            if member[1]:
+                members.append(member[0])
+            else:
+                continue
+        return Party(name, tuple(members), leader)
+
+
     def get_member(self, member_uuid: UUID) -> Character:
         if self.has_member(member_uuid):
             char = self.members[member_uuid][0]
@@ -329,6 +342,7 @@ class Battle(NamedTuple):
                             # nothing happens
                             pass
                         case 1:
+                            updated_party = self.team1.to_party()
                             raise NotImplementedError("Tell Mr Frontend that we won :)")
                         case -1:
                             raise NotImplementedError("Tell Mr Frontend that we lost :(")
@@ -380,8 +394,10 @@ def _test_pcs():
             initial_effects = {}
             )
     bob.inventory.add(ti.Sword)
+    bob.inventory.add(ti.Dagger)
     bob.inventory.add(ti.StrHelmet)
     bob = bob.equip("mainhand", ti.Sword)
+    bob = bob.equip("mainhand", ti.Dagger)
     bob = bob.equip("head", ti.StrHelmet)
 
     return alice, bob

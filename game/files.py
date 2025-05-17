@@ -69,6 +69,7 @@ def load_pickle(path: str) -> object:
 
 
 def delete(file : str, filepath : str = None):
+    """Delete a file"""
     if filepath is None:
         os.remove(file)
         return
@@ -80,6 +81,7 @@ def delete(file : str, filepath : str = None):
 
 
 def _test():
+    """Execute a series of test to see if the program is working"""
     file_1 = "10"
     save_pickle(file_1, "test")
     assert load_pickle("test") == "10"

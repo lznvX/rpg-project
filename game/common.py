@@ -57,14 +57,6 @@ def try_append(collection: list, item: object) -> None:
         collection.append(item)
 
 
-def delete(file : str, filepath : str):
-    liste_file = os.listdir(filepath)
-    if file in liste_file:
-        os.remove(filepath+"\\"+file)
-    else:
-        print(f"Le fichier {file} n'est pas dans le bon dossier.")
-
-
 logger = logging.getLogger(__name__)
 
 if __name__ == "__main__":

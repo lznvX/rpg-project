@@ -13,6 +13,8 @@ from common import EnumObject
 from enums import LANGUAGE_ENUM
 import settings
 
+logger = logging.getLogger(__name__)
+
 SUB_DICT_SEPARATOR = "."
 
 
@@ -31,13 +33,13 @@ class DialogLine(NamedTuple):
         if isinstance(dialog_line, str):
             return DialogLine(translate(dialog_line))
 
-        elif (isinstance(dialog_line, tuple)
+        if (isinstance(dialog_line, tuple)
         and len(dialog_line) == 2
         and isinstance(dialog_line[0], str)
         and isinstance(dialog_line[1], str)):
             return DialogLine(
                 translate(dialog_line[0]),
-                lang_text.character_names[dialog_line[1]],
+                translate("character_names." + [dialog_line[1]]),
             )
 
         elif isinstance(dialog_line, (DialogLine, EnumObject)):
@@ -56,24 +58,21 @@ class DialogLine(NamedTuple):
 
 
 class _Lang(NamedTuple):
-    none: str = None
-
     # Dialog
     welcome: str = None
     controls: str = None
 
     # Choice
-    menu_back: str = None
-    menu_equipment: str = None
-    menu_backpack: str = None
-    menu_settings: str = None
-    menu_save: str = None
-    menu_load: str = None
-    menu_close: str = None
-    menu_save_quit: str = None
-    menu_test_combat: str = None
-
     settings_language: str = None
+
+    equipment_none: str = None
+
+    item_equip: str = None
+    item_unequip: str = None
+    item_use: str = None
+
+    # Menu
+    menu: dict[str, str] = None
 
     # Combat
     combat: dict[str, str] = None
@@ -128,7 +127,6 @@ def _translate_simple(lang_key: str, sub_dict: dict = None) -> str:
             lang_value = sub_dict[lang_key]
 
         if isinstance(lang_value, str):
-            logger.debug(f"Translated {lang_key} into {lang_value}")
             return lang_value
         elif isinstance(lang_value, dict):
             logger.error(f"Specify key of sub dict {lang_key} with dotted notation")
@@ -147,8 +145,10 @@ def _translate_nest(lang_key: str, sub_dict: dict = None) -> str:
     """
     Calls _translate_simple recursively (if it has to) for dicts in lang by
     using dotted notation in the lang key, like
-    _translate_single("item_names.agi_boots").
+    _translate_nest("item_names.agi_boots").
     """
+    logger.debug(f"Translating {lang_key}")
+
     if SUB_DICT_SEPARATOR in lang_key:
         sub_dict_name, sub_dict_key = lang_key.split(SUB_DICT_SEPARATOR, 1)
         if sub_dict is None:
@@ -169,12 +169,16 @@ def _translate_nest(lang_key: str, sub_dict: dict = None) -> str:
 
 def translate(lang_key: str | tuple[str]) -> str | tuple[str]:
     """
-    Calls _translate_nest recursively (if it has too) for tuples of lang keys.
+    Calls _translate_nest recursively (if it has to) for tuples of lang keys.
     """
     if isinstance(lang_key, tuple):
         return tuple(map(translate, lang_key))
     elif isinstance(lang_key, str):
         return _translate_nest(lang_key)
+    else:
+        error_msg = f"Expected value of type str | tuple[str], got {lang_key}"
+        logger.error(error_msg)
+        return error_msg
 
 
 def f(fstring: str, *args: object) -> str:
@@ -182,27 +186,30 @@ def f(fstring: str, *args: object) -> str:
     return fstring.format(*args)
 
 
-logger = logging.getLogger(__name__)
-
 ENGLISH = _Lang(
-    none = "None",
-
     # Dialog
     welcome = "Welcome adventurer ! ...asdf. \n(press Space or Enter)",
     controls = "Controls:\n\nUp: W    Down: S    Left: A    Right: D\nConfirm: Space/Enter    Menu: M",
 
-    # Choice
-    menu_back = "Back",
-    menu_equipment = "Equipment",
-    menu_backpack = "Backpack",
-    menu_settings = "Settings",
-    menu_save = "Save",
-    menu_load = "Load",
-    menu_close = "Close menu",
-    menu_save_quit = "Save and quit",
-    menu_test_combat = "Start combat test",
-
     settings_language = "Language",
+
+    equipment_none = "None",
+
+    item_equip = "Equip",
+    item_unequip = "Unequip",
+    item_use = "Use",
+
+    menu = {
+        "back": "Back",
+        "equipment": "Equipment",
+        "backpack": "Backpack",
+        "settings": "Settings",
+        "save": "Save",
+        "load": "Load",
+        "close": "Close menu",
+        "save_quit": "Save and quit",
+        "test_combat": "Start combat test",
+    },
 
     # Combat
     combat = {
@@ -222,7 +229,11 @@ ENGLISH = _Lang(
 
     # Characters
     character_names = {
-        "romain": "Romain",
+        "player": "Player",
+        "goblin": "Goblin",
+        "hobgoblin": "Hobgoblin",
+        "goblin_chief": "Goblin chieftain",
+        "bandit": "Bandit",
     },
 
     # Slots
@@ -276,24 +287,29 @@ ENGLISH = _Lang(
 )
 
 FRENCH = _Lang(
-    none = "Aucun",
-
     # Dialog
     welcome = "Bienvenue aventurier ! ...asdf. \n(appuyez sur Espace ou Entrée)",
     controls = "Controles:\n\nHaut: W    Bas: S    Gauche: A    Droite: D\nConfirmer: Space/Enter    Menu: M",
 
-    # Choice
-    menu_back = "Retour",
-    menu_equipment = "Équipement",
-    menu_backpack = "Sac à dos",
-    menu_settings = "Options",
-    menu_save = "Sauvegarder",
-    menu_load = "Charger",
-    menu_close = "Fermer le menu",
-    menu_save_quit = "Sauvegarder et quitter",
-    menu_test_combat = "Commencer combat de test",
-
     settings_language = "Langue",
+
+    equipment_none = "Aucun",
+
+    item_equip = "Équiper",
+    item_unequip = "Déséquiper",
+    item_use = "Utiliser",
+
+    menu = {
+        "back": "Retour",
+        "equipment": "Équipement",
+        "backpack": "Sac à dos",
+        "settings": "Options",
+        "save": "Sauvegarder",
+        "load": "Charger",
+        "close": "Fermer le menu",
+        "save_quit": "Sauvegarder et quitter",
+        "test_combat": "Commencer combat de test",
+    },
 
     # Combat
     combat = {
@@ -313,7 +329,11 @@ FRENCH = _Lang(
 
     # Characters
     character_names = {
-        "romain": "Romain",
+        "player": "Joueur",
+        "goblin": "Goblin",
+        "hobgoblin": "Hobgoblin",
+        "goblin_chief": "Chef goblin",
+        "bandit": "Bandit",
     },
 
     # Slots
@@ -329,9 +349,10 @@ FRENCH = _Lang(
     item_names = {
       # "item_name": "Item Name",
         "agi_boots": "Bottes de Hermes",
-        "potion_health": "Potion de Gueérisson",
+        "potion_health": "Potion de Guérison",
         "str_helmet": "Heaume de Force",
         "sword": "Épée",
+        "dagger": "Dague",
     },
     item_descriptions = {
     #   "item_name": "Item Description",
@@ -339,6 +360,7 @@ FRENCH = _Lang(
         "potion_health": "Guérit ♥ 5 lors de consommation",
         "str_helmet": "Une heaume spartane, enchantée avec un sort de force",
         "sword": "Un truc pointu",
+        "dagger": "Un autre truc pointu",
     },
 
     # Actions

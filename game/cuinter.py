@@ -19,28 +19,42 @@ from common import EnumObject, move_toward
 from enums import EVENT_TYPES, RECTANGLE_PRESETS, UI_ELEMENT_TYPES
 from lang import DialogLine
 
+logger = logging.getLogger(__name__)
+
 X_CORRECTION = 2.6 # Hauteur / largeur d'un caractère
 CHARACTER_TIME = 0.025 # Délai d'affichage de chaque caractère dans les textes
 
 
 class Label(NamedTuple):
+    """Displays single line text."""
     pid: int # Persistent identifier
     y: int
     x: int
-    text: str = None
+    text: str
 
     @classmethod
     def new(cls, y: int, x: int, text: str = None, is_top_level: bool = True) -> Label:
+        """Create a new Label.
+
+        Initialize its identifier and add it to cuinter's active UI elements
+        if is_top_level, meaning if it is not the "child" of another element.
+        """
+        logger.debug("Creating new Label")
+
         pid = int(uuid4())
         label = cls(pid, y, x, text)
 
         if is_top_level:
             set_element(pid, label)
 
-        logger.debug("Created new Label")
         return label
 
     def config(self, is_top_level: bool = True, **kwargs) -> Label:
+        """Clone the Label with attributes in kwargs changed.
+
+        Replace the old Label in cuinter's active UI elements if is_top_level,
+        meaning if it is not the "child" of another element.
+        """
         label = Label(
             self.pid,
             kwargs.get("y", self.y),
@@ -48,14 +62,19 @@ class Label(NamedTuple):
             kwargs.get("text", self.text),
         )
 
-        if is_top_level: set_element(self.pid, label)
+        if is_top_level:
+            set_element(self.pid, label)
+
         return label
 
     def delete(self) -> None:
+        """Remove the Label from cuinter's active UI elements."""
         remove_element(self.pid)
 
     def draw(self) -> None:
-        if self.text is None: return
+        """Draw the Label in the display buffer."""
+        if self.text is None:
+            return
 
         for i, char in enumerate(self.text):
             set_cell(self.y, self.x + i, char)
@@ -65,27 +84,30 @@ class SpriteRenderer(NamedTuple):
     pid: int
     y: int
     x: int
-    sprite: str = None
+    sprite: str
 
     @property
     def height(self) -> int:
-        if self.sprite is None: return 0
+        if self.sprite is None:
+            return 0
         return len(self.sprite)
 
     @property
     def width(self) -> int:
-        if self.sprite is None: return 0
+        if self.sprite is None:
+            return 0
         return max(len(row) for row in self.sprite)
 
     @classmethod
     def new(cls, y: int, x: int, sprite: str = None, is_top_level: bool = True) -> SpriteRenderer:
+        logger.debug("Creating new SpriteRenderer")
+
         pid = int(uuid4())
         sprite_renderer = cls(pid, y, x, sprite)
 
         if is_top_level:
             set_element(pid, sprite_renderer)
 
-        logger.debug("Created new SpriteRenderer")
         return sprite_renderer
 
     def config(self, is_top_level: bool = True, **kwargs) -> SpriteRenderer:
@@ -96,27 +118,31 @@ class SpriteRenderer(NamedTuple):
             kwargs.get("sprite", self.sprite),
         )
 
-        if is_top_level: set_element(self.pid, sprite_renderer)
+        if is_top_level:
+            set_element(self.pid, sprite_renderer)
+
         return sprite_renderer
 
     def delete(self) -> None:
         remove_element(self.pid)
 
     def draw(self) -> None:
-        if self.sprite is None: return
+        if self.sprite is None:
+            return
 
         for y, row in enumerate(self.sprite.split("\n")):
             for x, char in enumerate(row):
-                if char == " ": continue
+                if char == " ":
+                    continue
                 set_cell(self.y + y, self.x + x, char)
 
 
 class Rectangle(NamedTuple):
-    pid: int = None
-    y: int = None
-    x: int = None
-    height: int = None
-    width: int = None
+    pid: int
+    y: int
+    x: int
+    height: int
+    width: int
 
     @staticmethod
     def get_preset(preset: int = 0):
@@ -126,6 +152,7 @@ class Rectangle(NamedTuple):
         except NameError:
             logger.error("Rectangle couldn't access screen dimensions")
             return Rectangle(
+                pid=None,
                 y=0,
                 x=0,
                 height=20,
@@ -135,6 +162,7 @@ class Rectangle(NamedTuple):
         match preset:
             case RECTANGLE_PRESETS.DIALOG:
                 return Rectangle(
+                    pid=None,
                     y=screen_height - 12,
                     x=round(screen_width / 4),
                     height=10,
@@ -142,6 +170,7 @@ class Rectangle(NamedTuple):
                 )
             case RECTANGLE_PRESETS.MENU:
                 return Rectangle(
+                    pid=None,
                     y=round(screen_height / 4),
                     x=round(screen_width / 4),
                     height=round(screen_height / 2),
@@ -150,6 +179,7 @@ class Rectangle(NamedTuple):
             case _:
                 logger.error("Rectangle preset enum not found: {preset}")
                 return Rectangle(
+                    pid=None,
                     y=screen_height - 12,
                     x=round(screen_width / 4),
                     height=10,
@@ -160,6 +190,8 @@ class Rectangle(NamedTuple):
     def new(cls, y: int = None, x: int = None, height: int = None,
             width: int = None, rectangle_preset: int = 0,
             is_top_level: bool = True) -> Rectangle:
+        logger.debug("Creating new Rectangle")
+
         preset = Rectangle.get_preset(rectangle_preset)
         pid = int(uuid4())
         rectangle = cls(
@@ -173,7 +205,6 @@ class Rectangle(NamedTuple):
         if is_top_level:
             set_element(pid, rectangle)
 
-        logger.debug("Created new Rectangle")
         return rectangle
 
     def config(self, is_top_level: bool = True, **kwargs) -> Rectangle:
@@ -185,14 +216,17 @@ class Rectangle(NamedTuple):
             kwargs.get("width", self.width),
         )
 
-        if is_top_level: set_element(self.pid, rectangle)
+        if is_top_level:
+            set_element(self.pid, rectangle)
+
         return rectangle
 
     def delete(self) -> None:
         remove_element(self.pid)
 
     def draw(self) -> None:
-        if self.height <= 0 or self.width <= 0: return
+        if self.height <= 0 or self.width <= 0:
+            return
 
         y1, y2 = self.y, self.y + self.height
         x1, x2 = self.x, self.x + self.width
@@ -216,7 +250,7 @@ class Rectangle(NamedTuple):
 class TextBox(NamedTuple):
     pid: int
     rectangle: Rectangle
-    text: str = None
+    text: str
 
     @property
     def y(self) -> int:
@@ -238,6 +272,8 @@ class TextBox(NamedTuple):
     def new(cls, y: int = None, x: int = None, height: int = None,
             width: int = None, text: str = None, rectangle_preset: int = 0,
             is_top_level: bool = True) -> TextBox:
+        logger.debug("Creating new TextBox")
+
         pid = int(uuid4())
         text_box = cls(
             pid,
@@ -255,7 +291,6 @@ class TextBox(NamedTuple):
         if is_top_level:
             set_element(pid, text_box)
 
-        logger.debug("Created new TextBox")
         return text_box
 
     def config(self, is_top_level: bool = True, **kwargs) -> TextBox:
@@ -265,7 +300,9 @@ class TextBox(NamedTuple):
             kwargs.get("text", self.text),
         )
 
-        if is_top_level: set_element(self.pid, text_box)
+        if is_top_level:
+            set_element(self.pid, text_box)
+
         return text_box
 
     def delete(self) -> None:
@@ -294,8 +331,8 @@ class DialogBox(NamedTuple):
     pid: int
     text_box: TextBox
     dialog: tuple[DialogLine | EnumObject, ...]
-    start_time: float = 0
-    line_index: int = 0
+    start_time: float
+    line_index: int
 
     @property
     def y(self) -> int:
@@ -331,6 +368,8 @@ class DialogBox(NamedTuple):
             width: int = None,
             dialog: tuple[DialogLine | EnumObject, ...] = None,
             rectangle_preset: int = 0, is_top_level: bool = True) -> DialogBox:
+        logger.debug("Creating new DialogBox")
+
         pid = int(uuid4())
         dialog_box = cls(
             pid,
@@ -351,7 +390,6 @@ class DialogBox(NamedTuple):
         if is_top_level:
             set_element(pid, dialog_box)
 
-        logger.debug("Created new DialogBox")
         return dialog_box
 
     def config(self, is_top_level: bool = True, **kwargs) -> DialogBox:
@@ -363,7 +401,9 @@ class DialogBox(NamedTuple):
             kwargs.get("line_index", self.line_index),
         )
 
-        if is_top_level: set_element(self.pid, dialog_box)
+        if is_top_level:
+            set_element(self.pid, dialog_box)
+
         return dialog_box
 
     def delete(self) -> None:
@@ -412,8 +452,8 @@ class ChoiceBox(NamedTuple):
     pid: int
     text_box: TextBox
     options: tuple[str, ...]
-    on_confirm_events: dict[int, EnumObject] = {}
-    selected_index: int = 0
+    on_confirm_events: dict[int, EnumObject]
+    selected_index: int
 
     @property
     def y(self) -> int:
@@ -441,6 +481,8 @@ class ChoiceBox(NamedTuple):
             on_confirm_events: dict[int, EnumObject] = {},
             selected_index: int = 0, rectangle_preset: int = 0,
             is_top_level: bool = True) -> ChoiceBox:
+        logger.debug("Creating new ChoiceBox")
+
         pid = int(uuid4())
         choice_box = cls(
             pid,
@@ -461,7 +503,6 @@ class ChoiceBox(NamedTuple):
         if is_top_level:
             set_element(pid, choice_box)
 
-        logger.debug("Created new ChoiceBox")
         return choice_box
 
     def config(self, is_top_level: bool = True, **kwargs) -> ChoiceBox:
@@ -473,7 +514,9 @@ class ChoiceBox(NamedTuple):
             kwargs.get("selected_index", self.selected_index),
         )
 
-        if is_top_level: set_element(self.pid, choice_box)
+        if is_top_level:
+            set_element(self.pid, choice_box)
+
         return choice_box
 
     def delete(self) -> None:
@@ -512,25 +555,16 @@ class ChoiceBox(NamedTuple):
         get_elements()[self.pid].text_box.draw()
 
 
-def _fullscreen() -> None:
-    """Simulates the F11 key being pressed."""
-    user32 = ctypes.windll.user32
-    user32.keybd_event(0x7A, 0, 0, 0)
-    user32.keybd_event(0x7A, 0, 0x0002, 0)
-
-
-def _display_buffer(stdscr) -> None:
-    """
-    Displays the buffer in rows instead of individual characters to improve
-    performance.
-    """
+def _display_buffer() -> None:
+    """Display the buffer in rows instead of individual characters to improve performance."""
     for y, row in enumerate(get_buffer()):
         row_str = ""
         prev_x = 0
         first_x = None
 
         for x, char in enumerate(row):
-            if char == " ": continue
+            if char == " ":
+                continue
 
             if first_x is None:
                 row_str += char
@@ -540,7 +574,9 @@ def _display_buffer(stdscr) -> None:
 
             prev_x = x
 
-        if first_x is None: continue
+        if first_x is None:
+            continue
+
         if y == screen_height - 1 and first_x + len(row_str) == screen_width:
             row_str = row_str[:-1]
 
@@ -551,61 +587,69 @@ def _display_buffer(stdscr) -> None:
 def _make_buffer_manager():
     cache = deepcopy(empty_buffer)
 
-    def get_buffer() -> list[list[str]]:
+    def get_cache() -> list[list[str]]:
         return cache
 
-    def set_cell(y: int, x: int, char: str = " ") -> None:
+    def set_item(y: int, x: int, char: str = " ") -> None:
         nonlocal cache
         if 0 <= y < screen_height and 0 <= x < screen_width:
             cache[y][x] = char
 
-    def clear_buffer() -> None:
+    def clear_cache() -> None:
         nonlocal cache
         cache = deepcopy(empty_buffer)
 
-    return get_buffer, set_cell, clear_buffer
+    return get_cache, set_item, clear_cache
 
 
 def _make_element_manager():
     cache = {}
 
-    def get_elements() -> dict[int, object]:
+    def get_cache() -> dict[int, object]:
         return cache
 
-    def set_element(pid: int, element: object) -> None:
+    def set_item(pid: int, element: object) -> None:
         nonlocal cache
         cache[pid] = element
 
-    def remove_element(pid: int) -> None:
+    def remove_item(pid: int) -> None:
         nonlocal cache
         del cache[pid]
 
-    return get_elements, set_element, remove_element
+    return get_cache, set_item, remove_item
 
 
 def _make_event_manager():
     cache = []
 
-    def get_events() -> list[EnumObject]:
+    def get_cache() -> list[EnumObject]:
         return cache
 
-    def add_event(event: Event) -> None:
+    def add_item(event: EnumObject) -> None:
         nonlocal cache
         cache.append(event)
 
-    def clear_events() -> None:
+    def clear_cache() -> None:
         nonlocal cache
         cache.clear()
 
-    return get_events, add_event, clear_events
+    return get_cache, add_item, clear_cache
+
+
+def fullscreen() -> None:
+    """Simulate the F11 key being pressed."""
+    logger.debug("Toggling fullscreen")
+
+    user32 = ctypes.windll.user32
+    user32.keybd_event(0x7A, 0, 0, 0)
+    user32.keybd_event(0x7A, 0, 0x0002, 0)
 
 
 def update() -> list[EnumObject]:
-    """
-    Draws the ui elements and processes inputs, returns a dictionary of events
-    for main.py to handle.
+    """Draw the active UI elements and process inputs. 
 
-    Doesn't behave like tkinter's mainloop, has to be called within a loop.
+    Returns a dictionary of events for main.py to handle. Doesn't behave like
+    tkinter's mainloop, has to be called within a loop.
     """
 
     clear_events()
@@ -633,13 +677,11 @@ def update() -> list[EnumObject]:
     for element in get_elements().values():
         element.draw()
 
-    _display_buffer(stdscr)
+    _display_buffer()
     stdscr.refresh()
 
     return get_events()
 
-
-logger = logging.getLogger(__name__)
 
 UI_ELEMENT_CLASSES = {
     UI_ELEMENT_TYPES.LABEL: Label,
@@ -651,7 +693,7 @@ UI_ELEMENT_CLASSES = {
 }
 
 time.sleep(0.5)
-_fullscreen()
+fullscreen()
 time.sleep(0.5)
 
 stdscr = curses.initscr()

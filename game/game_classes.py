@@ -11,13 +11,13 @@ from __future__ import annotations
 from typing import NamedTuple
 from collections import Counter
 from uuid import UUID, uuid4
-from common import named_tuple_modifier, auto_integer
+from common import auto_integer, move_toward, named_tuple_modifier
 from lang import translate
 import math
 import logging
 
-
 logger = logging.getLogger(__name__)
+
 null_uuid = UUID('00000000-0000-0000-0000-000000000000')
 
 
@@ -300,7 +300,8 @@ class Inventory(NamedTuple):
     def find_equipped_item(self, item_uuid: UUID) -> Item:
         """Look through equipment slots to find an Item."""
         for slot in self.equipment.keys():
-            if self.equipment[slot].uuid == item_uuid:
+            if (self.equipment[slot] is not None
+            and self.equipment[slot].uuid == item_uuid):
                 return self.equipment[slot]
             else:
                 continue
@@ -484,8 +485,13 @@ class Character(NamedTuple):
     mana: int = None
 
     inventory: Inventory = None
-    actions: list[(UUID, Action)] = None
+    actions: list[tuple[UUID, Action]] = None
     effects: dict = None
+
+
+    @property
+    def display_name(self) -> str:
+        return translate("character_names." + self.name)
 
 
     @staticmethod
@@ -595,18 +601,16 @@ class Character(NamedTuple):
         Returns a modified character sheet of the target and the damage taken.
         """
         # TODO: account for damage type, resistance, etc.
-        damage_taken = int(attack.damage)
+        damage_taken = round(attack.damage)
 
-        health = self.health - damage_taken
+        if damage_taken >= 0:
+            health = move_toward(self.health, 0, damage_taken)
+        else:
+            health = move_toward(self.health, self.current.max_health, -damage_taken)
+
         is_alive = self.is_alive
-
         if health <= 0:
-            health = 0
             is_alive = False
-
-        # With this, healing can just be negative damage
-        if health > self.current.max_health:
-            health = self.current.max_health
 
         return self.modify(health=health, is_alive=is_alive), damage_taken
 
@@ -619,7 +623,7 @@ class Character(NamedTuple):
         #     else:
         #         continue
 
-        return f"{self.name} (♥ {self.health})"
+        return f"{self.display_name} (♥ {self.health})"
 
 
     @staticmethod

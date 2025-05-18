@@ -8,23 +8,34 @@ Contributors:
 from __future__ import annotations
 import logging
 from typing import NamedTuple
-from game_classes import Character, Stats
+from game_classes import Character
 import monsters
 
+logger = logging.getLogger(__name__)
 
-class Save(NamedTuple):
+DEFAULT_ZONE_PATH = "assets\\zones\\test_zone.pkl"
+
+
+class GameSave(NamedTuple):
     """Un fichier de sauvgarde"""
-    character : Character
-    worldPosition : tuple[str, int, int] #le premier int représente l'axe y et le deuxième l'axe x
-    
+    character: Character
+    zone_path: str
+    player_grid_y: int
+    player_grid_x: int
+
     @classmethod
     def new(cls, character: Character = monsters.Player(),
-        worldPosition: tuple[str, int, int] = ("test_zone.pkl", 3, 3)
-    ) -> Save:
-        """Create a new Savefile"""
-        logger.debug(f"the save {Save(character, worldPosition)} is created ")
-        return Save(character, worldPosition)
-        
+            zone_path: str = DEFAULT_ZONE_PATH, player_grid_y: int = 3,
+            player_grid_x: int = 5) -> GameSave:
+        logger.debug("Creating new GameSave")
+
+        return cls(
+            character,
+            zone_path,
+            player_grid_y,
+            player_grid_x,
+        )
+
 #     def _test():
 #         save1 = Save.new(worldPosition=("zone2.pkl", 5, 5))
 #         save2 = Save.new(worldPosition=("zone1.pkl", 3, 7))
@@ -34,8 +45,6 @@ class Save(NamedTuple):
 #         delete("save_1.pkl", "Saves\\Game_Saves")
 #         print("Save tests passed")
 
-
-logger = logging.getLogger(__name__)
 
 # if __name__ == "__main__":
 #     Save._test()

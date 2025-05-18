@@ -8,18 +8,20 @@ from __future__ import annotations
 import logging
 import os
 import pickle
-from typing import NamedTuple
-from enums import EVENT_TYPES
+
+logger = logging.getLogger(__name__)
 
 
 def load_text(path: str) -> str:
-    """Reads and returns the content of the text file at the provided path."""
+    """
+    Reads and returns the content of the text file at the provided path.
+    """
     logger.debug(f"Loading text file: {path}")
-    
+
     try:
         with open(path, "r", encoding="utf-8") as file:
             return file.read()
-    
+
     except FileNotFoundError:
         error_msg = f"File missing: {path}"
         logger.error(error_msg)
@@ -32,7 +34,7 @@ def load_text_dir(path: str) -> dict[str, str]:
     the files in the directory.
     """
     logger.debug(f"Loading text file directory: {path}")
-    
+
     texts = {}
     for entry in os.listdir(path):
         full_path = os.path.join(path, entry)
@@ -43,19 +45,23 @@ def load_text_dir(path: str) -> dict[str, str]:
             continue
 
         texts[name] = load_text(full_path)
-    
+
     return texts
 
 
 def save_pickle(obj: object, path: str) -> None:
-    """Saves an object as a pickle file at the provided path."""
+    """
+    Saves an object as a pickle file at the provided path.
+    """
     logger.debug(f"Saving pickle file: {path}")
     with open(path, "wb") as file:
         pickle.dump(obj, file)
 
 
 def load_pickle(path: str) -> object:
-    """Reads and returns the pickle object at the provided path."""
+    """
+    Reads and returns the pickle object at the provided path.
+    """
     logger.debug(f"Loading pickle file: {path}")
     try:
         with open(path, "rb") as file:
@@ -67,12 +73,8 @@ def load_pickle(path: str) -> object:
         return None
 
 
-def delete(file : str, filepath : str):
-    liste_file = os.listdir(filepath)
-    if file in liste_file:
-        os.remove(filepath+"\\"+file)
-    else:
-        print(f"Le fichier {file} n'est pas dans le bon dossier.") #TODO fix this heresy
-
-
-logger = logging.getLogger(__name__)
+def delete(file_path: str) -> None:
+    """
+    Deletes the file at file_path.
+    """
+    os.remove(file_path)

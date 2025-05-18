@@ -4,12 +4,10 @@ Created on Tue May 13 21:47:27 2025
 @author: widmo
 """
 
-
 from typing import NamedTuple
 from files import load_text_dir
-from game_classes import Stats, Character, Inventory, Item
+from game_classes import Stats, Character
 import test_items as ti
-
 
 """
 name: str,
@@ -35,7 +33,7 @@ class DefaultStats(NamedTuple):
     goblin_chief = Stats( 20,  30,   5,  10,   8,   5,   4,   4)
 
 
-def Player():
+def player():
     char = Character.new(
         name            = "player",
         sprite_sheet    = load_text_dir(PLAYER_SPRITE_DIR_PATH),
@@ -52,7 +50,7 @@ def Player():
     return char
 
 
-def Goblin():
+def goblin():
     char = Character.new(
         name            = "goblin",
         sprite_sheet    = None,
@@ -66,7 +64,7 @@ def Goblin():
     return char
 
 
-def Hobgoblin():
+def hobgoblin():
     char = Character.new(
         name            = "hobgoblin",
         sprite_sheet    = None,
@@ -81,9 +79,9 @@ def Hobgoblin():
     return char
 
 
-def GoblinChief():
+def goblin_chief():
     char = Character.new(
-        name            = "goblin_chieftain",
+        name            = "goblin_chief",
         sprite_sheet    = None,
         is_player       = False,
         base_stats      = DefaultStats.goblin_chief,
@@ -95,7 +93,7 @@ def GoblinChief():
     return char
 
 
-def Bandit():
+def bandit():
     char = Character.new(
         name            = "bandit",
         sprite_sheet    = None,
@@ -110,6 +108,6 @@ def Bandit():
 
 
 if __name__ == "__main__":
-    print(Goblin())
-    print(Hobgoblin())
-    print(GoblinChief())
+    print(goblin())
+    print(hobgoblin())
+    print(goblin_chief())

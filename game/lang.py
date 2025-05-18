@@ -13,6 +13,8 @@ from common import EnumObject
 from enums import LANGUAGE_ENUM
 import settings
 
+logger = logging.getLogger(__name__)
+
 SUB_DICT_SEPARATOR = "."
 
 
@@ -31,13 +33,13 @@ class DialogLine(NamedTuple):
         if isinstance(dialog_line, str):
             return DialogLine(translate(dialog_line))
 
-        elif (isinstance(dialog_line, tuple)
+        if (isinstance(dialog_line, tuple)
         and len(dialog_line) == 2
         and isinstance(dialog_line[0], str)
         and isinstance(dialog_line[1], str)):
             return DialogLine(
                 translate(dialog_line[0]),
-                lang_text.character_names[dialog_line[1]],
+                translate("character_names." + [dialog_line[1]]),
             )
 
         elif isinstance(dialog_line, (DialogLine, EnumObject)):
@@ -62,9 +64,9 @@ class _Lang(NamedTuple):
 
     # Choice
     settings_language: str = None
-    
+
     equipment_none: str = None
-    
+
     item_equip: str = None
     item_unequip: str = None
     item_use: str = None
@@ -146,7 +148,7 @@ def _translate_nest(lang_key: str, sub_dict: dict = None) -> str:
     _translate_nest("item_names.agi_boots").
     """
     logger.debug(f"Translating {lang_key}")
-    
+
     if SUB_DICT_SEPARATOR in lang_key:
         sub_dict_name, sub_dict_key = lang_key.split(SUB_DICT_SEPARATOR, 1)
         if sub_dict is None:
@@ -173,14 +175,16 @@ def translate(lang_key: str | tuple[str]) -> str | tuple[str]:
         return tuple(map(translate, lang_key))
     elif isinstance(lang_key, str):
         return _translate_nest(lang_key)
+    else:
+        error_msg = f"Expected value of type str | tuple[str], got {lang_key}"
+        logger.error(error_msg)
+        return error_msg
 
 
 def f(fstring: str, *args: object) -> str:
     """Shorthand for fstring.format(*args)."""
     return fstring.format(*args)
 
-
-logger = logging.getLogger(__name__)
 
 ENGLISH = _Lang(
     # Dialog
@@ -228,7 +232,7 @@ ENGLISH = _Lang(
         "player": "Player",
         "goblin": "Goblin",
         "hobgoblin": "Hobgoblin",
-        "goblin_chieftain": "Goblin chieftain",
+        "goblin_chief": "Goblin chieftain",
         "bandit": "Bandit",
     },
 
@@ -328,7 +332,7 @@ FRENCH = _Lang(
         "player": "Joueur",
         "goblin": "Goblin",
         "hobgoblin": "Hobgoblin",
-        "goblin_chieftain": "Chef goblin",
+        "goblin_chief": "Chef goblin",
         "bandit": "Bandit",
     },
 

@@ -6,9 +6,7 @@ Contributors:
     Jakub
 """
 
-
 from game_classes import Item, Action, Stats, null_uuid
-
 
 """ Item
 
@@ -27,7 +25,6 @@ from game_classes import Item, Action, Stats, null_uuid
  actions: tuple[Action] # added to the user's actions
  uuid: UUID # used to keep track of applied bonuses
 """
-
 
 light_stab = Action("light_stab",
     True,

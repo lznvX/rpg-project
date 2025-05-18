@@ -10,6 +10,7 @@ from typing import NamedTuple
 from enums import LANGUAGE_ENUM
 from files import save_pickle, load_pickle
 
+logger = logging.getLogger(__name__)
 
 SETTINGS_PATH = "user_data\\settings.pkl"
 
@@ -24,38 +25,38 @@ class Settings(NamedTuple):
             first_time=True,
             language=LANGUAGE_ENUM.ENGLISH,
         )
-        
-        
+
+
 def _make_setting_manager():
     cache = Settings.new()
 
-    def get(setting_name: str) -> object:
+    def get_cache(setting_name: str) -> object:
         try:
             return getattr(cache, setting_name)
         except AttributeError:
             logger.error(f"Settings don't contain {setting_name}")
             return None
 
-    def config(**kwargs) -> None:
+    def config_cache(**kwargs) -> None:
         logger.debug(f"Changing settings: {kwargs}")
-        
+
         nonlocal cache
         cache = cache._replace(**kwargs)
 
-    def reset() -> None:
+    def reset_cache() -> None:
         logger.debug("Resetting settings")
-        
+
         nonlocal cache
         cache = Settings.new()
 
-    def save() -> None:
+    def save_cache() -> None:
         logger.debug("Saving settings")
-        
+
         save_pickle(cache, SETTINGS_PATH)
 
-    def load() -> None:
+    def load_cache() -> None:
         logger.debug("Loading settings")
-        
+
         nonlocal cache
         stored_settings = load_pickle(SETTINGS_PATH)
         if stored_settings is not None:
@@ -65,11 +66,11 @@ def _make_setting_manager():
             logger.warning("Settings file not found, using default")
 
     return (
-        get,
-        config,
-        reset,
-        save,
-        load,
+        get_cache,
+        config_cache,
+        reset_cache,
+        save_cache,
+        load_cache,
     )
 
 
@@ -81,8 +82,6 @@ def _test():
     assert get("language") == LANGUAGE_ENUM.ENGLISH
     print("Test passed")
 
-
-logger = logging.getLogger(__name__)
 
 (
     get,

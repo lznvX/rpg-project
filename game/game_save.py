@@ -8,8 +8,10 @@ Contributors:
 from __future__ import annotations
 import logging
 from typing import NamedTuple
-from game_classes import Character, Stats
+from game_classes import Character
 import monsters
+
+logger = logging.getLogger(__name__)
 
 DEFAULT_ZONE_PATH = "assets\\zones\\test_zone.pkl"
 
@@ -20,7 +22,7 @@ class GameSave(NamedTuple):
     zone_path: str
     player_grid_y: int
     player_grid_x: int
-    
+
     @classmethod
     def new(cls, character: Character = monsters.Player(),
             zone_path: str = DEFAULT_ZONE_PATH, player_grid_y: int = 3,
@@ -33,7 +35,7 @@ class GameSave(NamedTuple):
             player_grid_y,
             player_grid_x,
         )
-        
+
 #     def _test():
 #         save1 = Save.new(worldPosition=("zone2.pkl", 5, 5))
 #         save2 = Save.new(worldPosition=("zone1.pkl", 3, 7))
@@ -43,8 +45,6 @@ class GameSave(NamedTuple):
 #         delete("save_1.pkl", "Saves\\Game_Saves")
 #         print("Save tests passed")
 
-
-logger = logging.getLogger(__name__)
 
 # if __name__ == "__main__":
 #     Save._test()

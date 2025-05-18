@@ -16,8 +16,8 @@ from lang import translate
 import math
 import logging
 
-
 logger = logging.getLogger(__name__)
+
 null_uuid = UUID('00000000-0000-0000-0000-000000000000')
 
 

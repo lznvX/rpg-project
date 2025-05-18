@@ -63,6 +63,8 @@ battle_target = None
 tiles = load_text_dir(TILE_SPRITE_DIR_PATH)
 tileset = remap_dict(tiles, world.TILE_NAME_TO_CHAR)
 
+cuinter.setup()
+
 grid = world.Grid.new(tileset)
 player = world.WorldCharacter.new(
     grid=grid,
@@ -126,8 +128,10 @@ while 1:
                     continue
 
                 for world_object in world_objects:
-                    if (not isinstance(world_object, world.WalkTrigger)
-                    or event_value != world_object.key):
+                    if (
+                        not isinstance(world_object, world.WalkTrigger)
+                        or event_value != world_object.key
+                    ):
                         continue
 
                     try_append(
@@ -145,8 +149,10 @@ while 1:
 
                     if old_y != player.grid_y or old_x != player.grid_x:
                         for world_object in world_objects:
-                            if (not isinstance(world_object, world.WalkTrigger)
-                            or world_object.key is not None):
+                            if (
+                                not isinstance(world_object, world.WalkTrigger)
+                                or world_object.key is not None
+                            ):
                                 continue
 
                             try_append(
@@ -226,11 +232,13 @@ while 1:
                 try_append(new_events, new_event)
 
             case EVENT_TYPES.LOAD_ZONE:
-                if (not isinstance(event_value, tuple)
-                or len(event_value) != 3
-                or not isinstance(event_value[0], str)
-                or not isinstance(event_value[1], int)
-                or not isinstance(event_value[2], int)):
+                if (
+                    not isinstance(event_value, tuple)
+                    or len(event_value) != 3
+                    or not isinstance(event_value[0], str)
+                    or not isinstance(event_value[1], int)
+                    or not isinstance(event_value[2], int)
+                ):
                     logger.error(f"Expected value of type tuple[str, int, int], got {event_value}")
                     continue
 
@@ -243,7 +251,7 @@ while 1:
 
                 current_zone_path = zone_path
                 grid = grid.load_tilemap(tilemap)
-                grid = grid.center(cuinter.screen_height, cuinter.screen_width)
+                grid = grid.center(cuinter.get_screen_height(), cuinter.get_screen_width())
                 player = player.config(
                     grid=grid,
                     grid_y=player_grid_y,
@@ -290,10 +298,12 @@ while 1:
                 logger.error("Not implemented: EVENT_TYPES.GAME_OVER")
 
             case EVENT_TYPES.SET_BATTLE_ACTION:
-                if (not isinstance(event_value, tuple)
-                or len(event_value) != 2
-                or not isinstance(event_value[0], Action)
-                or not isinstance(event_value[1], Item)):
+                if (
+                    not isinstance(event_value, tuple)
+                    or len(event_value) != 2
+                    or not isinstance(event_value[0], Action)
+                    or not isinstance(event_value[1], Item)
+                ):
                     logger.error(f"Expected value of type tuple[Action, Item], got {event_value}")
                     continue
 
@@ -327,10 +337,12 @@ while 1:
                 )
 
             case EVENT_TYPES.EQUIP_ITEM:
-                if (not isinstance(event_value, tuple)
-                or len(event_value) != 2
-                or not isinstance(event_value[0], str)
-                or not isinstance(event_value[1], Item)):
+                if (
+                    not isinstance(event_value, tuple)
+                    or len(event_value) != 2
+                    or not isinstance(event_value[0], str)
+                    or not isinstance(event_value[1], Item)
+                ):
                     logger.error(f"Expected value of type tuple[str, Item], got {event_value}")
                     continue
 
@@ -348,11 +360,15 @@ while 1:
                 )
 
             case EVENT_TYPES.ADD_ITEM:
-                if (not isinstance(event_value, Item)
-                and (not isinstance(event_value, tuple)
-                or len(event_value) != 2
-                or not isinstance(event_value[0], Item)
-                or not isinstance(event_value[1], int))):
+                if (
+                    not isinstance(event_value, Item)
+                    and (
+                        not isinstance(event_value, tuple)
+                        or len(event_value) != 2
+                        or not isinstance(event_value[0], Item)
+                        or not isinstance(event_value[1], int)
+                    )
+                ):
                     logger.error(
                         f"Expected value of type Item | tuple[Item, int], got {event_value}",
                     )
@@ -364,11 +380,15 @@ while 1:
                     player.character.inventory.add(event_value)
 
             case EVENT_TYPES.REMOVE_ITEM:
-                if (not isinstance(event_value, Item)
-                and (not isinstance(event_value, tuple)
-                or len(event_value) != 2
-                or not isinstance(event_value[0], Item)
-                or not isinstance(event_value[1], int))):
+                if (
+                    not isinstance(event_value, Item)
+                    and (
+                        not isinstance(event_value, tuple)
+                        or len(event_value) != 2
+                        or not isinstance(event_value[0], Item)
+                        or not isinstance(event_value[1], int)
+                    )
+                ):
                     logger.error(
                         f"Expected value of type Item | tuple[Item, int], got {event_value}",
                     )
@@ -422,8 +442,10 @@ while 1:
                     for slot_name in inventory.slots:
                         if slot_name not in item.tags:
                             continue
-                        if (inventory.equipment[slot_name] is not None
-                        and item.name == inventory.equipment[slot_name].name):
+                        if (
+                            inventory.equipment[slot_name] is not None
+                            and item.name == inventory.equipment[slot_name].name
+                        ):
                             equip_entry = translate("item_unequip")
                             on_confirm_event = EnumObject(
                                 EVENT_TYPES.UNEQUIP_ITEM,
@@ -603,8 +625,10 @@ while 1:
                 quit()
 
             case EVENT_TYPES.MULTI_EVENT:
-                if (not isinstance(event_value, tuple)
-                or not all(isinstance(element, EnumObject) for element in event_value)):
+                if (
+                    not isinstance(event_value, tuple)
+                    or not all(isinstance(element, EnumObject) for element in event_value)
+                ):
                     logger.error(
                         f"Expected value of type tuple[EnumObject, ...], got {event_value}",
                     )

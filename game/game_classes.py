@@ -81,11 +81,12 @@ class Stats(NamedTuple):
 
     @staticmethod
     def get_placeholder() -> Stats:
-        """Generate a placeholder stat block.$
+        """Generate a placeholder stat block.
 
         Intended as a fallback when there's no access to the stats of a real Character.
         """
-        Stats( 20,  50,   0,  10,  10,  10,   2,   4)
+        # It took me so fucking long to realize I forgot to return
+        return Stats( 20,  50,   0,  10,  10,  10,   2,   4)
 
 
     def modify(self, **changes) -> Stats:
@@ -135,16 +136,17 @@ class Action(NamedTuple):
     def _damage_limited(self, *relevant_stats: (int, int)) -> float:
         if len(relevant_stats) > 2:
             logger.warning(f" _damage_limited() of <{self.name}> got more than 2 arguments")
-        return (4 / math.pi) * math.atan(relevant_stats[0] / relevant_stats[0]) * self.base_damage
+        return (4 / math.pi) * math.atan(relevant_stats[0] / relevant_stats[1]) * self.base_damage
 
     @auto_integer
-    def get_damage(self, source_item: Item, user_stats: Stats=None) -> float:
+    def get_damage(self, source_item: Item, user_stats: Stats) -> float:
         if user_stats is None:
             logger.info(f" No user_stats were provided for use of Action <{self.name}>; using default values")
             user_stats = Stats.get_placeholder()
+
         else:
-            # logger.debug(f" user_stats: {user_stats}")
-            ...
+            pass
+        logger.debug(f"user_stats: {user_stats}")
 
         if self.requires_item:
             if source_item is None:
@@ -189,7 +191,7 @@ class Action(NamedTuple):
 
 
     def display(self, source_item: Item, actor: Character=None):
-        return f"{self.display_name} (¤ {self.get_damage(source_item, actor)})"
+        return f"{self.display_name} (¤ {round(self.get_damage(source_item, actor), 1)})"
 
 
 class Item(NamedTuple):
@@ -297,6 +299,18 @@ class Inventory(NamedTuple):
         return Inventory(equipment, tasklist, Counter())
 
 
+    def _get_equipment_dump(self) -> str:
+        _equipment = []
+        for slot in self.equipment.keys():
+            item = self.equipment[slot]
+            if item is not None:
+                uuid = item.uuid
+            else:
+                uuid = None
+            _equipment.append((slot, item, uuid))
+        return str(_equipment)
+
+
     def find_equipped_item(self, item_uuid: UUID) -> Item:
         """Look through equipment slots to find an Item."""
         for slot in self.equipment.keys():
@@ -305,6 +319,9 @@ class Inventory(NamedTuple):
                 return self.equipment[slot]
             else:
                 continue
+
+        # Dumb equipment to the log before throwing exception
+        logger.warning(f"Could not find item {item_uuid} in this Inventory.equipment\n\nCurrent Equipment:\n{self._get_equipment_dump()}\n")
         raise ItemNotFoundError( f"Could not find item {item_uuid} in this Inventory.equipment")
 
 
@@ -534,6 +551,7 @@ class Character(NamedTuple):
             ...
         else:
             for action in item.actions:
+                logger.debug(f"Appending <{(item_uuid, action)} to {self.name}'s actions>")
                 self.actions.append((item_uuid, action))
 
 

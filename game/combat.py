@@ -3,8 +3,9 @@
 Created on 2025.03.12
 Contributors:
     Jakub
-    Romain (just did implementation with the rest)
+    Romain
 """
+
 
 from __future__ import annotations
 import logging
@@ -25,8 +26,16 @@ from game_classes import (
 from lang import DialogLine, f, translate
 import monsters as m
 import test_items as ti
+from get_input import get_input
 
+
+is_main = __name__ == "__main__"
+auto_turn_delay = 0.5 if is_main else 0 # seconds
 logger = logging.getLogger(__name__)
+
+
+class FightOver(RuntimeError):
+    pass
 
 
 class CombatParty(NamedTuple):
@@ -235,8 +244,13 @@ class Battle(NamedTuple):
         # is this allowed? no prob for me, dunno if Kessler will get angry
         if is_main:
             while is_fight_on:
-                self.advance(None)
+                # fix combat not ending in standalone mode
+                try:
+                    self.advance(None)
+                except FightOver:
+                    break
                 # why is the delay broken? was commented out
+                # wtf how did I not notice
                 try_sleep(auto_turn_delay)
 
     def new_turn(self) -> int:
@@ -258,14 +272,23 @@ class Battle(NamedTuple):
         if len(self.team1.valid_targets) == 0:
             logger.info("Battle ends as player loss")
             self.output(translate("combat.loss"))
-            is_fight_on = False
-            return -1
+
+            if is_main:
+                # fix combat not ending in standalone mode
+                raise FightOver("The player looses")
+            else:
+                return -1
+
         elif len(self.team2.valid_targets) == 0:
             logger.info("Battle ends as player victory")
             self.output(translate("combat.win"))
             self.output(f(translate("combat.rewards"), "0", "0"))
-            is_fight_on = False
-            return 1
+
+            if is_main:
+                # fix combat not ending in standalone mode
+                raise FightOver("The player wins")
+            else:
+                return 1
         else:
             return 0
 
@@ -298,7 +321,7 @@ class Battle(NamedTuple):
                             attack, weapon, target_uuid = self.get_player_action(
                                 fighter,
                                 allies,
-                                enemies,
+                                enemies
                             )
                         else:
                             target_choice_event = self.get_target_choice_event(enemies)
@@ -354,7 +377,7 @@ class Battle(NamedTuple):
                 allies.update_member(fighter_uuid, fighter)
                 enemies.update_member(target_uuid, target)
 
-                # remove dead characters, check win/loss conditions
+                # log dead characters, check win/loss conditions
                 if not target.is_alive:
                     logger.info(f"{target.name} dies")
                     self.output(f(translate("combat.death"), target.display_name))
@@ -482,6 +505,8 @@ def _test_pcs():
     alice = alice.equip("mainhand", ti.Sword)
     alice = alice.equip("feet", ti.AgiBoots)
 
+    logger.debug(f"Alice's equipment:\n\n{alice.inventory._get_equipment_dump()}\n")
+
     bob = Character.new(
             name            = "Bob",
             sprite_sheet    = None,
@@ -494,15 +519,18 @@ def _test_pcs():
     bob.inventory.add(ti.Dagger)
     bob.inventory.add(ti.StrHelmet)
     bob = bob.equip("mainhand", ti.Sword)
-    bob = bob.equip("mainhand", ti.Dagger)
+    bob = bob.equip("offhand", ti.Dagger)
     bob = bob.equip("head", ti.StrHelmet)
+
+    logger.debug(f"Bob's equipment:\n\n{bob.inventory._get_equipment_dump()}\n")
 
     return alice, bob
 
 
-is_main = __name__ == "__main__"
-auto_turn_delay = 0.5 if is_main else 0 # seconds
 if is_main:
+    logging.basicConfig(filename='logs/combat_test.log', filemode='wt', encoding='utf-8', level=logging.DEBUG,
+    format="%(name)-9s :: %(levelname)-8s :: %(message)s", force=True)
+
     alice, bob = _test_pcs()
     player_party = Party("Adventuring Party", [alice, bob], bob.uuid)
 

@@ -18,8 +18,10 @@ class _EventTypes(NamedTuple):
     LOAD_UI_ELEMENT: int
     LOAD_ZONE: int
     LOAD_BATTLE: int
+    GAME_OVER: int
     SET_BATTLE_ACTION: int
     SET_BATTLE_TARGET: int
+    SET_CHARACTER: int
     EQUIP_ITEM: int
     UNEQUIP_ITEM: int
     ADD_ITEM: int

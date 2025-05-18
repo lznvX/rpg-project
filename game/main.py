@@ -21,7 +21,7 @@ import cuinter
 from cuinter import UI_ELEMENT_CLASSES
 from enums import EVENT_TYPES, UI_ELEMENT_TYPES, RECTANGLE_PRESETS
 from files import load_text_dir, load_pickle, save_pickle
-from game_classes import Action, Item, Party
+from game_classes import Action, Character, DamageInstance, Item, Party
 from game_save import GameSave
 from lang import DialogLine, translate
 import monsters
@@ -29,7 +29,7 @@ import settings
 import world
 from world import WORLD_OBJECT_CLASSES
 
-HUD_COUNTER_REFRESH = 1 # Time between each HUD counter update
+FPS_COUNTER_REFRESH = 1 # Time between each HUD counter update
 MOVE_MAP = {
     ord("w"): (-1, 0, "up"),
     ord("s"): (1, 0, "down"),
@@ -74,13 +74,22 @@ player = world.WorldCharacter.new(
     y_offset=-1,
     x_offset=0,
 )
-fps_label = cuinter.Label.new(0, 0)
+fps_label = cuinter.Label.new(
+    y=0,
+    x=0,
+    text="FPS:"
+)
+health_label = cuinter.Label.new(
+    y=1,
+    x=0,
+    text=f"♥ {player.character.health}/{player.character.current.max_health}"
+)
 
 world_objects = []
 new_events = [
     EnumObject(
-        EVENT_TYPES.LOAD_GAME, current_save
-    ),
+        EVENT_TYPES.LOAD_GAME,
+    )
 ]
 if settings.get("first_time"):
     new_events.append(EnumObject(
@@ -98,9 +107,9 @@ while 1:
     last_time = current_time
     
     frame_count += 1
-    if current_time - fps_timer >= HUD_COUNTER_REFRESH:
+    if current_time - fps_timer >= FPS_COUNTER_REFRESH:
         average_fps = frame_count / (current_time - fps_timer)
-        fps_label.config(text=f"FPS : {round(average_fps)}")
+        fps_label.config(text=f"FPS: {round(average_fps)}")
         fps_timer = current_time
         frame_count = 0
     
@@ -109,17 +118,17 @@ while 1:
     events = new_events + cuinter.update()
     new_events.clear()
     
-    for event_type, value in events:
+    for event_type, event_value in events:
         match event_type:
             case EVENT_TYPES.PRESS_KEY:
                 # Key presses only passed to events if they weren't caught by a UI element
-                if not isinstance(value, int):
-                    logger.error(f"Expected value of type int, got {value}")
+                if not isinstance(event_value, int):
+                    logger.error(f"Expected value of type int, got {event_value}")
                     continue
                 
                 for world_object in world_objects:
                     if (not isinstance(world_object, world.WalkTrigger)
-                    or value != world_object.key):
+                    or event_value != world_object.key):
                         continue
                     
                     try_append(
@@ -127,9 +136,9 @@ while 1:
                         world_object.on_walk(player.grid_y, player.grid_x),
                     )
                 
-                if value in MOVE_MAP:
+                if event_value in MOVE_MAP:
                     old_y, old_x = player.grid_y, player.grid_x
-                    move_y, move_x, direction = MOVE_MAP[value]
+                    move_y, move_x, direction = MOVE_MAP[event_value]
                     player = player.move(move_y, move_x)
                     
                     if player.grid_multi_sprite.sprite_key != direction:
@@ -146,7 +155,7 @@ while 1:
                                 world_object.on_walk(player.grid_y, player.grid_x),
                             )
                 
-                elif value == ord("m"):
+                elif event_value == ord("m"):
                     try_append(
                         new_events,
                         EnumObject(
@@ -156,11 +165,11 @@ while 1:
                     )
             
             case EVENT_TYPES.MAKE_UI_ELEMENT:
-                if not isinstance(value, EnumObject):
-                    logger.error(f"Expected value of type EnumObject, got {value}")
+                if not isinstance(event_value, EnumObject):
+                    logger.error(f"Expected value of type EnumObject, got {event_value}")
                     continue
                 
-                ui_element_type, args = value
+                ui_element_type, args = event_value
                 ui_element_class = UI_ELEMENT_CLASSES[ui_element_type]
                 
                 if isinstance(args, dict):
@@ -183,11 +192,11 @@ while 1:
                     logger.error(f"Not implemented: {ui_element_class}.new()")
             
             case EVENT_TYPES.MAKE_WORLD_OBJECT:
-                if not isinstance(value, EnumObject):
-                    logger.error(f"Expected value of type EnumObject, got {value}")
+                if not isinstance(event_value, EnumObject):
+                    logger.error(f"Expected value of type EnumObject, got {event_value}")
                     continue
                 
-                world_object_type, args = value
+                world_object_type, args = event_value
                 world_object_class = WORLD_OBJECT_CLASSES[world_object_type]
                 
                 try:
@@ -202,11 +211,11 @@ while 1:
                     logger.error(f"Not implemented: {world_object_class}.new()")
             
             case EVENT_TYPES.LOAD_UI_ELEMENT:
-                if not isinstance(value, str):
-                    logger.error(f"Expected value of type str, got {value}")
+                if not isinstance(event_value, str):
+                    logger.error(f"Expected value of type str, got {event_value}")
                     continue
                 
-                constructor = load_pickle(value)
+                constructor = load_pickle(event_value)
                 if not isinstance(constructor, EnumObject):
                     logger.error(f"Expected constructor of type EnumObject, got {constructor}")
                     continue
@@ -218,15 +227,15 @@ while 1:
                 try_append(new_events, new_event)
             
             case EVENT_TYPES.LOAD_ZONE:
-                if (not isinstance(value, tuple)
-                or len(value) != 3
-                or not isinstance(value[0], str)
-                or not isinstance(value[1], int)
-                or not isinstance(value[2], int)):
-                    logger.error(f"Expected value of type tuple[str, int, int], got {value}")
+                if (not isinstance(event_value, tuple)
+                or len(event_value) != 3
+                or not isinstance(event_value[0], str)
+                or not isinstance(event_value[1], int)
+                or not isinstance(event_value[2], int)):
+                    logger.error(f"Expected value of type tuple[str, int, int], got {event_value}")
                     continue
                 
-                zone_path, player_grid_y, player_grid_x = value
+                zone_path, player_grid_y, player_grid_x = event_value
                 zone_data = load_pickle(zone_path)
                 if zone_data is None:
                     continue
@@ -251,13 +260,13 @@ while 1:
                     try_append(new_events, new_event)
             
             case EVENT_TYPES.LOAD_BATTLE:
-                if not isinstance(value, str):
-                    logger.error(f"Expected value of type str, got {value}")
+                if not isinstance(event_value, str):
+                    logger.error(f"Expected value of type str, got {event_value}")
                     continue
                 
                 #TODO load battle_data and plug into Battle.new()
                 
-                chief = monsters.GoblinChief()
+                leader = monsters.Hobgoblin()
                 battle = Battle.new(
                     Party(
                         name="Player party",
@@ -267,100 +276,141 @@ while 1:
                     Party(
                         name="Goblin squad",
                         members=(
-                            chief,
-                            monsters.Hobgoblin(),
+                            leader,
+                            monsters.Goblin(),
                             monsters.Goblin(),
                         ),
-                        leader=chief.uuid,
+                        leader=leader.uuid,
                     ),
                 )
                 
                 battle.begin()
                 try_append(new_events, battle.advance())
             
+            case EVENT_TYPES.GAME_OVER:
+                logger.error("Not implemented: EVENT_TYPES.GAME_OVER")
+            
             case EVENT_TYPES.SET_BATTLE_ACTION:
-                if (not isinstance(value, tuple)
-                or len(value) != 2
-                or not isinstance(value[0], Action)
-                or not isinstance(value[1], Item)):
-                    logger.error(f"Expected value of type tuple[Action, Item], got {value}")
+                if (not isinstance(event_value, tuple)
+                or len(event_value) != 2
+                or not isinstance(event_value[0], Action)
+                or not isinstance(event_value[1], Item)):
+                    logger.error(f"Expected value of type tuple[Action, Item], got {event_value}")
                     continue
                 
                 if battle_target is not None:
-                    try_append(new_events, battle.advance((*value, battle_target)))
+                    try_append(new_events, battle.advance((*event_value, battle_target)))
                     battle_target = None
                 else:
-                    battle_action = value
+                    battle_action = event_value
             
             case EVENT_TYPES.SET_BATTLE_TARGET:
-                if not isinstance(value, UUID):
-                    logger.error(f"Expected value of type UUID, got {value}")
+                if not isinstance(event_value, UUID):
+                    logger.error(f"Expected value of type UUID, got {event_value}")
                     continue
                 
                 if battle_action is not None:
-                    try_append(new_events, battle.advance((*battle_action, value)))
+                    try_append(new_events, battle.advance((*battle_action, event_value)))
                     battle_action = None
                 else:
-                    battle_target = value
+                    battle_target = event_value
+            
+            case EVENT_TYPES.SET_CHARACTER:
+                if not isinstance(event_value, Character):
+                    logger.error(f"Expected value of type Character, got {event_value}")
+                    continue
+                
+                player = player.config(
+                    character=event_value,
+                )
+                health_label.config(
+                    text=f"♥ {event_value.health}/{event_value.current.max_health}",
+                )
             
             case EVENT_TYPES.EQUIP_ITEM:
-                if (not isinstance(value, tuple)
-                or len(value) != 2
-                or not isinstance(value[0], str)
-                or not isinstance(value[1], Item)):
-                    logger.error(f"Expected value of type tuple[str, Item], got {value}")
+                if (not isinstance(event_value, tuple)
+                or len(event_value) != 2
+                or not isinstance(event_value[0], str)
+                or not isinstance(event_value[1], Item)):
+                    logger.error(f"Expected value of type tuple[str, Item], got {event_value}")
                     continue
                 
-                player = player.config(character=player.character.equip(*value))
+                player = player.config(
+                    character=player.character.equip(*event_value),
+                )
             
             case EVENT_TYPES.UNEQUIP_ITEM:
-                if not isinstance(value, str):
-                    logger.error(f"Expected value of type str, got {value}")
+                if not isinstance(event_value, str):
+                    logger.error(f"Expected value of type str, got {event_value}")
                     continue
                 
-                player = player.config(character=player.character.unequip(value))
+                player = player.config(
+                    character=player.character.unequip(event_value)
+                )
             
             case EVENT_TYPES.ADD_ITEM:
-                if (not isinstance(value, Item)
-                and (not isinstance(value, tuple)
-                or len(value) != 2
-                or not isinstance(value[0], Item)
-                or not isinstance(value[1], int))):
-                    logger.error(f"Expected value of type Item | tuple[Item, int], got {value}")
+                if (not isinstance(event_value, Item)
+                and (not isinstance(event_value, tuple)
+                or len(event_value) != 2
+                or not isinstance(event_value[0], Item)
+                or not isinstance(event_value[1], int))):
+                    logger.error(f"Expected value of type Item | tuple[Item, int], got {event_value}")
                     continue
                 
-                if isinstance(value, tuple):
-                    player.character.inventory.add(*value)
+                if isinstance(event_value, tuple):
+                    player.character.inventory.add(*event_value)
                 else:
-                    player.character.inventory.add(value)
+                    player.character.inventory.add(event_value)
             
             case EVENT_TYPES.REMOVE_ITEM:
-                if (not isinstance(value, Item)
-                and (not isinstance(value, tuple)
-                or len(value) != 2
-                or not isinstance(value[0], Item)
-                or not isinstance(value[1], int))):
-                    logger.error(f"Expected value of type Item | tuple[Item, int], got {value}")
+                if (not isinstance(event_value, Item)
+                and (not isinstance(event_value, tuple)
+                or len(event_value) != 2
+                or not isinstance(event_value[0], Item)
+                or not isinstance(event_value[1], int))):
+                    logger.error(f"Expected value of type Item | tuple[Item, int], got {event_value}")
                     continue
                 
-                if isinstance(value, tuple):
-                    player.character.inventory.remove(*value)
+                if isinstance(event_value, tuple):
+                    player.character.inventory.remove(*event_value)
                 else:
-                    player.character.inventory.remove(value)
+                    player.character.inventory.remove(event_value)
             
             case EVENT_TYPES.USE_ITEM:
-                logger.error("Not implemented: EVENT_TYPES.USE_ITEM")
-                if not isinstance(value, Item):
-                    logger.error(f"Expected value of type Item, got {value}")
+                logger.debug("Using item")
+                if not isinstance(event_value, Item):
+                    logger.error(f"Expected value of type Item, got {event_value}")
                     continue
+                
+                # Ideally this would be in the item's actions, but no time yay
+                item = event_value
+                match item.name:
+                    case "potion_health":
+                        if player.character.inventory.backpack[item] < 1:
+                            logger.error(f"Not enough {item.name} to use")
+                            continue
+                        
+                        player.character.inventory.remove(item)
+                        updated_character, damage_taken = player.character.hit(
+                            DamageInstance(
+                                damage=-5,
+                                damage_type="true",
+                                effects={},
+                            ),
+                        )
+                        new_event = EnumObject(
+                            EVENT_TYPES.SET_CHARACTER,
+                            updated_character,
+                        )
+                        try_append(new_events, new_event)
             
             case EVENT_TYPES.OPEN_ITEM:
                 logger.debug("Opening item")
-                if not isinstance(value, Item):
-                    logger.error(f"Expected value of type Item, got {value}")
+                if not isinstance(event_value, Item):
+                    logger.error(f"Expected value of type Item, got {event_value}")
                     continue
                 
-                item = value
+                item = event_value
                 inventory = player.character.inventory
                 options = ()
                 on_confirm_events = {}
@@ -415,7 +465,7 @@ while 1:
                         on_use_event = EnumObject(
                             EVENT_TYPES.OPEN_BACKPACK,
                         )
-                    options += (f"{translate('item_use')} {item.display_name}",)
+                    options += (f"{translate('item_use')} {item.display_name} ({inventory.backpack[item]})",)
                     on_confirm_events[len(options) - 1] = EnumObject(
                         EVENT_TYPES.MULTI_EVENT,
                         (
@@ -482,7 +532,7 @@ while 1:
                 for i, (item, count) in enumerate(item_counts):
                     item_entry = item.display_name
                     if count > 1:
-                        item_entry += f" × {count}"
+                        item_entry += f" ({count})"
                     options += (item_entry,)
                     on_confirm_events[i] = EnumObject(
                         EVENT_TYPES.OPEN_ITEM,
@@ -502,11 +552,11 @@ while 1:
                 )
             
             case EVENT_TYPES.CONFIG_SETTINGS:
-                if not isinstance(value, dict):
-                    logger.error(f"Expected value of type dict, got {value}")
+                if not isinstance(event_value, dict):
+                    logger.error(f"Expected value of type dict, got {event_value}")
                     continue
                 
-                settings.config(**value)
+                settings.config(**event_value)
             
             case EVENT_TYPES.SAVE_GAME:
                 logger.debug("Saving game")
@@ -545,10 +595,10 @@ while 1:
                 quit()
             
             case EVENT_TYPES.MULTI_EVENT:
-                if (not isinstance(value, tuple)
-                or not all(isinstance(element, EnumObject) for element in value)):
-                    logger.error(f"Expected value of type tuple[EnumObject], got {value}")
+                if (not isinstance(event_value, tuple)
+                or not all(isinstance(element, EnumObject) for element in event_value)):
+                    logger.error(f"Expected value of type tuple[EnumObject, ...], got {event_value}")
                     continue
                 
-                for new_event in value:
+                for new_event in event_value:
                     try_append(new_events, new_event)

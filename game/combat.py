@@ -264,9 +264,8 @@ class Battle(NamedTuple):
             return -1
         elif len(self.team2.valid_targets) == 0:
             combat_log.info("Battle ends as player victory")
-            combat_win = translate("combat.win")
-            combat_rewards = f(translate("combat.rewards"), "0", "0")
-            self.output(f"{translate('combat.begin')}\n\n{self}")
+            self.output(translate("combat.win"))
+            self.output(f(translate("combat.rewards"), "0", "0"))
             is_fight_on = False
             return 1
         else:
@@ -301,70 +300,12 @@ class Battle(NamedTuple):
                         if __name__ == "__main__":
                             attack, weapon, target_uuid = self.get_player_action(fighter, allies, enemies)
                         else:
-                            # HAHAHA  U G L I E R
-                            target_options = ()
-                            target_on_confirm_events = {}
-
-                            for enemy_uuid in enemies.valid_targets:
-                                target_options += (self.get_fighter(enemy_uuid).__repr__(),)
-                                target_on_confirm_events[len(target_options) - 1] = EnumObject(
-                                    EVENT_TYPES.SET_BATTLE_TARGET,
-                                    enemy_uuid,
-                                )
-
-                            target_choice_constructor = EnumObject(
-                                UI_ELEMENT_TYPES.CHOICE_BOX,
-                                {
-                                    "options": target_options,
-                                    "on_confirm_events": target_on_confirm_events,
-                                    "rectangle_preset": RECTANGLE_PRESETS.MENU,
-                                },
-                            )
-                            target_choice_event = EnumObject(
-                                EVENT_TYPES.MAKE_UI_ELEMENT,
-                                target_choice_constructor,
-                            )
-
-                            action_options = ()
-                            action_on_confirm_events = {}
-
-                            for weapon_uuid, action in fighter.actions:
-                                weapon = fighter.inventory.find_equipped_item(weapon_uuid)
-                                action_options += (action.display(weapon, fighter.current),)
-                                action_on_confirm_events[len(action_options) - 1] = EnumObject(
-                                    EVENT_TYPES.SET_BATTLE_ACTION,
-                                    (action, weapon),
-                                )
-
-                            action_choice_constructor = EnumObject(
-                                UI_ELEMENT_TYPES.CHOICE_BOX,
-                                {
-                                    "options": action_options,
-                                    "on_confirm_events": action_on_confirm_events,
-                                    "rectangle_preset": RECTANGLE_PRESETS.MENU,
-                                },
-                            )
-                            action_choice_event = EnumObject(
-                                EVENT_TYPES.MAKE_UI_ELEMENT,
-                                action_choice_constructor,
-                            )
-
+                            target_choice_event = self.get_target_choice_event(enemies)
+                            action_choice_event = self.get_action_choice_event(fighter)
                             self.return_dialog.append(target_choice_event)
                             self.return_dialog.append(action_choice_event)
-                            return_dialog = tuple(self.return_dialog)
+                            dialog_event = self.get_dialog_event()
                             self.return_dialog.clear()
-
-                            dialog_constructor = EnumObject(
-                                UI_ELEMENT_TYPES.DIALOG_BOX,
-                                {
-                                    "dialog": return_dialog,
-                                    "rectangle_preset": RECTANGLE_PRESETS.MENU,
-                                },
-                            )
-                            dialog_event = EnumObject(
-                                EVENT_TYPES.MAKE_UI_ELEMENT,
-                                dialog_constructor,
-                            )
 
                             return dialog_event
 
@@ -387,6 +328,17 @@ class Battle(NamedTuple):
 
                 fighter, target, damage_dealt = Battle.attack(fighter, weapon, attack, target)
 
+                if fighter.is_player:
+                    self.return_dialog.append(EnumObject(
+                        EVENT_TYPES.SET_CHARACTER,
+                        fighter,
+                    ))
+                elif target.is_player:
+                    self.return_dialog.append(EnumObject(
+                        EVENT_TYPES.SET_CHARACTER,
+                        target,
+                    ))
+
                 combat_log.info(f"{target.name} takes ¤ {damage_dealt} damage -> ♥ {target.health}")
                 self.output(f(translate("combat.damage"), target.display_name, damage_dealt, target.health))
 
@@ -405,14 +357,21 @@ class Battle(NamedTuple):
                             # nothing happens
                             pass
                         case 1:
-                            updated_party = self.team1.to_party()
-                            raise NotImplementedError("Tell Mr Frontend that we won :)")
+                            # updated_party = self.team1.to_party()
+                            dialog_event = self.get_dialog_event()
+                            self.return_dialog.clear()
+
+                            return dialog_event
                         case -1:
-                            raise NotImplementedError("Tell Mr Frontend that we lost :(")
+                            self.return_dialog.append(EnumObject(
+                                EVENT_TYPES.GAME_OVER,
+                            ))
+                            dialog_event = self.get_dialog_event()
+                            self.return_dialog.clear()
+
+                            return dialog_event
                         case _:
                             raise NotImplementedError("How did we get here?")
-
-
 
                 self.progress["turn_progress"] += 1
             else:
@@ -420,11 +379,76 @@ class Battle(NamedTuple):
                 continue
 
 
+    def get_target_choice_event(self, enemies: CombatParty) -> EnumObject:
+        options = ()
+        on_confirm_events = {}
+
+        for enemy_uuid in enemies.valid_targets:
+            options += (self.get_fighter(enemy_uuid).__repr__(),)
+            on_confirm_events[len(options) - 1] = EnumObject(
+                EVENT_TYPES.SET_BATTLE_TARGET,
+                enemy_uuid,
+            )
+
+        choice_constructor = EnumObject(
+            UI_ELEMENT_TYPES.CHOICE_BOX,
+            {
+                "options": options,
+                "on_confirm_events": on_confirm_events,
+                "rectangle_preset": RECTANGLE_PRESETS.MENU,
+            },
+        )
+        return EnumObject(
+            EVENT_TYPES.MAKE_UI_ELEMENT,
+            choice_constructor,
+        )
+
+
+    def get_action_choice_event(self, fighter: Character) -> EnumObject:
+        options = ()
+        on_confirm_events = {}
+
+        for weapon_uuid, action in fighter.actions:
+            weapon = fighter.inventory.find_equipped_item(weapon_uuid)
+            options += (action.display(weapon, fighter.current),)
+            on_confirm_events[len(options) - 1] = EnumObject(
+                EVENT_TYPES.SET_BATTLE_ACTION,
+                (action, weapon),
+            )
+
+        choice_constructor = EnumObject(
+            UI_ELEMENT_TYPES.CHOICE_BOX,
+            {
+                "options": options,
+                "on_confirm_events": on_confirm_events,
+                "rectangle_preset": RECTANGLE_PRESETS.MENU,
+            },
+        )
+        return EnumObject(
+            EVENT_TYPES.MAKE_UI_ELEMENT,
+            choice_constructor,
+        )
+
+    def get_dialog_event(self) -> EnumObject:
+        return_dialog = tuple(self.return_dialog)
+        dialog_constructor = EnumObject(
+            UI_ELEMENT_TYPES.DIALOG_BOX,
+            {
+                "dialog": return_dialog,
+                "rectangle_preset": RECTANGLE_PRESETS.MENU,
+            },
+        )
+        return EnumObject(
+            EVENT_TYPES.MAKE_UI_ELEMENT,
+            dialog_constructor,
+        )
+
+
     def output(self, text: str) -> None:
         if is_main:
             print("\n" + text)
         else:
-            self.return_dialog.append(text)
+            self.return_dialog.append(DialogLine(text))
 
 
     def __repr__(self) -> str:

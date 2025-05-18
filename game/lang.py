@@ -167,7 +167,7 @@ def _translate_nest(lang_key: str, sub_dict: dict = None) -> str:
 
 def translate(lang_key: str | tuple[str]) -> str | tuple[str]:
     """
-    Calls _translate_nest recursively (if it has too) for tuples of lang keys.
+    Calls _translate_nest recursively (if it has to) for tuples of lang keys.
     """
     if isinstance(lang_key, tuple):
         return tuple(map(translate, lang_key))

@@ -11,7 +11,7 @@ from __future__ import annotations
 from typing import NamedTuple
 from collections import Counter
 from uuid import UUID, uuid4
-from common import named_tuple_modifier, auto_integer
+from common import auto_integer, move_toward, named_tuple_modifier
 from lang import translate
 import math
 import logging
@@ -601,18 +601,16 @@ class Character(NamedTuple):
         Returns a modified character sheet of the target and the damage taken.
         """
         # TODO: account for damage type, resistance, etc.
-        damage_taken = int(attack.damage)
+        damage_taken = round(attack.damage)
 
-        health = self.health - damage_taken
+        if damage_taken >= 0:
+            health = move_toward(self.health, 0, damage_taken)
+        else:
+            health = move_toward(self.health, self.current.max_health, -damage_taken)
+
         is_alive = self.is_alive
-
         if health <= 0:
-            health = 0
             is_alive = False
-
-        # With this, healing can just be negative damage
-        if health > self.current.max_health:
-            health = self.current.max_health
 
         return self.modify(health=health, is_alive=is_alive), damage_taken
 

@@ -590,8 +590,9 @@ while 1:
                 try_append(new_events, new_event)
             
             case EVENT_TYPES.QUIT:
-                settings.save()
                 logger.debug("Quitting")
+                settings.save()
+                cuinter.fullscreen()
                 quit()
             
             case EVENT_TYPES.MULTI_EVENT:

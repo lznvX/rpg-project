@@ -518,15 +518,6 @@ class ChoiceBox(NamedTuple):
         get_elements()[self.pid].text_box.draw()
 
 
-def _fullscreen() -> None:
-    """Simulates the F11 key being pressed."""
-    logger.debug("Fullscreening terminal")
-    
-    user32 = ctypes.windll.user32
-    user32.keybd_event(0x7A, 0, 0, 0)
-    user32.keybd_event(0x7A, 0, 0x0002, 0)
-
-
 def _display_buffer(stdscr) -> None:
     """
     Displays the buffer in rows instead of individual characters to improve
@@ -608,6 +599,15 @@ def _make_event_manager():
     return get_events, add_event, clear_events
 
 
+def fullscreen() -> None:
+    """Simulates the F11 key being pressed."""
+    logger.debug("Toggling fullscreen")
+    
+    user32 = ctypes.windll.user32
+    user32.keybd_event(0x7A, 0, 0, 0)
+    user32.keybd_event(0x7A, 0, 0x0002, 0)
+
+
 def update() -> list[EnumObject]:
     """
     Draws the ui elements and processes inputs, returns a dictionary of events
@@ -659,7 +659,7 @@ UI_ELEMENT_CLASSES = {
 }
 
 time.sleep(0.5)
-_fullscreen()
+fullscreen()
 time.sleep(0.5)
 
 stdscr = curses.initscr()

@@ -70,7 +70,7 @@ def try_append(collection: list, item: object) -> None:
 
 
 def try_sleep(sleep_time: int) -> None:
-    if sleep_time < 0:
+    if sleep_time > 0:
         time.sleep(sleep_time)
 
 

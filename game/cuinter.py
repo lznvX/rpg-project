@@ -149,7 +149,6 @@ class Rectangle(NamedTuple):
     def get_preset(preset: int = 0):
         screen_height = get_screen_height()
         screen_width = get_screen_width()
-
         match preset:
             case RECTANGLE_PRESETS.DIALOG:
                 return Rectangle(
@@ -697,7 +696,7 @@ def setup() -> None:
 
 
 def update() -> list[EnumObject]:
-    """Process inputs and draw active UI elements. 
+    """Process inputs and draw active UI elements.
 
     Returns a dictionary of events for main.py to handle. Doesn't behave like
     tkinter's mainloop, has to be called within a loop.

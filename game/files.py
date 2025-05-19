@@ -85,7 +85,7 @@ def _test():
     file_1 = "10"
     save_pickle(file_1, "test")
     assert load_pickle("test") == "10"
-    with open("test", "w") as file:
+    with open("test", "w", encoding="utf-8") as file:
         file.write(file_1)
     assert load_text("test") == "10"
     delete("test")

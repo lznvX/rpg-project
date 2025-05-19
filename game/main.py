@@ -16,7 +16,7 @@ import time
 from typing import Callable, NamedTuple
 from uuid import UUID
 from combat import Battle
-from common import EnumObject, remap_dict, try_append
+from common import EnumObject, remap_dict
 import cuinter
 from cuinter import UI_ELEMENT_CLASSES
 from enums import EVENT_TYPES, UI_ELEMENT_TYPES, RECTANGLE_PRESETS
@@ -233,7 +233,7 @@ def load_ui_element(ui_element_path: str) -> None:
 def load_zone(zone_path: str, player_grid_y: int = 0, player_grid_x: int = 0) -> None:
     zone_data = load_pickle(zone_path)
     tilemap, world_object_constructors = zone_data
-    
+
     grid = get_globals().grid
     grid = grid.load_tilemap(tilemap)
     grid = grid.center(cuinter.get_screen_height(), cuinter.get_screen_width())
@@ -361,7 +361,7 @@ def use_item(item: Item) -> None:
         case "potion_health":
             if player.character.inventory.backpack[item] < 1:
                 logger.error(f"Not enough {item.name} to use")
-                return 
+                return
 
             remove_item(item)
             updated_character, damage_taken = player.character.hit(

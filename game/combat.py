@@ -20,7 +20,6 @@ from game_classes import (
     DamageInstance,
     Item,
     Party,
-    Stats,
 )
 from lang import DialogLine, f, translate
 import monsters as m

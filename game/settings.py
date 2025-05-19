@@ -71,11 +71,11 @@ def _make_setting_manager() -> tuple[Callable, ...]:
 
 
 def _test():
-    assert get("language") == LANGUAGE_ENUM.ENGLISH
+    assert get().language == LANGUAGE_ENUM.ENGLISH
     config(language=LANGUAGE_ENUM.FRENCH)
-    assert get("language") == LANGUAGE_ENUM.FRENCH
+    assert get().language == LANGUAGE_ENUM.FRENCH
     reset()
-    assert get("language") == LANGUAGE_ENUM.ENGLISH
+    assert get().language == LANGUAGE_ENUM.ENGLISH
     print("Test passed")
 
 

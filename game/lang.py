@@ -42,13 +42,12 @@ class DialogLine(NamedTuple):
                 translate("character_names." + [dialog_line[1]]),
             )
 
-        elif isinstance(dialog_line, (DialogLine, EnumObject)):
+        if isinstance(dialog_line, (DialogLine, EnumObject)):
             return dialog_line
 
-        else:
-            error_msg = "Expected value of type str | DialogLine | EnumObject, got {dialog_line}"
-            logger.error(error_msg)
-            return error_msg
+        error_msg = "Expected value of type str | DialogLine | EnumObject, got {dialog_line}"
+        logger.error(error_msg)
+        return error_msg
 
     @staticmethod
     def process_dialog(
@@ -129,7 +128,7 @@ def _translate_simple(lang_key: str, sub_dict: dict = None) -> str:
 
         if isinstance(lang_value, str):
             return lang_value
-        elif isinstance(lang_value, dict):
+        if isinstance(lang_value, dict):
             logger.error(f"Specify key of sub dict {lang_key} with dotted notation")
         elif lang_value is None:
             raise ValueError
@@ -157,14 +156,12 @@ def _translate_nest(lang_key: str, sub_dict: dict = None) -> str:
         else:
             next_sub_dict = sub_dict[sub_dict_name]
 
-
         return _translate_nest(
             sub_dict_key,
             next_sub_dict,
         )
 
-    else:
-        return _translate_simple(lang_key, sub_dict)
+    return _translate_simple(lang_key, sub_dict)
 
 
 def translate(lang_key: str | tuple[str]) -> str | tuple[str]:
@@ -176,12 +173,12 @@ def translate(lang_key: str | tuple[str]) -> str | tuple[str]:
 
     if isinstance(lang_key, tuple):
         return tuple(map(translate, lang_key))
-    elif isinstance(lang_key, str):
+    if isinstance(lang_key, str):
         return _translate_nest(lang_key)
-    else:
-        error_msg = f"Expected value of type str | tuple[str], got {lang_key}"
-        logger.error(error_msg)
-        return error_msg
+
+    error_msg = f"Expected value of type str | tuple[str], got {lang_key}"
+    logger.error(error_msg)
+    return error_msg
 
 
 def f(fstring: str, *args: object) -> str:

@@ -17,7 +17,11 @@ class _EventTypes(NamedTuple):
     MAKE_WORLD_OBJECT: int
     LOAD_UI_ELEMENT: int
     LOAD_ZONE: int
-    LOAD_COMBAT: int
+    LOAD_BATTLE: int
+    GAME_OVER: int
+    SET_BATTLE_ACTION: int
+    SET_BATTLE_TARGET: int
+    SET_CHARACTER: int
     EQUIP_ITEM: int
     UNEQUIP_ITEM: int
     ADD_ITEM: int
@@ -84,6 +88,3 @@ LANGUAGE_ENUM = _LanguageEnum.new()
 UI_ELEMENT_TYPES = _UIElementTypes.new()
 RECTANGLE_PRESETS = _RectanglePresets.new()
 WORLD_OBJECT_TYPES = _WorldObjectTypes.new()
-
-if __name__ == "__main__":
-    pass

@@ -9,15 +9,27 @@ Contributors:
 
 from __future__ import annotations
 import logging
-import os
-import pickle
+import time
 from typing import NamedTuple, Callable
+
+logger = logging.getLogger(__name__)
+
+
+def auto_integer(func: Callable) -> Callable:
+    """Convert output of func to int if appropriate."""
+    def wrapper(*args, **kwargs):
+        result = func(*args, **kwargs)
+        if isinstance(result, float):
+            if result.is_integer():
+                return int(result)
+        return result
+    return wrapper
 
 
 class EnumObject(NamedTuple):
-    """
-    Stores an object with an associated int. Usually used to define how the object is used, such as
-    in events and world objects.
+    """Store an object with an associated int.
+
+    Usually used to define how the object is used, such as in events and world objects.
     """
     enum: int
     value: object = None
@@ -26,7 +38,7 @@ class EnumObject(NamedTuple):
 def named_tuple_modifier(data_type: Callable, old_data: NamedTuple, **changes) -> NamedTuple:
     """Generate a new NamedTuple based on an existing one.
 
-    Changes are represented as another NamedTuple of the same type
+    Changes are represented as another NamedTuple of the same type.
     """
     changes = data_type(**changes)
 
@@ -40,25 +52,27 @@ def named_tuple_modifier(data_type: Callable, old_data: NamedTuple, **changes) -
 
 
 def move_toward(a: int | float, b: int | float, step: int | float = 1) -> int | float:
-    """Returns a moved by step towards b without overshooting."""
+    """Returs a moved by step towards b without overshooting."""
     return min(a + step, b) if b >= a else max(a - step, b)
 
 
 def remap_dict(data: dict, key_map: dict) -> dict:
-    """
-    Returns a new dict with keys of data remapped through key_map and values
-    unchanged.
-    """
+    """Return a new dict with keys of data remapped through key_map and values unchanged."""
     return {key_map[k]: v for k, v in data.items() if k in key_map}
 
 
 def try_append(collection: list, item: object) -> None:
+    """Append an item to collection if it is not None."""
     if item is not None:
         collection.append(item)
 
 
-logger = logging.getLogger(__name__)
+def try_sleep(sleep_time: int) -> None:
+    """Sleep for sleep_time if it is not 0."""
+    if sleep_time > 0:
+        time.sleep(sleep_time)
+
 
 if __name__ == "__main__":
     # Tests
-    pass
+    ...

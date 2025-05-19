@@ -6,9 +6,7 @@ Contributors:
     Jakub
 """
 
-
 from game_classes import Item, Action, Stats, null_uuid
-
 
 """ Item
 
@@ -28,19 +26,21 @@ from game_classes import Item, Action, Stats, null_uuid
  uuid: UUID # used to keep track of applied bonuses
 """
 
-
 light_stab = Action("light_stab",
-    "attack",
+    True,
+    "physical_attack",
     2, "physical",
     None)
 
 stab = Action("stab",
-    "attack",
+    True,
+    "physical_attack",
     5, "physical",
     None)
 
 slash = Action("slash",
-    "attack",
+    True,
+    "physical_attack",
     10, "physical",
     None)
 
@@ -48,7 +48,8 @@ slash = Action("slash",
 Dagger = Item(
     "dagger",
     ("equippable", "weapon", "mainhand", "offhand"),
-    5,
+    3,
+    None,
     Stats(),
     (light_stab,),
     null_uuid)
@@ -57,6 +58,7 @@ Sword = Item(
     "sword",
     ("equippable", "weapon", "mainhand", "offhand"),
     10,
+    None,
     Stats(),
     (stab, slash),
     null_uuid)
@@ -65,6 +67,7 @@ StrHelmet = Item(
     "str_helmet",
     ("equippable", "head"),
     20,
+    None,
     Stats(strength=5, armor=5),
     tuple(),
     null_uuid)
@@ -73,6 +76,7 @@ AgiBoots = Item(
     "agi_boots",
     ("equippable", "feet"),
     15,
+    None,
     Stats(agility=5, armor=2),
     tuple(),
     null_uuid)
@@ -81,6 +85,7 @@ PotionHealth = Item(
     "potion_health",
     ("consumable", "potion"),
     4,
+    None,
     Stats(),
     tuple(),
     null_uuid)

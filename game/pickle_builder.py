@@ -5,7 +5,7 @@ ressources to easily modify them.
 
 Contributors:
     Romain
-""" ...
+"""
 
 from common import EnumObject
 from enums import (
@@ -31,14 +31,14 @@ objects = {
         UI_ELEMENT_TYPES.CHOICE_BOX,
         {
             "options": (
-                "menu_equipment",
-                "menu_backpack",
-                "menu_settings",
-                "menu_save",
-                "menu_load",
-                "menu_save_quit",
-                "menu_test_combat",
-                "menu_close",
+                "menu.equipment",
+                "menu.backpack",
+                "menu.settings",
+                "menu.save",
+                "menu.load",
+                "menu.save_quit",
+                "menu.test_combat",
+                "menu.close",
             ),
             "on_confirm_events": {
                 0: EnumObject(
@@ -69,8 +69,8 @@ objects = {
                     ),
                 ),
                 6: EnumObject(
-                    EVENT_TYPES.LOAD_COMBAT,
-                    "assets\\combats\\test_combat.pkl",
+                    EVENT_TYPES.LOAD_BATTLE,
+                    "assets\\combats\\test_battle.pkl",
                 ),
             },
             "rectangle_preset": RECTANGLE_PRESETS.MENU,
@@ -81,7 +81,7 @@ objects = {
         {
             "options": (
                 "settings_language",
-                "menu_back",
+                "menu.back",
             ),
             "on_confirm_events": {
                 0: EnumObject(
@@ -102,7 +102,7 @@ objects = {
             "options": (
                 "English",
                 "Français",
-                "menu_back",
+                "menu.back",
             ),
             "on_confirm_events": {
                 0: EnumObject(

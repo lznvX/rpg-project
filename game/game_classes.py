@@ -11,9 +11,12 @@ from __future__ import annotations
 from typing import NamedTuple
 from collections import Counter
 from uuid import UUID, uuid4
-from common import named_tuple_modifier
+from common import auto_integer, move_toward, named_tuple_modifier
 from lang import translate
+import math
+import logging
 
+logger = logging.getLogger(__name__)
 
 null_uuid = UUID('00000000-0000-0000-0000-000000000000')
 
@@ -32,6 +35,7 @@ class NotEnoughItemError(ValueError):
     """Raised when an inventory doesn't contain enough of an item to perform an action."""
     pass
 class ItemNotFoundError(ValueError):
+    """Raised when an item was expected but None was provided."""
     pass
 class IncompatibleSlotError(ValueError):
     """raised when an item is inserted in an incorrect slot."""
@@ -42,6 +46,8 @@ class TaskNotFoundError(ValueError):
 class CharacterNotFoundError(ValueError):
     """Raised when a character with the given UUID doesn't exist"""
     pass
+class UnknownActionTypeError(ValueError):
+    """Raised when an Action with an invalid type was provided."""
 
 
 class DamageInstance(NamedTuple):
@@ -73,6 +79,16 @@ class Stats(NamedTuple):
     magical_resistance: int = None   # decreases MAGICAL damage taken
 
 
+    @staticmethod
+    def get_placeholder() -> Stats:
+        """Generate a placeholder stat block.
+
+        Intended as a fallback when there's no access to the stats of a real Character.
+        """
+        # It took me so fucking long to realize I forgot to return
+        return Stats( 20,  50,   0,  10,  10,  10,   2,   4)
+
+
     def modify(self, **changes) -> Stats:
         """Generate new stat sheet based on an existing one.
 
@@ -85,7 +101,13 @@ class Action(NamedTuple):
     """Describes an action during combat."""
 
     name: str           # Internal name; english only
+    requires_item: bool # Whether the action is from an item or some other source
     action_type: str    #
+                        # physical_attack
+                        # magical_attack
+                        # item_use
+                        # defense
+                        # other
 
     base_damage: int    # How much damage is dealt by the action
     damage_type: str    # What type is the damage
@@ -107,8 +129,57 @@ class Action(NamedTuple):
         return translate("action_descriptions." + self.name)
 
 
-    def get_damage(self) -> float:
-        return self.base_damage
+    def _damage_simple(self, relevant_stat: int) -> float:
+        return self.base_damage * relevant_stat
+
+
+    def _damage_limited(self, *relevant_stats: (int, int)) -> float:
+        if len(relevant_stats) > 2:
+            logger.warning(f" _damage_limited() of <{self.name}> got more than 2 arguments")
+        return (4 / math.pi) * math.atan(relevant_stats[0] / relevant_stats[1]) * self.base_damage
+
+    @auto_integer
+    def get_damage(self, source_item: Item, user_stats: Stats) -> float:
+        if user_stats is None:
+            logger.info(f" No user_stats were provided for use of Action <{self.name}>; using default values")
+            user_stats = Stats.get_placeholder()
+
+        else:
+            pass
+        logger.debug(f"user_stats: {user_stats}")
+
+        if self.requires_item:
+            if source_item is None:
+                ItemNotFoundError(f"Action <{self.name}> cannot be performed without an item")
+
+            match self.action_type:
+                case "physical_attack":
+                    return self._damage_limited(user_stats.strength, source_item.weight)
+                case "magical_attack":
+                    return self._damage_limited(user_stats.acumen, source_item.magical_inertia)
+                case "item_use":
+                    raise NotImplementedError("Actions of type '{self.action_type}' are not supported yet")
+                case "defense":
+                    raise NotImplementedError("Actions of type '{self.action_type}' are not supported yet")
+                case "other":
+                    raise NotImplementedError("Actions of type '{self.action_type}' are not supported yet")
+                case _:
+                    raise UnknownActionTypeError(f"Unknown action type: {self.action_type}")
+        else:
+            match self.action_type:
+                case "physical_attack":
+                    return self._damage_simple(user_stats.strength)
+                case "magical_attack":
+                    return self._damage_simple(user_stats.acumen)
+                case "item_use":
+                    raise ItemNotFoundError(f"Action <{self.name}> of type '{self.action_type}' cannot be performed without an item")
+                case "defense":
+                    raise NotImplementedError("Actions of type '{self.action_type}' are not supported yet")
+                case "other":
+                    raise NotImplementedError("Actions of type '{self.action_type}' are not supported yet")
+                case _:
+                    raise UnknownActionTypeError(f"Unknown action type: {self.action_type}")
+
 
 
     def create_damage_instance(self) -> DamageInstance:
@@ -116,7 +187,11 @@ class Action(NamedTuple):
 
 
     def __repr__(self):
-        return f"{self.display_name} (¤ {self.get_damage()})"
+        return f"{self.display_name} (¤ {self.base_damage})"
+
+
+    def display(self, source_item: Item, actor: Character=None):
+        return f"{self.display_name} (¤ {round(self.get_damage(source_item, actor), 1)})"
 
 
 class Item(NamedTuple):
@@ -131,6 +206,7 @@ class Item(NamedTuple):
 
     weight: int = None              # -> limit for storage, heavy armor slows
                                     # you down, +relevant in combat
+    magical_inertia: int = None     # used for magic damage calculation
 
     stat_bonus: Stats = None        # added to the user's stats
     actions: tuple[Action] = None   # added to the user's actions
@@ -141,6 +217,7 @@ class Item(NamedTuple):
     def new(name: str="test_item",
             tags: tuple[str]=tuple(),
             weight: int=1,
+            magical_inertia: int=1,
             stat_bonus: Stats=Stats(),
             actions: tuple[Action]=tuple(),
             ) -> Item:
@@ -151,6 +228,7 @@ class Item(NamedTuple):
          return Item(name,
                      tags,
                      weight,
+                     magical_inertia,
                      stat_bonus,
                      actions,
                      # a null UUID corresponds to an un-equipped item
@@ -219,6 +297,32 @@ class Inventory(NamedTuple):
             equipment[slot] = None
 
         return Inventory(equipment, tasklist, Counter())
+
+
+    def _get_equipment_dump(self) -> str:
+        _equipment = []
+        for slot in self.equipment.keys():
+            item = self.equipment[slot]
+            if item is not None:
+                uuid = item.uuid
+            else:
+                uuid = None
+            _equipment.append((slot, item, uuid))
+        return str(_equipment)
+
+
+    def find_equipped_item(self, item_uuid: UUID) -> Item:
+        """Look through equipment slots to find an Item."""
+        for slot in self.equipment.keys():
+            if (self.equipment[slot] is not None
+            and self.equipment[slot].uuid == item_uuid):
+                return self.equipment[slot]
+            else:
+                continue
+
+        # Dumb equipment to the log before throwing exception
+        logger.warning(f"Could not find item {item_uuid} in this Inventory.equipment\n\nCurrent Equipment:\n{self._get_equipment_dump()}\n")
+        raise ItemNotFoundError( f"Could not find item {item_uuid} in this Inventory.equipment")
 
 
     def equip(self, slot: str, item: Item) -> UUID:
@@ -398,8 +502,13 @@ class Character(NamedTuple):
     mana: int = None
 
     inventory: Inventory = None
-    actions: list[(UUID, Action)] = None
+    actions: list[tuple[UUID, Action]] = None
     effects: dict = None
+
+
+    @property
+    def display_name(self) -> str:
+        return translate("character_names." + self.name)
 
 
     @staticmethod
@@ -442,6 +551,7 @@ class Character(NamedTuple):
             ...
         else:
             for action in item.actions:
+                logger.debug(f"Appending <{(item_uuid, action)} to {self.name}'s actions>")
                 self.actions.append((item_uuid, action))
 
 
@@ -509,18 +619,16 @@ class Character(NamedTuple):
         Returns a modified character sheet of the target and the damage taken.
         """
         # TODO: account for damage type, resistance, etc.
-        damage_taken = int(attack.damage)
+        damage_taken = round(attack.damage)
 
-        health = self.health - damage_taken
+        if damage_taken >= 0:
+            health = move_toward(self.health, 0, damage_taken)
+        else:
+            health = move_toward(self.health, self.current.max_health, -damage_taken)
+
         is_alive = self.is_alive
-
         if health <= 0:
-            health = 0
             is_alive = False
-
-        # With this, healing can just be negative damage
-        if health > self.current.max_health:
-            health = self.current.max_health
 
         return self.modify(health=health, is_alive=is_alive), damage_taken
 
@@ -533,7 +641,7 @@ class Character(NamedTuple):
         #     else:
         #         continue
 
-        return f"{self.name} (♥ {self.health})"
+        return f"{self.display_name} (♥ {self.health})"
 
 
     @staticmethod

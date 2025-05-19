@@ -64,7 +64,7 @@ objects = {
                             EVENT_TYPES.SAVE_GAME,
                         ),
                         EnumObject(
-                            EVENT_TYPES.QUIT,
+                            EVENT_TYPES.QUIT_GAME,
                         ),
                     ),
                 ),

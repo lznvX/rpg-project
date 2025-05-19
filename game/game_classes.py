@@ -367,14 +367,14 @@ class Inventory(NamedTuple):
         return item.uuid
 
 
-    def add(self, item: Item, count: int=1):
+    def add(self, item: Item, count: int = 1):
         """Add an item to the backpack."""
         assert count >= 0
 
         self.backpack[item] += count
 
 
-    def remove(self, item: Item, count: int=1):
+    def remove(self, item: Item, count: int = 1):
         """Remove an item from the backpack."""
         assert count >= 0
 

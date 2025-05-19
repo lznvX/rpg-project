@@ -6,7 +6,7 @@ Contributors:
 
 from __future__ import annotations
 import logging
-from typing import NamedTuple
+from typing import Callable, NamedTuple
 from enums import LANGUAGE_ENUM
 from files import save_pickle, load_pickle
 
@@ -27,7 +27,7 @@ class Settings(NamedTuple):
         )
 
 
-def _make_setting_manager():
+def _make_setting_manager() -> tuple[Callable, ...]:
     cache = Settings.new()
 
     def get_cache() -> Settings:

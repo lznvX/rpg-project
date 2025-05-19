@@ -13,7 +13,7 @@ import curses
 import logging
 import math
 import time
-from typing import NamedTuple
+from typing import Callable, NamedTuple
 from uuid import uuid4
 from common import EnumObject, move_toward
 from enums import EVENT_TYPES, RECTANGLE_PRESETS, UI_ELEMENT_TYPES
@@ -545,7 +545,7 @@ class ChoiceBox(NamedTuple):
         get_elements()[self.pid].text_box.draw()
 
 
-def _make_stdscr_manager():
+def _make_stdscr_manager() -> tuple[Callable, ...]:
     cache = None
 
     def get_cache() -> object:
@@ -575,7 +575,7 @@ def _make_stdscr_manager():
     return get_cache, set_cache, get_cache_height, get_cache_width, get_cache_empty_buffer
 
 
-def _make_buffer_manager():
+def _make_buffer_manager() -> tuple[Callable, ...]:
     cache = deepcopy(get_empty_buffer())
 
     def get_cache() -> list[list[str]]:
@@ -593,7 +593,7 @@ def _make_buffer_manager():
     return get_cache, set_item, clear_cache
 
 
-def _make_element_manager():
+def _make_element_manager() -> tuple[Callable, ...]:
     cache = {}
 
     def get_cache() -> dict[int, object]:
@@ -610,7 +610,7 @@ def _make_element_manager():
     return get_cache, set_item, remove_item
 
 
-def _make_event_manager():
+def _make_event_manager() -> tuple[Callable, ...]:
     cache = []
 
     def get_cache() -> list[EnumObject]:

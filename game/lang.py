@@ -115,13 +115,14 @@ class _Lang(NamedTuple):
 
 
 def _translate_simple(lang_key: str, sub_dict: dict = None) -> str:
-    """
-    Returns the text with the specified attribute name in the selected language
+    """Return lang_key translated in the selected language.
+
+    Return the text with the specified attribute name in the selected language
     from the settings or the provided sub dict.
     """
     try:
         if sub_dict is None:
-            lang_text = LANGUAGES[settings.get("language")]
+            lang_text = LANGUAGES[settings.get().language]
             lang_value = getattr(lang_text, lang_key)
         else:
             lang_value = sub_dict[lang_key]
@@ -142,17 +143,16 @@ def _translate_simple(lang_key: str, sub_dict: dict = None) -> str:
 
 
 def _translate_nest(lang_key: str, sub_dict: dict = None) -> str:
-    """
+    """Return lang_key translated in the selected language.
+
     Calls _translate_simple recursively (if it has to) for dicts in lang by
     using dotted notation in the lang key, like
     _translate_nest("item_names.agi_boots").
     """
-    logger.debug(f"Translating {lang_key}")
-
     if SUB_DICT_SEPARATOR in lang_key:
         sub_dict_name, sub_dict_key = lang_key.split(SUB_DICT_SEPARATOR, 1)
         if sub_dict is None:
-            lang_text = LANGUAGES[settings.get("language")]
+            lang_text = LANGUAGES[settings.get().language]
             next_sub_dict = getattr(lang_text, sub_dict_name)
         else:
             next_sub_dict = sub_dict[sub_dict_name]
@@ -168,9 +168,12 @@ def _translate_nest(lang_key: str, sub_dict: dict = None) -> str:
 
 
 def translate(lang_key: str | tuple[str]) -> str | tuple[str]:
-    """
+    """Return lang_key translated in the selected language.
+
     Calls _translate_nest recursively (if it has to) for tuples of lang keys.
     """
+    logger.debug(f"Translating {lang_key}")
+
     if isinstance(lang_key, tuple):
         return tuple(map(translate, lang_key))
     elif isinstance(lang_key, str):
@@ -185,10 +188,12 @@ def f(fstring: str, *args: object) -> str:
     """Shorthand for fstring.format(*args)."""
     return fstring.format(*args)
 
+
 def _test():
     assert FRENCH.action_descriptions["slash"] == "Brandissez votre épée sur votre ennemi"
     assert _translate_simple("feet", ENGLISH.equipment_slots) == "Feet"
     print("all Tests passed")
+
 
 ENGLISH = _Lang(
     # Dialog
@@ -334,9 +339,9 @@ FRENCH = _Lang(
     # Characters
     character_names = {
         "player": "Joueur",
-        "goblin": "Goblin",
-        "hobgoblin": "Hobgoblin",
-        "goblin_chief": "Chef goblin",
+        "goblin": "Goblein",
+        "hobgoblin": "Hobgobelin",
+        "goblin_chief": "Chef gobelin",
         "bandit": "Bandit",
     },
 
@@ -394,7 +399,6 @@ LANGUAGES = {
     LANGUAGE_ENUM.ENGLISH: ENGLISH,
     LANGUAGE_ENUM.FRENCH: FRENCH,
 }
-
 
 if __name__ == "__main__":
     _test()

@@ -33,7 +33,7 @@ class _EventTypes(NamedTuple):
     CONFIG_SETTINGS: int
     SAVE_GAME: int
     LOAD_GAME: int
-    QUIT: int
+    QUIT_GAME: int
     MULTI_EVENT: int
 
     @classmethod

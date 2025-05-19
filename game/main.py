@@ -1,8 +1,8 @@
 """Main game script
 
-Run with CTRL+T (Thonny), currently contains game loop setup, utility labels and
-interface tests. If _curses module missing, run pip install windows-curses in
-terminal.
+Run with CTRL+T (Thonny) or with run.bat file, currently contains game 
+loop setup, utility labels and interface tests. If _curses module missing, 
+run pip install windows-curses in windows terminal.
 
 Contributors:
     Romain

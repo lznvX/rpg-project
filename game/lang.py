@@ -185,6 +185,10 @@ def f(fstring: str, *args: object) -> str:
     """Shorthand for fstring.format(*args)."""
     return fstring.format(*args)
 
+def _test():
+    assert FRENCH.action_descriptions["slash"] == "Brandissez votre épée sur votre ennemi"
+    assert _translate_simple("feet", ENGLISH.equipment_slots) == "Feet"
+    print("all Tests passed")
 
 ENGLISH = _Lang(
     # Dialog
@@ -390,3 +394,7 @@ LANGUAGES = {
     LANGUAGE_ENUM.ENGLISH: ENGLISH,
     LANGUAGE_ENUM.FRENCH: FRENCH,
 }
+
+
+if __name__ == "__main__":
+    _test()

@@ -23,6 +23,7 @@ logger = logging.getLogger(__name__)
 
 X_CORRECTION = 2.6 # Hauteur / largeur d'un caractère
 CHARACTER_TIME = 0.025 # Délai d'affichage de chaque caractère dans les textes
+STDSCR_INIT_ERROR_MSG = "Stdscr not initialized"
 
 
 class Label(NamedTuple):
@@ -146,19 +147,9 @@ class Rectangle(NamedTuple):
 
     @staticmethod
     def get_preset(preset: int = 0):
-        try:
-            screen_height
-            screen_width
-        except NameError:
-            logger.error("Rectangle couldn't access screen dimensions")
-            return Rectangle(
-                pid=None,
-                y=0,
-                x=0,
-                height=20,
-                width=20,
-            )
 
+        screen_height = get_screen_height()
+        screen_width = get_screen_width()
         match preset:
             case RECTANGLE_PRESETS.DIALOG:
                 return Rectangle(
@@ -555,49 +546,50 @@ class ChoiceBox(NamedTuple):
         get_elements()[self.pid].text_box.draw()
 
 
-def _display_buffer() -> None:
-    """Display the buffer in rows instead of individual characters to improve performance."""
-    for y, row in enumerate(get_buffer()):
-        row_str = ""
-        prev_x = 0
-        first_x = None
+def _make_stdscr_manager():
+    cache = None
 
-        for x, char in enumerate(row):
-            if char == " ":
-                continue
+    def get_cache() -> object:
+        if cache is None:
+            logger.error(STDSCR_INIT_ERROR_MSG)
+        return cache
 
-            if first_x is None:
-                row_str += char
-                first_x = x
-            else:
-                row_str += " " * (x - prev_x - 1) + char
+    def set_cache(stdscr: object) -> None:
+        nonlocal cache
+        cache = stdscr
 
-            prev_x = x
+    def get_cache_height() -> int:
+        if cache is None:
+            logger.error(STDSCR_INIT_ERROR_MSG)
+            return 0
+        return cache.getmaxyx()[0]
 
-        if first_x is None:
-            continue
+    def get_cache_width() -> int:
+        if cache is None:
+            logger.error(STDSCR_INIT_ERROR_MSG)
+            return 0
+        return cache.getmaxyx()[1]
 
-        if y == screen_height - 1 and first_x + len(row_str) == screen_width:
-            row_str = row_str[:-1]
+    def get_cache_empty_buffer() -> list[list[str]]:
+        return [[" " for _ in range(get_cache_width())] for _ in range(get_cache_height())]
 
-        stdscr.move(y, first_x)
-        stdscr.addstr(row_str)
+    return get_cache, set_cache, get_cache_height, get_cache_width, get_cache_empty_buffer
 
 
 def _make_buffer_manager():
-    cache = deepcopy(empty_buffer)
+    cache = deepcopy(get_empty_buffer())
 
     def get_cache() -> list[list[str]]:
         return cache
 
     def set_item(y: int, x: int, char: str = " ") -> None:
         nonlocal cache
-        if 0 <= y < screen_height and 0 <= x < screen_width:
+        if 0 <= y < get_screen_height() and 0 <= x < get_screen_width():
             cache[y][x] = char
 
     def clear_cache() -> None:
         nonlocal cache
-        cache = deepcopy(empty_buffer)
+        cache = deepcopy(get_empty_buffer())
 
     return get_cache, set_item, clear_cache
 
@@ -636,6 +628,50 @@ def _make_event_manager():
     return get_cache, add_item, clear_cache
 
 
+def _draw() -> None:
+    """Display the buffer in rows instead of individual characters to improve performance."""
+    stdscr = get_stdscr()
+    if stdscr is None:
+        return
+    
+    clear_buffer()
+    stdscr.clear()
+
+    for element in get_elements().values():
+        element.draw()
+
+    for y, row in enumerate(get_buffer()):
+        row_str = ""
+        prev_x = 0
+        first_x = None
+
+        for x, char in enumerate(row):
+            if char == " ":
+                continue
+
+            if first_x is None:
+                row_str += char
+                first_x = x
+            else:
+                row_str += " " * (x - prev_x - 1) + char
+
+            prev_x = x
+
+        if first_x is None:
+            continue
+
+        if (
+            y == stdscr.getmaxyx()[0] - 1
+            and first_x + len(row_str) == stdscr.getmaxyx()[1]
+        ):
+            row_str = row_str[:-1]
+
+        stdscr.move(y, first_x)
+        stdscr.addstr(row_str)
+
+    stdscr.refresh()
+
+
 def fullscreen() -> None:
     """Simulate the F11 key being pressed."""
     logger.debug("Toggling fullscreen")
@@ -645,19 +681,33 @@ def fullscreen() -> None:
     user32.keybd_event(0x7A, 0, 0x0002, 0)
 
 
+def setup() -> None:
+    """Initialize the curses window."""
+    time.sleep(0.5)
+    fullscreen()
+    time.sleep(0.5)
+
+    stdscr = curses.initscr()
+
+    curses.curs_set(0) # Cache le curseur
+    stdscr.nodelay(1) # Pas de blocage d'entrées
+    stdscr.timeout(0) # Délai de vérification d'entrée
+
+    set_stdscr(stdscr)
+
+
 def update() -> list[EnumObject]:
-    """Draw the active UI elements and process inputs. 
+    """Process inputs and draw active UI elements.
 
     Returns a dictionary of events for main.py to handle. Doesn't behave like
     tkinter's mainloop, has to be called within a loop.
     """
+    stdscr = get_stdscr()
+    if stdscr is None:
+        return []
 
     clear_events()
-
-    # Input updating
-
     key = stdscr.getch()
-
     if not key is None:
         for element in reversed(get_elements().values()):
             try:
@@ -669,16 +719,7 @@ def update() -> list[EnumObject]:
         else:
             add_event(EnumObject(EVENT_TYPES.PRESS_KEY, key))
 
-    # Display updating
-
-    clear_buffer()
-    stdscr.clear()
-
-    for element in get_elements().values():
-        element.draw()
-
-    _display_buffer()
-    stdscr.refresh()
+    _draw()
 
     return get_events()
 
@@ -692,19 +733,25 @@ UI_ELEMENT_CLASSES = {
     UI_ELEMENT_TYPES.CHOICE_BOX: ChoiceBox,
 }
 
-time.sleep(0.5)
-fullscreen()
-time.sleep(0.5)
-
-stdscr = curses.initscr()
-
-curses.curs_set(0) # Cache le curseur
-stdscr.nodelay(1) # Pas de blocage d'entrées
-stdscr.timeout(0) # Délai de vérification d'entrée
-
-screen_height, screen_width = stdscr.getmaxyx()
-empty_buffer = [[" " for _ in range(screen_width)] for _ in range(screen_height)]
-
-get_buffer, set_cell, clear_buffer = _make_buffer_manager()
-get_elements, set_element, remove_element = _make_element_manager()
-get_events, add_event, clear_events = _make_event_manager()
+(
+    get_stdscr,
+    set_stdscr,
+    get_screen_height,
+    get_screen_width,
+    get_empty_buffer,
+) = _make_stdscr_manager()
+(
+    get_buffer,
+    set_cell,
+    clear_buffer,
+) = _make_buffer_manager()
+(
+    get_elements,
+    set_element,
+    remove_element,
+) = _make_element_manager()
+(
+    get_events,
+    add_event,
+    clear_events
+) = _make_event_manager()

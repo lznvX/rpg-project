@@ -78,3 +78,20 @@ def delete(file_path: str) -> None:
     Deletes the file at file_path.
     """
     os.remove(file_path)
+
+
+def _test():
+    """Execute a series of test to see if the program is working"""
+    file_1 = "10"
+    save_pickle(file_1, "test")
+    assert load_pickle("test") == "10"
+    with open("test", "w") as file:
+        file.write(file_1)
+    assert load_text("test") == "10"
+    delete("test")
+    assert "test" not in os.listdir()
+    print("all Tests passed")
+
+
+if __name__ == "__main__":
+    _test()

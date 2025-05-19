@@ -380,6 +380,10 @@ class DialogBox(NamedTuple):
         if is_top_level:
             set_element(pid, dialog_box)
 
+        if isinstance(dialog_box.current_line, EnumObject):
+            add_event(dialog_box.current_line)
+            dialog_box.next()
+
         return dialog_box
 
     def config(self, is_top_level: bool = True, **kwargs) -> DialogBox:

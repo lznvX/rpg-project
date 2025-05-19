@@ -278,8 +278,10 @@ class Battle(NamedTuple):
 
         elif len(self.team2.valid_targets) == 0:
             logger.info("Battle ends as player victory")
-            self.output(translate("combat.win"))
-            self.output(f(translate("combat.rewards"), "0", "0"))
+            output = translate("combat.win")
+            output += "\n\n"
+            output += f(translate("combat.rewards"), "0", "0")
+            self.output(output)
 
             if is_main:
                 # fix combat not ending in standalone mode
@@ -345,7 +347,7 @@ class Battle(NamedTuple):
 
                 # Resolve attack
                 logger.info(f"{fighter.name} uses <{attack.name}> on {target}")
-                self.output(f(translate("combat.attack"), fighter, attack.display_name, target))
+                output = f(translate("combat.attack"), fighter, attack.display_name, target)
 
                 fighter, target, damage_dealt = Battle.attack(fighter, weapon, attack, target)
 
@@ -363,12 +365,14 @@ class Battle(NamedTuple):
                 logger.info(
                     f"{target.name} takes ¤ {damage_dealt} damage -> ♥ {target.health}",
                 )
-                self.output(f(
+                output += "\n\n"
+                output += f(
                     translate("combat.damage"),
                     target.display_name,
                     damage_dealt,
                     target.health,
-                ))
+                )
+                
 
                 # update the fighter and character saved in the Battle instance
                 allies.update_member(fighter_uuid, fighter)
@@ -377,7 +381,8 @@ class Battle(NamedTuple):
                 # log dead characters, check win/loss conditions
                 if not target.is_alive:
                     logger.info(f"{target.name} dies")
-                    self.output(f(translate("combat.death"), target.display_name))
+                    output += "\n\n"
+                    output += f(translate("combat.death"), target.display_name)
                     # self.turn_order.remove(target_uuid)
 
                     match self.check_win_loss_conditions():
@@ -401,6 +406,7 @@ class Battle(NamedTuple):
                         case _:
                             raise NotImplementedError("How did we get here?")
 
+                self.output(output)
                 self.progress["turn_progress"] += 1
             else:
                 self.new_turn()

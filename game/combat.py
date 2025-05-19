@@ -6,7 +6,6 @@ Contributors:
     Romain
 """
 
-
 from __future__ import annotations
 import logging
 import random as r
@@ -27,7 +26,6 @@ from lang import DialogLine, f, translate
 import monsters as m
 import test_items as ti
 from get_input import get_input
-
 
 is_main = __name__ == "__main__"
 auto_turn_delay = 0.5 if is_main else 0 # seconds

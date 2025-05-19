@@ -30,12 +30,8 @@ class Settings(NamedTuple):
 def _make_setting_manager():
     cache = Settings.new()
 
-    def get_cache(setting_name: str) -> object:
-        try:
-            return getattr(cache, setting_name)
-        except AttributeError:
-            logger.error(f"Settings don't contain {setting_name}")
-            return None
+    def get_cache() -> Settings:
+        return cache
 
     def config_cache(**kwargs) -> None:
         logger.debug(f"Changing settings: {kwargs}")

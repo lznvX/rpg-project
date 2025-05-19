@@ -22,7 +22,7 @@ from cuinter import UI_ELEMENT_CLASSES
 from enums import EVENT_TYPES, UI_ELEMENT_TYPES, RECTANGLE_PRESETS
 from files import load_text_dir, load_pickle, save_pickle
 from game_classes import Action, Character, DamageInstance, Item, Party
-from game_save import GameSave
+from game_save import DEFAULT_ZONE_PATH, GameSave
 from lang import DialogLine, translate
 import monsters
 import settings
@@ -53,35 +53,104 @@ MENU_CHOICE_PATH = "assets\\choices\\menu_choice.pkl"
 class Globals(NamedTuple):
     grid: world.Grid
     player: world.WorldCharacter
-    current_save = None
-    current_zone_path = None
-    battle_action = None
-    battle_target = None
+    current_zone_path: str
+    battle_action: tuple[Action, Item]
+    battle_target: UUID
 
     @classmethod
     def new(cls) -> Globals:
-        
+        tile_sprites = load_text_dir(TILE_SPRITE_DIR_PATH)
+        tileset = remap_dict(tile_sprites, world.TILE_NAME_TO_CHAR)
+
+        grid = world.Grid.new(tileset)
+        player = world.WorldCharacter.new(
+            grid=grid,
+            grid_y=0,
+            grid_x=0,
+            character=monsters.player(),
+            sprite_key="down",
+            y_offset=-1,
+            x_offset=0,
+        )
+
+        return cls(
+            grid=grid,
+            player=player,
+            current_zone_path=DEFAULT_ZONE_PATH,
+            battle_action=None,
+            battle_target=None,
+        )
 
 
 def _make_globals_manager
     cache = Globals.new()
 
+    def get_cache() -> Settings:
+        return cache
+
+    def config_cache(**kwargs) -> None:
+        nonlocal cache
+        cache = cache._replace(**kwargs)
+
+    return get_cache, config_cache
+
+
+def _make_world_object_manager():
+    cache = []
+
+    def get_cache() -> list[object]:
+        return cache
+
+    def add_item(world_object: object) -> None:
+        if world_object is None:
+            return
+
+        logger.debug("Adding world object")
+        nonlocal cache
+        cache.append(event)
+
+    def clear_cache() -> None:
+        logger.debug("Clearing world objects")
+        nonlocal cache
+        cache.clear()
+
+    return get_cache, add_item, clear_cache
+
+
+def _make_event_manager():
+    cache = []
+
+    def get_cache() -> list[EnumObject]:
+        return cache
+
+    def add_item(event: EnumObject) -> None:
+        if event is None:
+            return
+
+        logger.debug(f"Adding event {event}")
+        nonlocal cache
+        cache.append(event)
+
+    def clear_cache() -> None:
+        nonlocal cache
+        cache.clear()
+
+    return get_cache, add_item, clear_cache
+
+
 def press_key(key: int) -> None:
-    for world_object in world_objects:
+    for world_object in get_world_objects():
         if (
             not isinstance(world_object, world.WalkTrigger)
-            or event_value != world_object.key
+            or key != world_object.key
         ):
             continue
 
-        try_append(
-            new_events,
-            world_object.on_walk(player.grid_y, player.grid_x),
-        )
+        add_event(world_object.on_walk(player.grid_y, player.grid_x))
 
-    if event_value in MOVE_MAP:
+    if key in MOVE_MAP:
         old_y, old_x = player.grid_y, player.grid_x
-        move_y, move_x, direction = MOVE_MAP[event_value]
+        move_y, move_x, direction = MOVE_MAP[key]
         player = player.move(move_y, move_x)
 
         if player.grid_multi_sprite.sprite_key != direction:
@@ -95,19 +164,13 @@ def press_key(key: int) -> None:
                 ):
                     continue
 
-                try_append(
-                    new_events,
-                    world_object.on_walk(player.grid_y, player.grid_x),
-                )
+                add_event(world_object.on_walk(player.grid_y, player.grid_x))
 
-    elif event_value == ord("m"):
-        try_append(
-            new_events,
-            EnumObject(
-                EVENT_TYPES.LOAD_UI_ELEMENT,
-                MENU_CHOICE_PATH,
-            ),
-        )
+    elif key == ord("m"):
+        add_event(EnumObject(
+            EVENT_TYPES.LOAD_UI_ELEMENT,
+            MENU_CHOICE_PATH,
+        ))
 
 
 def main() -> None:
@@ -115,27 +178,7 @@ def main() -> None:
     fps_timer = last_time  # Time of the last FPS update
     frame_count = 0
 
-    settings.load()
-    current_save = None
-    current_zone_path = None
-    battle_action = None
-    battle_target = None
-
-    tiles = load_text_dir(TILE_SPRITE_DIR_PATH)
-    tileset = remap_dict(tiles, world.TILE_NAME_TO_CHAR)
-
     cuinter.setup()
-
-    grid = world.Grid.new(tileset)
-    player = world.WorldCharacter.new(
-        grid=grid,
-        grid_y=0,
-        grid_x=0,
-        character=monsters.player(),
-        sprite_key="down",
-        y_offset=-1,
-        x_offset=0,
-    )
     fps_label = cuinter.Label.new(
         y=0,
         x=0,
@@ -147,14 +190,13 @@ def main() -> None:
         text=f"♥ {player.character.health}/{player.character.current.max_health}"
     )
 
-    world_objects = []
-    new_events = [
-        EnumObject(
-            EVENT_TYPES.LOAD_GAME,
-        )
-    ]
+    settings.load()
+
+    add_event(EnumObject(
+        EVENT_TYPES.LOAD_GAME,
+    ))
     if settings.get("first_time"):
-        new_events.append(EnumObject(
+        add_event(EnumObject(
             EVENT_TYPES.LOAD_UI_ELEMENT,
             "assets\\dialogs\\welcome_dialog.pkl",
         ))
@@ -177,8 +219,8 @@ def main() -> None:
 
         ############ Event handling, code to run every frame
 
-        events = new_events + cuinter.update()
-        new_events.clear()
+        events = get_events() + cuinter.update()
+        clear_events()
 
         for event_type, event_value in events:
             match event_type:
@@ -658,6 +700,21 @@ def main() -> None:
                     for new_event in event_value:
                         try_append(new_events, new_event)
 
+
+(
+    get_globals,
+    config_globals,
+) = _make_globals_manager()
+(
+    get_world_objects,
+    add_world_object,
+    clear_world_objects,
+) = _make_world_object_manager()
+(
+    get_events,
+    add_event,
+    clear_events,
+) = _make_event_manager()
 
 if __name__ == "__main__":
     main()

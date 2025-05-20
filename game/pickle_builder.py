@@ -5,6 +5,7 @@ ressources to easily modify them.
 
 Contributors:
     Romain
+    Alexander
 """
 
 from common import EnumObject
@@ -291,11 +292,58 @@ objects = {
                     ord("d"),
                 ),
             ),
+            EnumObject(
+                WORLD_OBJECT_TYPES.WALK_TRIGGER,
+                (
+                    0,
+                    8,
+                    EnumObject(
+                        EVENT_TYPES.LOAD_ZONE,
+                        (
+                            "assets\\zones\\test_zone_box.pkl",
+                            6,
+                            8,
+                        ),
+                    ),
+                    ord("w"),
+                ),
+            ),
+        ),
+    ),
+    "assets\\zones\\test_zone_box.pkl": (
+        (
+            "XXXXXXXXXXXXX",
+            "XXX╔═════╗XXX",
+            "XXX║     ║XXX",
+            "XXX║     ║XXX",
+            "XXX║     ║XXX",
+            "XXX║     ║XXX",
+            "XXX╚═══╗ ║XXX",
+        ),
+        (
+            EnumObject(
+                WORLD_OBJECT_TYPES.WALK_TRIGGER,
+                (
+                    6,
+                    8,
+                    EnumObject(
+                        EVENT_TYPES.LOAD_ZONE,
+                        (
+                            "assets\\zones\\test_zone_2.pkl",
+                            0,
+                            8,
+                        ),
+                    ),
+                    ord("s"),
+                ),
+            ),
         ),
     ),
 }
 
-for path, obj in objects.items():
-    save_pickle(obj, path)
 
-print(f"{len(objects)} objects built and saved successfully")
+if __name__ == "__main__":
+    for path, obj in objects.items():
+        save_pickle(obj, path)
+
+    print(f"{len(objects)} objects built and saved successfully")

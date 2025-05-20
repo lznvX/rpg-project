@@ -8,7 +8,8 @@ inventory management.
 Run with CTRL+T (Thonny). If _curses module is missing, run 'pip install windows-curses'
 in terminal.
 
-Docstrings written by DeepSeek, verified and modified when needed by us.
+Docstrings written by DeepSeek,
+verified and modified when needed by us.
 
 Contributors:
     Romain

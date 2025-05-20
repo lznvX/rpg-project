@@ -1,4 +1,4 @@
-"""Classes and functions shared between several systems
+"""Classes and functions shared between several systems.
 
 Created on 2025.03.20
 Contributors:
@@ -52,7 +52,7 @@ def named_tuple_modifier(data_type: Callable, old_data: NamedTuple, **changes) -
 
 
 def move_toward(a: int | float, b: int | float, step: int | float = 1) -> int | float:
-    """Returs a moved by step towards b without overshooting."""
+    """Return a moved by step towards b without overshooting."""
     return min(a + step, b) if b >= a else max(a - step, b)
 
 

@@ -696,9 +696,7 @@ class Party(NamedTuple):
 
 
 class Task(NamedTuple):
-    """
-    A quest that if the condition is fulfild give a reward
-    """
+    """A quest that gives a reward when a condition is fulfilled."""
     name: str
     conditions: Counter[Item]
     reward: Counter[Item]

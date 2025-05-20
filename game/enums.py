@@ -1,4 +1,4 @@
-"""Various pseudo enums
+"""Various pseudo enums.
 
 We can't use actual enums, so have fun with NamedTuples.
 

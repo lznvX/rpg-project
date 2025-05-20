@@ -1,6 +1,9 @@
-"""Interface and display for curses
+"""Interface and display for curses.
 
 Basically a tkinter clone at this point.
+
+Docstrings partly written by GitHub Copilot (GPT-4.1),
+verified and modified when needed by us.
 
 Contributors:
     Romain
@@ -21,14 +24,21 @@ from lang import DialogLine
 
 logger = logging.getLogger(__name__)
 
-X_CORRECTION = 2.6 # Hauteur / largeur d'un caractère
-CHARACTER_TIME = 0.025 # Délai d'affichage de chaque caractère dans les textes
+X_CORRECTION = 2.6  # Hauteur / largeur d'un caractère
+CHARACTER_TIME = 0.025  # Délai d'affichage de chaque caractère dans les textes
 STDSCR_INIT_ERROR_MSG = "Stdscr not initialized"
 
 
 class Label(NamedTuple):
-    """Displays single line text."""
-    pid: int # Persistent identifier
+    """Displays single line text in the curses UI.
+
+    Attributes:
+        pid (int): Persistent identifier.
+        y (int): Y position.
+        x (int): X position.
+        text (str): Text to display.
+    """
+    pid: int
     y: int
     x: int
     text: str
@@ -82,6 +92,14 @@ class Label(NamedTuple):
 
 
 class SpriteRenderer(NamedTuple):
+    """Displays an ASCII sprite at a given position.
+
+    Attributes:
+        pid (int): Persistent identifier.
+        y (int): Y position.
+        x (int): X position.
+        sprite (str): The ASCII sprite as a string.
+    """
     pid: int
     y: int
     x: int
@@ -89,18 +107,21 @@ class SpriteRenderer(NamedTuple):
 
     @property
     def height(self) -> int:
+        """Return the height of the sprite."""
         if self.sprite is None:
             return 0
         return len(self.sprite)
 
     @property
     def width(self) -> int:
+        """Return the width of the sprite."""
         if self.sprite is None:
             return 0
         return max(len(row) for row in self.sprite)
 
     @classmethod
     def new(cls, y: int, x: int, sprite: str = None, is_top_level: bool = True) -> SpriteRenderer:
+        """Create a new SpriteRenderer and optionally register it as a top-level UI element."""
         logger.debug("Creating new SpriteRenderer")
 
         pid = int(uuid4())
@@ -112,6 +133,7 @@ class SpriteRenderer(NamedTuple):
         return sprite_renderer
 
     def config(self, is_top_level: bool = True, **kwargs) -> SpriteRenderer:
+        """Clone the SpriteRenderer with updated attributes and optionally update in UI elements."""
         sprite_renderer = SpriteRenderer(
             self.pid,
             kwargs.get("y", self.y),
@@ -125,9 +147,11 @@ class SpriteRenderer(NamedTuple):
         return sprite_renderer
 
     def delete(self) -> None:
+        """Remove the SpriteRenderer from cuinter's active UI elements."""
         remove_element(self.pid)
 
     def draw(self) -> None:
+        """Draw the sprite in the display buffer."""
         if self.sprite is None:
             return
 
@@ -139,6 +163,8 @@ class SpriteRenderer(NamedTuple):
 
 
 class Rectangle(NamedTuple):
+    """Draws a rectangle (box) on the UI."""
+
     pid: int
     y: int
     x: int
@@ -147,6 +173,7 @@ class Rectangle(NamedTuple):
 
     @staticmethod
     def get_preset(preset: int = 0):
+        """Return a Rectangle with dimensions set from a preset."""
         screen_height = get_screen_height()
         screen_width = get_screen_width()
         match preset:
@@ -180,6 +207,7 @@ class Rectangle(NamedTuple):
     def new(cls, y: int = None, x: int = None, height: int = None,
             width: int = None, rectangle_preset: int = 0,
             is_top_level: bool = True) -> Rectangle:
+        """Create a new Rectangle and optionally register as a top-level UI element."""
         logger.debug("Creating new Rectangle")
 
         preset = Rectangle.get_preset(rectangle_preset)
@@ -198,6 +226,7 @@ class Rectangle(NamedTuple):
         return rectangle
 
     def config(self, is_top_level: bool = True, **kwargs) -> Rectangle:
+        """Clone the Rectangle with updated attributes and optionally update in UI elements."""
         rectangle = Rectangle(
             self.pid,
             kwargs.get("y", self.y),
@@ -212,9 +241,11 @@ class Rectangle(NamedTuple):
         return rectangle
 
     def delete(self) -> None:
+        """Remove the Rectangle from cuinter's active UI elements."""
         remove_element(self.pid)
 
     def draw(self) -> None:
+        """Draw the Rectangle in the display buffer."""
         if self.height <= 0 or self.width <= 0:
             return
 
@@ -238,6 +269,8 @@ class Rectangle(NamedTuple):
 
 
 class TextBox(NamedTuple):
+    """Displays a rectangle with wrapped text inside."""
+
     pid: int
     rectangle: Rectangle
     text: str
@@ -262,6 +295,7 @@ class TextBox(NamedTuple):
     def new(cls, y: int = None, x: int = None, height: int = None,
             width: int = None, text: str = None, rectangle_preset: int = 0,
             is_top_level: bool = True) -> TextBox:
+        """Create a new TextBox and optionally register as a top-level UI element."""
         logger.debug("Creating new TextBox")
 
         pid = int(uuid4())
@@ -284,6 +318,7 @@ class TextBox(NamedTuple):
         return text_box
 
     def config(self, is_top_level: bool = True, **kwargs) -> TextBox:
+        """Clone the TextBox with updated attributes and optionally update in UI elements."""
         text_box = TextBox(
             self.pid,
             self.rectangle.config(False, **kwargs),
@@ -296,9 +331,11 @@ class TextBox(NamedTuple):
         return text_box
 
     def delete(self) -> None:
+        """Remove the TextBox from cuinter's active UI elements."""
         remove_element(self.pid)
 
     def draw(self) -> None:
+        """Draw the TextBox with wrapped text."""
         self.rectangle.draw()
 
         if self.text is None:
@@ -318,6 +355,8 @@ class TextBox(NamedTuple):
 
 
 class DialogBox(NamedTuple):
+    """Displays a dialog box with animated lines of text."""
+
     pid: int
     text_box: TextBox
     dialog: tuple[DialogLine | EnumObject, ...]
@@ -342,14 +381,17 @@ class DialogBox(NamedTuple):
 
     @property
     def current_line(self) -> DialogLine:
+        """Return the current line in dialog."""
         return self.dialog[self.line_index]
 
     @property
-    def current_text(self) -> DialogLine:
+    def current_text(self) -> str:
+        """Return the text of the current line."""
         return self.current_line.text
 
     @property
     def length_to_draw(self) -> int:
+        """Return the number of characters to display for animation."""
         uncapped = math.floor((time.time() - self.start_time) / CHARACTER_TIME)
         return min(uncapped, len(self.current_text))
 
@@ -358,6 +400,7 @@ class DialogBox(NamedTuple):
             width: int = None,
             dialog: tuple[DialogLine | EnumObject, ...] = None,
             rectangle_preset: int = 0, is_top_level: bool = True) -> DialogBox:
+        """Create a new DialogBox and optionally register as a top-level UI element."""
         logger.debug("Creating new DialogBox")
 
         pid = int(uuid4())
@@ -387,6 +430,7 @@ class DialogBox(NamedTuple):
         return dialog_box
 
     def config(self, is_top_level: bool = True, **kwargs) -> DialogBox:
+        """Clone the DialogBox with updated attributes and optionally update in UI elements."""
         dialog_box = DialogBox(
             self.pid,
             self.text_box.config(False, **kwargs),
@@ -401,13 +445,16 @@ class DialogBox(NamedTuple):
         return dialog_box
 
     def delete(self) -> None:
+        """Remove the DialogBox from cuinter's active UI elements."""
         remove_element(self.pid)
 
     def key_input(self, key: int) -> None:
+        """Handle key input for dialog advancement."""
         if key in (ord(" "), ord("\n")):
             self.next()
 
     def next(self) -> None:
+        """Advance to the next line or close the DialogBox."""
         if self.dialog is None:
             return
 
@@ -429,6 +476,7 @@ class DialogBox(NamedTuple):
             self.delete()
 
     def draw(self) -> None:
+        """Draw the dialog box with the current line animated."""
         if self.dialog is None:
             self.text_box.draw()
             return
@@ -443,6 +491,8 @@ class DialogBox(NamedTuple):
 
 
 class ChoiceBox(NamedTuple):
+    """Displays a selectable list of options in a box."""
+
     pid: int
     text_box: TextBox
     options: tuple[str, ...]
@@ -467,6 +517,7 @@ class ChoiceBox(NamedTuple):
 
     @property
     def selected_option(self) -> str:
+        """Return the currently selected option."""
         return self.options[self.selected_index]
 
     @classmethod
@@ -474,7 +525,8 @@ class ChoiceBox(NamedTuple):
             width: int = None, options: tuple[str, ...] = None,
             on_confirm_events: dict[int, EnumObject] = {},
             selected_index: int = 0, rectangle_preset: int = 0,
-            is_top_level: bool = True) -> ChoiceBox:
+            is_top_level: bool = True) -> 'ChoiceBox':
+        """Create a new ChoiceBox and optionally register as a top-level UI element."""
         logger.debug("Creating new ChoiceBox")
 
         pid = int(uuid4())
@@ -500,6 +552,7 @@ class ChoiceBox(NamedTuple):
         return choice_box
 
     def config(self, is_top_level: bool = True, **kwargs) -> ChoiceBox:
+        """Clone the ChoiceBox with updated attributes and optionally update in UI elements."""
         choice_box = ChoiceBox(
             self.pid,
             self.text_box.config(False, **kwargs),
@@ -514,9 +567,11 @@ class ChoiceBox(NamedTuple):
         return choice_box
 
     def delete(self) -> None:
+        """Remove the ChoiceBox from cuinter's active UI elements."""
         remove_element(self.pid)
 
     def key_input(self, key: int) -> None:
+        """Handle key input for navigating/selecting options."""
         if key == ord("w"):
             self.select_previous()
 
@@ -527,12 +582,15 @@ class ChoiceBox(NamedTuple):
             self.confirm()
 
     def select_previous(self) -> None:
+        """Move selection to the previous option."""
         self.config(selected_index=move_toward(self.selected_index, 0))
 
     def select_next(self) -> None:
+        """Move selection to the next option."""
         self.config(selected_index=move_toward(self.selected_index, len(self.options) - 1))
 
     def confirm(self) -> None:
+        """Confirm the selected option and execute its event."""
         if (self.on_confirm_events is not None
         and self.selected_index in self.on_confirm_events
         and self.on_confirm_events[self.selected_index] is not None):
@@ -540,6 +598,7 @@ class ChoiceBox(NamedTuple):
         self.delete()
 
     def draw(self) -> None:
+        """Draw the ChoiceBox with the current selection highlighted."""
         formatted_text = ""
         for i, option in enumerate(self.options):
             formatted_line = ("> " if i == self.selected_index else "  ") + option
@@ -550,6 +609,7 @@ class ChoiceBox(NamedTuple):
 
 
 def _make_stdscr_manager() -> tuple[Callable, ...]:
+    """Creates getter/setter functions for the curses stdscr object and its properties."""
     cache = None
 
     def get_cache() -> object:
@@ -580,6 +640,7 @@ def _make_stdscr_manager() -> tuple[Callable, ...]:
 
 
 def _make_buffer_manager() -> tuple[Callable, ...]:
+    """Creates functions to manage the display buffer."""
     cache = deepcopy(get_empty_buffer())
 
     def get_cache() -> list[list[str]]:
@@ -598,6 +659,7 @@ def _make_buffer_manager() -> tuple[Callable, ...]:
 
 
 def _make_element_manager() -> tuple[Callable, ...]:
+    """Creates functions to manage active UI elements."""
     cache = {}
 
     def get_cache() -> dict[int, object]:
@@ -615,6 +677,7 @@ def _make_element_manager() -> tuple[Callable, ...]:
 
 
 def _make_event_manager() -> tuple[Callable, ...]:
+    """Creates functions to manage UI events."""
     cache = []
 
     def get_cache() -> list[EnumObject]:
@@ -636,7 +699,7 @@ def _draw() -> None:
     stdscr = get_stdscr()
     if stdscr is None:
         return
-    
+
     clear_buffer()
     stdscr.clear()
 
@@ -676,7 +739,7 @@ def _draw() -> None:
 
 
 def fullscreen() -> None:
-    """Simulate the F11 key being pressed."""
+    """Simulate the F11 key being pressed to toggle fullscreen mode."""
     logger.debug("Toggling fullscreen")
 
     user32 = ctypes.windll.user32
@@ -685,16 +748,16 @@ def fullscreen() -> None:
 
 
 def setup() -> None:
-    """Initialize the curses window."""
+    """Initialize the curses window and configure the UI."""
     time.sleep(0.5)
     fullscreen()
     time.sleep(0.5)
 
     stdscr = curses.initscr()
 
-    curses.curs_set(0) # Cache le curseur
-    stdscr.nodelay(1) # Pas de blocage d'entrées
-    stdscr.timeout(0) # Délai de vérification d'entrée
+    curses.curs_set(0)  # Hide cursor
+    stdscr.nodelay(1)   # No input blocking
+    stdscr.timeout(0)   # No input timeout
 
     set_stdscr(stdscr)
 
@@ -702,8 +765,8 @@ def setup() -> None:
 def update() -> list[EnumObject]:
     """Process inputs and draw active UI elements.
 
-    Returns a dictionary of events for main.py to handle. Doesn't behave like
-    tkinter's mainloop, has to be called within a loop.
+    Returns a dictionary of events for main.py to handle.
+    Doesn't behave like tkinter's mainloop, has to be called within a loop.
     """
     stdscr = get_stdscr()
     if stdscr is None:

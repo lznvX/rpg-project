@@ -1,4 +1,4 @@
-"""Utility script to create and edit ressource pickle files
+""Utility script to create and edit ressource pickle files
 
 Run in terminal, Thonny doesn't work for me. Purpose is to keep a human readable version of these
 ressources to easily modify them.
@@ -64,7 +64,7 @@ objects = {
                             EVENT_TYPES.SAVE_GAME,
                         ),
                         EnumObject(
-                            EVENT_TYPES.QUIT_GAME,
+                            EVENT_TYPES.QUIT,
                         ),
                     ),
                 ),
@@ -141,14 +141,13 @@ objects = {
     ),
     "assets\\zones\\test_zone.pkl": (
         (
-            "╝│ │   │╚╗XXXX",
-            "─┘ │   │ ║XXXX",
-            "╗  │   │ ║XXXX",
-            "║┌─┘   │ ╚═══╗",
-            "╝└┐    └────┐║",
-            "──┘┌─────┐  │║",
-            "╗  │     │┌─┘║",
-            "╚═╗│╔═══╗││╔═╝",
+            "╝│ │ │╚╗XXXX",
+            "─┘ │ │ ║XXXX",
+            "╗┌─┘ │ ╚═══╗",
+            "╝└┐  └────┐║",
+            "──┘┌───┐  │║",
+            "╗  │   │┌─┘║",
+            "╚═╗│╔═╗││╔═╝",
         ),
         (
             EnumObject(
@@ -160,7 +159,7 @@ objects = {
                         EVENT_TYPES.LOAD_ZONE,
                         (
                             "assets\\zones\\test_zone.pkl",
-                            7,
+                            6,
                             3,
                         ),
                     ),
@@ -170,7 +169,7 @@ objects = {
             EnumObject(
                 WORLD_OBJECT_TYPES.WALK_TRIGGER,
                 (
-                    7,
+                    6,
                     3,
                     EnumObject(
                         EVENT_TYPES.LOAD_ZONE,
@@ -193,7 +192,7 @@ objects = {
                         (
                             "assets\\zones\\test_zone_2.pkl",
                             1,
-                            13,
+                            11,
                         ),
                     ),
                     ord("a"),
@@ -202,14 +201,14 @@ objects = {
             EnumObject(
                 WORLD_OBJECT_TYPES.WALK_TRIGGER,
                 (
-                    5,
+                    4,
                     0,
                     EnumObject(
                         EVENT_TYPES.LOAD_ZONE,
                         (
                             "assets\\zones\\test_zone_2.pkl",
-                            5,
-                            13,
+                            4,
+                            11,
                         ),
                     ),
                     ord("a"),
@@ -219,27 +218,26 @@ objects = {
     ),
     "assets\\zones\\test_zone_2.pkl": (
         (
-            "XXXX╔╝│   │ │╚",
-            "XXXX║ │   │ └─",
-            "╔═══╝ │   │  ╔",
-            "║┌────┘   └─┐║",
-            "║│         ┌┘╚",
-            "║│  ┌─────┐└──",
-            "║└─┐│     │  ╔",
-            "╚═╗││╔═══╗│╔═╝",
+            "XXXX╔╝│ │ │╚",
+            "XXXX║ │ │ └─",
+            "╔═══╝ │ └─┐╔",
+            "║┌────┘  ┌┘╚",
+            "║│  ┌───┐└──",
+            "║└─┐│   │  ╔",
+            "╚═╗││╔═╗│╔═╝",
         ),
         (
             EnumObject(
                 WORLD_OBJECT_TYPES.WALK_TRIGGER,
                 (
                     0,
-                    10,
+                    8,
                     EnumObject(
                         EVENT_TYPES.LOAD_ZONE,
                         (
                             "assets\\zones\\test_zone_2.pkl",
-                            7,
-                            10,
+                            6,
+                            8,
                         ),
                     ),
                     ord("w"),
@@ -248,14 +246,14 @@ objects = {
             EnumObject(
                 WORLD_OBJECT_TYPES.WALK_TRIGGER,
                 (
-                    7,
-                    10,
+                    6,
+                    8,
                     EnumObject(
                         EVENT_TYPES.LOAD_ZONE,
                         (
                             "assets\\zones\\test_zone_2.pkl",
                             0,
-                            10,
+                            8,
                         ),
                     ),
                     ord("s"),
@@ -265,7 +263,7 @@ objects = {
                 WORLD_OBJECT_TYPES.WALK_TRIGGER,
                 (
                     1,
-                    13,
+                    11,
                     EnumObject(
                         EVENT_TYPES.LOAD_ZONE,
                         (
@@ -280,24 +278,71 @@ objects = {
             EnumObject(
                 WORLD_OBJECT_TYPES.WALK_TRIGGER,
                 (
-                    5,
-                    13,
+                    4,
+                    11,
                     EnumObject(
                         EVENT_TYPES.LOAD_ZONE,
                         (
                             "assets\\zones\\test_zone.pkl",
-                            5,
+                            4,
                             0,
                         ),
                     ),
                     ord("d"),
                 ),
             ),
+            EnumObject(
+                WORLD_OBJECT_TYPES.WALK_TRIGGER,
+                (
+                    0,
+                    8,
+                    EnumObject(
+                        EVENT_TYPES.LOAD_ZONE,
+                        (
+                            "assets\\zones\\test_zone_box.pkl",
+                            6,
+                            8,
+                        ),
+                    ),
+                    ord("w"),
+                ),
+            ),
+        ),
+    ),
+    "assets\\zones\\test_zone_box.pkl": (
+        (
+            "XXXXXXXXXXXXX",
+            "XXX╔═════╗XXX",
+            "XXX║     ║XXX",
+            "XXX║     ║XXX",
+            "XXX║     ║XXX",
+            "XXX║     ║XXX",
+            "XXX╚═══╗ ║XXX",
+        ),
+        (
+            EnumObject(
+                WORLD_OBJECT_TYPES.WALK_TRIGGER,
+                (
+                    6,
+                    8,
+                    EnumObject(
+                        EVENT_TYPES.LOAD_ZONE,
+                        (
+                            "assets\\zones\\test_zone_2.pkl",
+                            0,
+                            8,
+                        ),
+                    ),
+                    ord("s"),
+                ),
+            ),
         ),
     ),
 }
 
-for path, obj in objects.items():
-    save_pickle(obj, path)
+if __name__ == "__main__":
+    for path, obj in objects.items():
+        save_pickle(obj, path)
 
-print(f"{len(objects)} objects built and saved successfully")
+    print(f"{len(objects)} objects built and saved successfully")
+

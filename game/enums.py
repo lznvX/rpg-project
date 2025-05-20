@@ -1,4 +1,4 @@
-"""Various pseudo enums
+"""Various pseudo enums.
 
 We can't use actual enums, so have fun with NamedTuples.
 
@@ -33,7 +33,7 @@ class _EventTypes(NamedTuple):
     CONFIG_SETTINGS: int
     SAVE_GAME: int
     LOAD_GAME: int
-    QUIT: int
+    QUIT_GAME: int
     MULTI_EVENT: int
 
     @classmethod

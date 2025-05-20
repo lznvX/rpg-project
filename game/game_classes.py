@@ -214,26 +214,28 @@ class Item(NamedTuple):
 
 
     @staticmethod
-    def new(name: str="test_item",
-            tags: tuple[str]=tuple(),
-            weight: int=1,
-            magical_inertia: int=1,
-            stat_bonus: Stats=Stats(),
-            actions: tuple[Action]=tuple(),
-            ) -> Item:
-         """Item constructor.
+    def new(
+        name: str="test_item",
+        tags: tuple[str]=tuple(),
+        weight: int=1,
+        magical_inertia: int=1,
+        stat_bonus: Stats=Stats(),
+        actions: tuple[Action]=tuple(),
+    ) -> Item:
+        """Item constructor.
 
-         Needed because NamedTuple.__init__ can't be modified.
-         """
-         return Item(name,
-                     tags,
-                     weight,
-                     magical_inertia,
-                     stat_bonus,
-                     actions,
-                     # a null UUID corresponds to an un-equipped item
-                     null_uuid
-                     )
+        Needed because NamedTuple.__init__ can't be modified.
+        """
+        return Item(
+            name,
+            tags,
+            weight,
+            magical_inertia,
+            stat_bonus,
+            actions,
+            # a null UUID corresponds to an un-equipped item
+            null_uuid,
+        )
 
 
     def modify(self, **changes) -> Item:
@@ -367,14 +369,14 @@ class Inventory(NamedTuple):
         return item.uuid
 
 
-    def add(self, item: Item, count: int=1):
+    def add(self, item: Item, count: int = 1):
         """Add an item to the backpack."""
         assert count >= 0
 
         self.backpack[item] += count
 
 
-    def remove(self, item: Item, count: int=1):
+    def remove(self, item: Item, count: int = 1):
         """Remove an item from the backpack."""
         assert count >= 0
 
@@ -694,9 +696,7 @@ class Party(NamedTuple):
 
 
 class Task(NamedTuple):
-    """
-    A quest that if the condition is fulfild give a reward
-    """
+    """A quest that gives a reward when a condition is fulfilled."""
     name: str
     conditions: Counter[Item]
     reward: Counter[Item]
@@ -705,15 +705,16 @@ class Task(NamedTuple):
 
     @staticmethod
     def new(name: str, conditions: dict[Item, int], reward: dict[Item, int]) -> Item:
-         """Task constructor.
+        """Task constructor.
 
-         Needed because NamedTuple.__init__ can't be modified.
-         """
-         return Task(name,
-                     Counter(conditions),
-                     Counter(reward),
-                     uuid4(),
-                     )
+        Needed because NamedTuple.__init__ can't be modified.
+        """
+        return Task(
+            name,
+            Counter(conditions),
+            Counter(reward),
+            uuid4(),
+        )
 
     @property
     def display_name(self) -> str:

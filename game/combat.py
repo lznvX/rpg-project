@@ -1,11 +1,16 @@
-"""combat mechanic prototype
+"""Combat mechanic prototype.
+
+Handles the core logic for turn-based battles, party management, and interactions
+between player and enemy teams.
+
+Docstrings partly written by GitHub Copilot (GPT-4.1),
+verified and modified when needed by us.
 
 Created on 2025.03.12
 Contributors:
     Jakub
     Romain
 """
-
 
 from __future__ import annotations
 import logging
@@ -21,30 +26,31 @@ from game_classes import (
     DamageInstance,
     Item,
     Party,
-    Stats,
 )
 from lang import DialogLine, f, translate
 import monsters as m
 import test_items as ti
 from get_input import get_input
 
-
 is_main = __name__ == "__main__"
-auto_turn_delay = 0.5 if is_main else 0 # seconds
+auto_turn_delay = 0.5 if is_main else 0  # seconds
 logger = logging.getLogger(__name__)
 
 
 class FightOver(RuntimeError):
+    """Raised to indicate the battle is over."""
     pass
 
 
 class CombatParty(NamedTuple):
+    """Represents one side in a battle, containing active members and the party leader."""
     name: str
     members: dict[UUID, (Character, bool)]
     leader: UUID
 
     @staticmethod
     def new(party: Party) -> CombatParty:
+        """Construct a CombatParty from a Party object."""
         name = party.name
         leader = party.leader
         members = dict()
@@ -57,6 +63,7 @@ class CombatParty(NamedTuple):
         return CombatParty(name, members, leader)
 
     def to_party(self) -> Party:
+        """Convert back to a Party, including only alive members."""
         name = self.name
         leader = self.leader
 
@@ -70,6 +77,7 @@ class CombatParty(NamedTuple):
         return Party(name, tuple(members), leader)
 
     def get_member(self, member_uuid: UUID) -> Character:
+        """Get a Character by their UUID, or raise if not present."""
         if self.has_member(member_uuid):
             char = self.members[member_uuid][0]
             # logger.debug(f" {self.name} - found member {char}")
@@ -103,26 +111,27 @@ class CombatParty(NamedTuple):
         return targets
 
     def update_member(self, member_uuid, new_member) -> None:
+        """Update a member’s Character instance."""
         self.members[member_uuid] = (new_member, self.members[member_uuid][1])
 
     def __repr__(self):
+        """String representation of alive party members."""
         return ", ".join([str(self.get_member(member_uuid)) for member_uuid in self.valid_targets])
 
     def __str__(self):
+        """Alias for __repr__."""
         return repr(self)
 
 
 class Battle(NamedTuple):
-    """Handles the combat.
+    """Handles the combat between two parties.
 
     Use Battle.new() instead of the default constructor.
     """
     team1: CombatParty
     team2: CombatParty
-
     turn_order: list[UUID]
     progress: dict[str, int]
-
     return_dialog: list[str | DialogLine | EnumObject]
 
     def get_teams(self, fighter_uuid: UUID) -> (CombatParty, CombatParty):
@@ -170,8 +179,10 @@ class Battle(NamedTuple):
     @staticmethod
     def attack(attacker: Character, weapon: Item, attack: Action, victim: Character
                ) -> (Character, Character, int):
-        """Determine the result of an interaction during combat."""
+        """Determine the result of an interaction during combat.
 
+        Returns the attacker, the updated victim, and the damage taken.
+        """
         hit = DamageInstance(
             attack.get_damage(weapon, attacker.current),
             attack.damage_type,
@@ -197,6 +208,7 @@ class Battle(NamedTuple):
             )
 
     def _sort_turn_order(self):
+        """Sort fighters by agility for turn order."""
         sort_key = lambda uuid: self.get_fighter(uuid).current.agility
         logger.debug("Sorting turn order")
         self.turn_order.sort(key=sort_key, reverse=True)
@@ -233,6 +245,7 @@ class Battle(NamedTuple):
         return action, weapon, enemy_uuid
 
     def begin(self) -> None:
+        """Start the battle loop, handling turns until completion."""
         logger.info("Battle started")
         self.output(f"{translate('combat.begin')}\n\n{self}")
 
@@ -241,19 +254,16 @@ class Battle(NamedTuple):
         try_sleep(auto_turn_delay)
         self.new_turn()
 
-        # is this allowed? no prob for me, dunno if Kessler will get angry
         if is_main:
             while is_fight_on:
-                # fix combat not ending in standalone mode
                 try:
                     self.advance(None)
                 except FightOver:
                     break
-                # why is the delay broken? was commented out
-                # wtf how did I not notice
                 try_sleep(auto_turn_delay)
 
     def new_turn(self) -> int:
+        """Advance to the next turn, updating state and cleaning up dead fighters."""
         self.progress["turn"] += 1
         self.progress["turn_progress"] = 0
         turn = self.progress["turn"]
@@ -269,23 +279,24 @@ class Battle(NamedTuple):
         try_sleep(2*auto_turn_delay)
 
     def check_win_loss_conditions(self) -> int:
+        """Check if one side has lost, returning 1 (win), -1 (loss), or 0 (ongoing)."""
         if len(self.team1.valid_targets) == 0:
             logger.info("Battle ends as player loss")
             self.output(translate("combat.loss"))
 
             if is_main:
-                # fix combat not ending in standalone mode
                 raise FightOver("The player looses")
             else:
                 return -1
 
         elif len(self.team2.valid_targets) == 0:
             logger.info("Battle ends as player victory")
-            self.output(translate("combat.win"))
-            self.output(f(translate("combat.rewards"), "0", "0"))
+            output = translate("combat.win")
+            output += "\n\n"
+            output += f(translate("combat.rewards"), "0", "0")
+            self.output(output)
 
             if is_main:
-                # fix combat not ending in standalone mode
                 raise FightOver("The player wins")
             else:
                 return 1
@@ -293,29 +304,23 @@ class Battle(NamedTuple):
             return 0
 
     def advance(self, player_choice: tuple[Action, Item, UUID] = None) -> EnumObject:
+        """Advance the battle by one action (player or NPC)."""
         player_action_resolved = False
 
         while True:
             turn_progress = self.progress["turn_progress"]
             if turn_progress < len(self.turn_order):
-                # Setup stuff
                 fighter_uuid = self.turn_order[turn_progress]
 
                 allies, enemies = self.get_teams(fighter_uuid)
                 fighter = allies.get_member(fighter_uuid)
                 if not fighter.is_alive:
-                    # needed because turn_order is only cleaned at the end of a turn
                     self.progress["turn_progress"] += 1
                     continue
 
                 logger.info(f"{fighter} starts their turn")
 
                 if fighter.is_player:
-                    # TODO: Handle player
-                    # pretty sure multiple PCs are supported
-
-                    # player_action_resolved dictates whether the data in...
-                    # player_choice is for this turn or the previous one
                     if player_action_resolved or player_choice is None:
                         if __name__ == "__main__":
                             attack, weapon, target_uuid = self.get_player_action(
@@ -330,7 +335,6 @@ class Battle(NamedTuple):
                             self.return_dialog.append(action_choice_event)
                             dialog_event = self.get_dialog_event()
                             self.return_dialog.clear()
-
                             return dialog_event
 
                     else:
@@ -338,17 +342,14 @@ class Battle(NamedTuple):
                         player_action_resolved = True
 
                 else:
-                    # Handle NPCs
-                    # TODO: Implement better NPC AI
                     attack_action_source, attack = r.choice(fighter.actions)
                     target_uuid = r.choice(enemies.valid_targets)
                     weapon = fighter.inventory.find_equipped_item(attack_action_source)
 
                 target = enemies.get_member(target_uuid)
 
-                # Resolve attack
                 logger.info(f"{fighter.name} uses <{attack.name}> on {target}")
-                self.output(f(translate("combat.attack"), fighter, attack.display_name, target))
+                output = f(translate("combat.attack"), fighter, attack.display_name, target)
 
                 fighter, target, damage_dealt = Battle.attack(fighter, weapon, attack, target)
 
@@ -366,32 +367,29 @@ class Battle(NamedTuple):
                 logger.info(
                     f"{target.name} takes ¤ {damage_dealt} damage -> ♥ {target.health}",
                 )
-                self.output(f(
+                output += "\n\n"
+                output += f(
                     translate("combat.damage"),
                     target.display_name,
                     damage_dealt,
                     target.health,
-                ))
+                )
+                
 
-                # update the fighter and character saved in the Battle instance
                 allies.update_member(fighter_uuid, fighter)
                 enemies.update_member(target_uuid, target)
 
-                # log dead characters, check win/loss conditions
                 if not target.is_alive:
                     logger.info(f"{target.name} dies")
-                    self.output(f(translate("combat.death"), target.display_name))
-                    # self.turn_order.remove(target_uuid)
+                    output += "\n\n"
+                    output += f(translate("combat.death"), target.display_name)
 
                     match self.check_win_loss_conditions():
                         case 0:
-                            # nothing happens
                             pass
                         case 1:
-                            # updated_party = self.team1.to_party()
                             dialog_event = self.get_dialog_event()
                             self.return_dialog.clear()
-
                             return dialog_event
                         case -1:
                             self.return_dialog.append(EnumObject(
@@ -399,17 +397,18 @@ class Battle(NamedTuple):
                             ))
                             dialog_event = self.get_dialog_event()
                             self.return_dialog.clear()
-
                             return dialog_event
                         case _:
                             raise NotImplementedError("How did we get here?")
 
+                self.output(output)
                 self.progress["turn_progress"] += 1
             else:
                 self.new_turn()
                 continue
 
     def get_target_choice_event(self, enemies: CombatParty) -> EnumObject:
+        """Construct an event for the player to choose an enemy target."""
         options = ()
         on_confirm_events = {}
 
@@ -434,6 +433,7 @@ class Battle(NamedTuple):
         )
 
     def get_action_choice_event(self, fighter: Character) -> EnumObject:
+        """Construct an event for the player to choose an action."""
         options = ()
         on_confirm_events = {}
 
@@ -459,6 +459,7 @@ class Battle(NamedTuple):
         )
 
     def get_dialog_event(self) -> EnumObject:
+        """Construct a dialog event from buffered lines."""
         return_dialog = tuple(self.return_dialog)
         dialog_constructor = EnumObject(
             UI_ELEMENT_TYPES.DIALOG_BOX,
@@ -473,17 +474,20 @@ class Battle(NamedTuple):
         )
 
     def output(self, text: str) -> None:
+        """Output a message to the screen or dialog buffer, depending on context."""
         if is_main:
             print("\n" + text)
         else:
             self.return_dialog.append(DialogLine(text))
 
     def __repr__(self) -> str:
+        """String representation of the current battle state."""
         return f"{self.team1.name}\n{self.team1}\n\nVS\n\n{self.team2.name}\n{self.team2}"
 
 
-def list_choices(choices: list | tuple, text: str="", start_from_1: bool=True,
-                 template: str="{}) {}") -> None:
+def list_choices(choices: list | tuple, text: str = "", start_from_1: bool = True,
+                 template: str = "{}) {}") -> None:
+    """Utility function to print a numbered list of choices."""
     print(text)
     for i, choice in enumerate(choices):
         if choice is None:
@@ -492,14 +496,15 @@ def list_choices(choices: list | tuple, text: str="", start_from_1: bool=True,
 
 
 def _test_pcs():
+    """Test function to generate sample player characters for debugging."""
     alice = Character.new(
-            name            = "Alice",
-            sprite_sheet    = None,
-            is_player       = False,
-            base_stats      = m.DefaultStats.human,
-            actions         = [],
-            initial_effects = {}
-            )
+        name="Alice",
+        sprite_sheet=None,
+        is_player=False,
+        base_stats=m.DefaultStats.human,
+        actions=[],
+        initial_effects={}
+    )
     alice.inventory.add(ti.Sword)
     alice.inventory.add(ti.AgiBoots)
     alice = alice.equip("mainhand", ti.Sword)
@@ -508,13 +513,13 @@ def _test_pcs():
     logger.debug(f"Alice's equipment:\n\n{alice.inventory._get_equipment_dump()}\n")
 
     bob = Character.new(
-            name            = "Bob",
-            sprite_sheet    = None,
-            is_player       = True,
-            base_stats      = m.DefaultStats.human,
-            actions         = [],
-            initial_effects = {}
-            )
+        name="Bob",
+        sprite_sheet=None,
+        is_player=True,
+        base_stats=m.DefaultStats.human,
+        actions=[],
+        initial_effects={}
+    )
     bob.inventory.add(ti.Sword)
     bob.inventory.add(ti.Dagger)
     bob.inventory.add(ti.StrHelmet)

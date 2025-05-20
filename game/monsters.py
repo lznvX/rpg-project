@@ -44,9 +44,13 @@ def player():
         )
     char.inventory.add(ti.PotionHealth, 3)
     char.inventory.add(ti.Dagger)
-    char.inventory.add(ti.Sword, 2)
+    char.inventory.add(ti.Sword)
+    char.inventory.add(ti.StrHelmet)
+    char.inventory.add(ti.AgiBoots)
     char = char.equip("mainhand", ti.Sword)
-    char = char.equip("offhand", ti.Sword)
+    char = char.equip("offhand", ti.Dagger)
+    char = char.equip("head", ti.StrHelmet)
+    char = char.equip("feet", ti.AgiBoots)
     return char
 
 

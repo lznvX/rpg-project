@@ -13,9 +13,7 @@ logger = logging.getLogger(__name__)
 
 
 def load_text(path: str) -> str:
-    """
-    Reads and returns the content of the text file at the provided path.
-    """
+    """Read and return the content of the text file at the provided path."""
     logger.debug(f"Loading text file: {path}")
 
     try:
@@ -29,7 +27,8 @@ def load_text(path: str) -> str:
 
 
 def load_text_dir(path: str) -> dict[str, str]:
-    """
+    """Read and return the content of the text files in the provided directory.
+
     Returns a dict with keys being the filenames, values being the contents of
     the files in the directory.
     """
@@ -50,18 +49,14 @@ def load_text_dir(path: str) -> dict[str, str]:
 
 
 def save_pickle(obj: object, path: str) -> None:
-    """
-    Saves an object as a pickle file at the provided path.
-    """
+    """Save an object as a pickle file at the provided path."""
     logger.debug(f"Saving pickle file: {path}")
     with open(path, "wb") as file:
         pickle.dump(obj, file)
 
 
 def load_pickle(path: str) -> object:
-    """
-    Reads and returns the pickle object at the provided path.
-    """
+    """Read and return the pickle object at the provided path."""
     logger.debug(f"Loading pickle file: {path}")
     try:
         with open(path, "rb") as file:
@@ -73,11 +68,9 @@ def load_pickle(path: str) -> object:
         return None
 
 
-def delete(file_path: str) -> None:
-    """
-    Deletes the file at file_path.
-    """
-    os.remove(file_path)
+def delete(path: str) -> None:
+    """Delete the file at the provided path."""
+    os.remove(path)
 
 
 def _test():
@@ -85,7 +78,7 @@ def _test():
     file_1 = "10"
     save_pickle(file_1, "test")
     assert load_pickle("test") == "10"
-    with open("test", "w") as file:
+    with open("test", "w", encoding="utf-8") as file:
         file.write(file_1)
     assert load_text("test") == "10"
     delete("test")

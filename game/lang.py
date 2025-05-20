@@ -31,7 +31,7 @@ class DialogLine(NamedTuple):
     @staticmethod
     def process_dialog_line(
         dialog_line: str | DialogLine | EnumObject
-    ) -> "DialogLine" | EnumObject:
+    ) -> DialogLine | EnumObject:
         """Turn any str or tuple into a DialogLine while letting events through.
 
         Args:
@@ -55,14 +55,14 @@ class DialogLine(NamedTuple):
         if isinstance(dialog_line, (DialogLine, EnumObject)):
             return dialog_line
 
-        error_msg = f"Expected value of type str | DialogLine | EnumObject, got {dialog_line!r}"
+        error_msg = f"Expected value of type str | DialogLine | EnumObject, got {dialog_line}"
         logger.error(error_msg)
         return error_msg
 
     @staticmethod
     def process_dialog(
-        dialog: tuple[str | "DialogLine" | EnumObject, ...]
-    ) -> tuple["DialogLine" | EnumObject, ...]:
+        dialog: tuple[str | DialogLine | EnumObject, ...]
+    ) -> tuple[DialogLine | EnumObject, ...]:
         """Convert a tuple of dialog entries to DialogLine/EnumObject types."""
         return tuple(map(DialogLine.process_dialog_line, dialog))
 
@@ -172,7 +172,7 @@ def translate(lang_key: str | tuple[str]) -> str | tuple[str]:
     if isinstance(lang_key, str):
         return _translate_nest(lang_key)
 
-    error_msg = f"Expected value of type str | tuple[str], got {lang_key!r}"
+    error_msg = f"Expected value of type str | tuple[str], got {lang_key}"
     logger.error(error_msg)
     return error_msg
 
@@ -337,7 +337,7 @@ FRENCH = _Lang(
     # Characters
     character_names = {
         "player": "Joueur",
-        "goblin": "Goblein",
+        "goblin": "Gobelin",
         "hobgoblin": "Hobgobelin",
         "goblin_chief": "Chef gobelin",
         "bandit": "Bandit",

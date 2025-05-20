@@ -141,13 +141,14 @@ objects = {
     ),
     "assets\\zones\\test_zone.pkl": (
         (
-            "╝│ │ │╚╗XXXX",
-            "─┘ │ │ ║XXXX",
-            "╗┌─┘ │ ╚═══╗",
-            "╝└┐  └────┐║",
-            "──┘┌───┐  │║",
-            "╗  │   │┌─┘║",
-            "╚═╗│╔═╗││╔═╝",
+            "╝│ │   │╚╗XXXX",
+            "─┘ │   │ ║XXXX",
+            "╗  │   │ ║XXXX",
+            "║┌─┘   │ ╚═══╗",
+            "╝└┐    └────┐║",
+            "──┘┌─────┐  │║",
+            "╗  │     │┌─┘║",
+            "╚═╗│╔═══╗││╔═╝",
         ),
         (
             EnumObject(
@@ -159,7 +160,7 @@ objects = {
                         EVENT_TYPES.LOAD_ZONE,
                         (
                             "assets\\zones\\test_zone.pkl",
-                            6,
+                            7,
                             3,
                         ),
                     ),
@@ -169,7 +170,7 @@ objects = {
             EnumObject(
                 WORLD_OBJECT_TYPES.WALK_TRIGGER,
                 (
-                    6,
+                    7,
                     3,
                     EnumObject(
                         EVENT_TYPES.LOAD_ZONE,
@@ -192,7 +193,7 @@ objects = {
                         (
                             "assets\\zones\\test_zone_2.pkl",
                             1,
-                            11,
+                            13,
                         ),
                     ),
                     ord("a"),
@@ -201,14 +202,14 @@ objects = {
             EnumObject(
                 WORLD_OBJECT_TYPES.WALK_TRIGGER,
                 (
-                    4,
+                    5,
                     0,
                     EnumObject(
                         EVENT_TYPES.LOAD_ZONE,
                         (
                             "assets\\zones\\test_zone_2.pkl",
-                            4,
-                            11,
+                            5,
+                            13,
                         ),
                     ),
                     ord("a"),
@@ -218,26 +219,27 @@ objects = {
     ),
     "assets\\zones\\test_zone_2.pkl": (
         (
-            "XXXX╔╝│ │ │╚",
-            "XXXX║ │ │ └─",
-            "╔═══╝ │ └─┐╔",
-            "║┌────┘  ┌┘╚",
-            "║│  ┌───┐└──",
-            "║└─┐│   │  ╔",
-            "╚═╗││╔═╗│╔═╝",
+            "XXXX╔╝│   │ │╚",
+            "XXXX║ │   │ └─",
+            "╔═══╝ │   │  ╔",
+            "║┌────┘   └─┐║",
+            "║│         ┌┘╚",
+            "║│  ┌─────┐└──",
+            "║└─┐│     │  ╔",
+            "╚═╗││╔═══╗│╔═╝",
         ),
         (
             EnumObject(
                 WORLD_OBJECT_TYPES.WALK_TRIGGER,
                 (
                     0,
-                    8,
+                    10,
                     EnumObject(
                         EVENT_TYPES.LOAD_ZONE,
                         (
                             "assets\\zones\\test_zone_2.pkl",
-                            6,
-                            8,
+                            7,
+                            10,
                         ),
                     ),
                     ord("w"),
@@ -246,14 +248,14 @@ objects = {
             EnumObject(
                 WORLD_OBJECT_TYPES.WALK_TRIGGER,
                 (
-                    6,
-                    8,
+                    7,
+                    10,
                     EnumObject(
                         EVENT_TYPES.LOAD_ZONE,
                         (
                             "assets\\zones\\test_zone_2.pkl",
                             0,
-                            8,
+                            10,
                         ),
                     ),
                     ord("s"),
@@ -263,7 +265,7 @@ objects = {
                 WORLD_OBJECT_TYPES.WALK_TRIGGER,
                 (
                     1,
-                    11,
+                    13,
                     EnumObject(
                         EVENT_TYPES.LOAD_ZONE,
                         (
@@ -278,13 +280,13 @@ objects = {
             EnumObject(
                 WORLD_OBJECT_TYPES.WALK_TRIGGER,
                 (
-                    4,
-                    11,
+                    5,
+                    13,
                     EnumObject(
                         EVENT_TYPES.LOAD_ZONE,
                         (
                             "assets\\zones\\test_zone.pkl",
-                            4,
+                            5,
                             0,
                         ),
                     ),

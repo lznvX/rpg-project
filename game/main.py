@@ -1,8 +1,14 @@
-"""Main game script
+"""Main game script for a terminal-based RPG game.
 
-Run with CTRL+T (Thonny), currently contains game loop setup, utility labels and
-interface tests. If _curses module missing, run pip install windows-curses in
-terminal.
+This module handles the core game loop, manages game state, and coordinates between
+different game systems like world rendering, combat, and UI. The game uses curses
+for terminal rendering and features a tile-based world, turn-based combat, and 
+inventory management.
+
+Run with CTRL+T (Thonny). If _curses module is missing, run 'pip install windows-curses'
+in terminal.
+
+Docstrings written by DeepSeek, verified and modified when needed by us.
 
 Contributors:
     Romain
@@ -29,6 +35,7 @@ import settings
 import world
 from world import WORLD_OBJECT_CLASSES
 
+# Configure logging
 logging.basicConfig(
     filename="logs\\game.log",
     filemode="w",
@@ -38,7 +45,8 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-FPS_COUNTER_REFRESH = 1 # Time between each HUD counter update
+# Constants
+FPS_COUNTER_REFRESH = 1  # Time between each HUD counter update (in seconds)
 MOVE_MAP = {
     ord("w"): (-1, 0, "up"),
     ord("s"): (1, 0, "down"),
@@ -52,6 +60,17 @@ MENU_CHOICE_PATH = "assets\\choices\\menu_choice.pkl"
 
 
 class Globals(NamedTuple):
+    """Container for global game state.
+    
+    Attributes:
+        grid: The current game world grid
+        player: The player's world character
+        health_label: UI label displaying player health
+        zone_path: Path to current zone data
+        battle: Current battle instance or None
+        battle_action: Tuple of (Action, Item) for battle actions
+        battle_target: UUID of battle target
+    """
     grid: world.Grid
     player: world.WorldCharacter
     health_label: cuinter.Label
@@ -62,6 +81,11 @@ class Globals(NamedTuple):
 
     @classmethod
     def new(cls) -> Globals:
+        """Create a new Globals instance with default values.
+        
+        Returns:
+            A new Globals instance with initialized player, grid, and UI elements.
+        """
         tile_sprites = load_text_dir(TILE_SPRITE_DIR_PATH)
         tileset = remap_dict(tile_sprites, world.TILE_NAME_TO_CHAR)
 
@@ -93,13 +117,28 @@ class Globals(NamedTuple):
 
 
 def _make_globals_manager() -> tuple[Callable, ...]:
-    # I mean it's not the global keyword right ?
+    """Create manager functions for global game state.
+    
+    Returns:
+        A tuple of functions (get_cache, config_cache) for accessing and modifying
+        the global state.
+    """
     cache = Globals.new()
 
     def get_cache() -> Globals:
+        """Get the current global state.
+        
+        Returns:
+            The current Globals instance.
+        """
         return cache
 
     def config_cache(**kwargs) -> None:
+        """Update the global state with new values.
+        
+        Args:
+            **kwargs: Named arguments matching Globals fields to update.
+        """
         nonlocal cache
         cache = cache._replace(**kwargs)
 
@@ -107,12 +146,28 @@ def _make_globals_manager() -> tuple[Callable, ...]:
 
 
 def _make_world_object_manager() -> tuple[Callable, ...]:
+    """Create manager functions for world objects.
+    
+    Returns:
+        A tuple of functions (get_cache, add_item, clear_cache) for managing
+        world objects like triggers and NPCs.
+    """
     cache = []
 
     def get_cache() -> list[object]:
+        """Get all current world objects.
+        
+        Returns:
+            List of active world objects.
+        """
         return cache
 
     def add_item(world_object: object) -> None:
+        """Add a new world object to the cache.
+        
+        Args:
+            world_object: The object to add (None values are ignored)
+        """
         if world_object is None:
             return
 
@@ -121,6 +176,7 @@ def _make_world_object_manager() -> tuple[Callable, ...]:
         cache.append(world_object)
 
     def clear_cache() -> None:
+        """Clear all world objects from the cache."""
         logger.debug("Clearing world objects")
         nonlocal cache
         cache.clear()
@@ -129,12 +185,28 @@ def _make_world_object_manager() -> tuple[Callable, ...]:
 
 
 def _make_event_manager() -> tuple[Callable, ...]:
+    """Create manager functions for game events.
+    
+    Returns:
+        A tuple of functions (get_cache, add_item, clear_cache) for managing
+        game events.
+    """
     cache = []
 
     def get_cache() -> list[EnumObject]:
+        """Get all pending events.
+        
+        Returns:
+            List of EnumObject events waiting to be processed.
+        """
         return cache
 
     def add_item(event: EnumObject) -> None:
+        """Add a new event to the queue.
+        
+        Args:
+            event: The event to add (None values are ignored)
+        """
         if event is None:
             return
 
@@ -142,6 +214,7 @@ def _make_event_manager() -> tuple[Callable, ...]:
         cache.append(event)
 
     def clear_cache() -> None:
+        """Clear all pending events."""
         nonlocal cache
         cache.clear()
 
@@ -149,8 +222,14 @@ def _make_event_manager() -> tuple[Callable, ...]:
 
 
 def press_key(key: int) -> None:
+    """Handle keyboard input from the player.
+    
+    Args:
+        key: The ASCII code of the pressed key.
+    """
     player = get_globals().player
 
+    # Check for walk triggers bound to specific keys
     for world_object in get_world_objects():
         if (
             not isinstance(world_object, world.WalkTrigger)
@@ -160,6 +239,7 @@ def press_key(key: int) -> None:
 
         add_event(world_object.on_walk(player.grid_y, player.grid_x))
 
+    # Handle movement keys
     if key in MOVE_MAP:
         old_y, old_x = player.grid_y, player.grid_x
         move_y, move_x, direction = MOVE_MAP[key]
@@ -169,6 +249,7 @@ def press_key(key: int) -> None:
             player = player.config(sprite_key=direction)
 
         if old_y != player.grid_y or old_x != player.grid_x:
+            # Check for walk triggers not bound to specific keys
             for world_object in get_world_objects():
                 if (
                     not isinstance(world_object, world.WalkTrigger)
@@ -179,12 +260,18 @@ def press_key(key: int) -> None:
                 add_event(world_object.on_walk(player.grid_y, player.grid_x))
 
     elif key == ord("m"):
+        # Open menu
         load_ui_element(MENU_CHOICE_PATH)
 
     config_globals(player=player)
 
 
 def make_ui_element(constructor: EnumObject) -> None:
+    """Create a UI element from a constructor specification.
+    
+    Args:
+        constructor: EnumObject containing the UI element type and arguments.
+    """
     ui_element_type, args = constructor
     ui_element_class = UI_ELEMENT_CLASSES[ui_element_type]
 
@@ -209,6 +296,11 @@ def make_ui_element(constructor: EnumObject) -> None:
 
 
 def make_world_object(constructor: EnumObject) -> None:
+    """Create a world object from a constructor specification.
+    
+    Args:
+        constructor: EnumObject containing the world object type and arguments.
+    """
     world_object_type, args = constructor
     world_object_class = WORLD_OBJECT_CLASSES[world_object_type]
     grid = get_globals().grid
@@ -226,11 +318,23 @@ def make_world_object(constructor: EnumObject) -> None:
 
 
 def load_ui_element(ui_element_path: str) -> None:
+    """Load and create a UI element from a file.
+    
+    Args:
+        ui_element_path: Path to the UI element specification file.
+    """
     constructor = load_pickle(ui_element_path)
     make_ui_element(constructor)
 
 
 def load_zone(zone_path: str, player_grid_y: int = 0, player_grid_x: int = 0) -> None:
+    """Load a game zone and place the player in it.
+    
+    Args:
+        zone_path: Path to the zone data file
+        player_grid_y: Y coordinate to place player (default: 0)
+        player_grid_x: X coordinate to place player (default: 0)
+    """
     zone_data = load_pickle(zone_path)
     tilemap, world_object_constructors = zone_data
 
@@ -257,6 +361,11 @@ def load_zone(zone_path: str, player_grid_y: int = 0, player_grid_x: int = 0) ->
 
 
 def load_battle(battle_path: str) -> None:
+    """Load and start a battle.
+    
+    Args:
+        battle_path: Path to battle data (currently unused in demo)
+    """
     # Should load battle data and plug into Battle.new(), but no time
     player = get_globals().player
 
@@ -285,11 +394,18 @@ def load_battle(battle_path: str) -> None:
 
 
 def game_over() -> None:
+    """Handle game over state."""
     # TODO Implement game_over()
     logger.error("Not implemented: game_over()")
 
 
 def set_battle_action(attack: Action, weapon: Item) -> None:
+    """Set a battle action and advance battle if battle target is set.
+    
+    Args:
+        attack: The attack action to perform
+        weapon: The weapon to use with the attack
+    """
     battle = get_globals().battle
     battle_target = get_globals().battle_target
 
@@ -305,6 +421,11 @@ def set_battle_action(attack: Action, weapon: Item) -> None:
 
 
 def set_battle_target(target_uuid: UUID) -> None:
+    """Set a battle target and advance battle if battle action is set.
+    
+    Args:
+        target_uuid: UUID of the target character
+    """
     battle = get_globals().battle
     battle_action = get_globals().battle_action
 
@@ -319,6 +440,11 @@ def set_battle_target(target_uuid: UUID) -> None:
 
 
 def set_character(character: Character) -> None:
+    """Update the player character and associated UI.
+    
+    Args:
+        character: The new character state
+    """
     player = get_globals().player
     player = player.config(
         character=character,
@@ -336,22 +462,50 @@ def set_character(character: Character) -> None:
 
 
 def equip_item(slot: str, item: Item) -> None:
+    """Equip an item to a character slot.
+    
+    Args:
+        slot: Equipment slot name
+        item: Item to equip
+    """
     set_character(get_globals().player.character.equip(slot, item))
 
 
 def unequip_item(slot: str) -> None:
+    """Unequip an item from a character slot.
+    
+    Args:
+        slot: Equipment slot name
+    """
     set_character(get_globals().player.character.unequip(slot))
 
 
 def add_item(item: Item, count: int = 1) -> None:
+    """Add items to player inventory.
+    
+    Args:
+        item: Item to add
+        count: Number of items to add (default: 1)
+    """
     get_globals().player.character.inventory.add(item, count)
 
 
 def remove_item(item: Item, count: int = 1) -> None:
+    """Remove items from player inventory.
+    
+    Args:
+        item: Item to remove
+        count: Number of items to remove (default: 1)
+    """
     get_globals().player.character.inventory.remove(item, count)
 
 
 def use_item(item: Item) -> None:
+    """Use a consumable item from inventory.
+    
+    Args:
+        item: Item to use
+    """
     # Should be in the item's actions, but no time
     logger.debug(f"Using item: {item}")
 
@@ -376,6 +530,11 @@ def use_item(item: Item) -> None:
 
 
 def open_item(item: Item) -> None:
+    """Open interaction menu for an inventory item.
+    
+    Args:
+        item: Item to interact with
+    """
     logger.debug(f"Opening item: {item}")
 
     inventory = get_globals().player.character.inventory
@@ -464,6 +623,7 @@ def open_item(item: Item) -> None:
 
 
 def open_equipment() -> None:
+    """Open inventory backpack menu."""
     logger.debug("Opening equipment")
 
     slot_items = get_globals().player.character.inventory.equipment.items()
@@ -499,6 +659,7 @@ def open_equipment() -> None:
 
 
 def open_backpack() -> None:
+    """Open inventory backpack menu."""
     logger.debug("Opening backpack")
 
     item_counts = sorted(get_globals().player.character.inventory.backpack.items())
@@ -529,10 +690,16 @@ def open_backpack() -> None:
 
 
 def config_settings(**kwargs) -> None:
+    """Update game settings.
+    
+    Args:
+        **kwargs: Setting names and values to update
+    """
     settings.config(**kwargs)
 
 
 def save_game() -> None:
+    """Save the current game state to file."""
     logger.debug("Saving game")
 
     player = get_globals().player
@@ -549,6 +716,7 @@ def save_game() -> None:
 
 
 def load_game() -> None:
+    """Load game state from file or create new game if no save exists."""
     logger.debug("Loading game")
 
     if os.path.exists(GAME_SAVE_PATH):
@@ -565,6 +733,7 @@ def load_game() -> None:
 
 
 def quit_game() -> None:
+    """Clean up and exit the game."""
     logger.debug("Quitting game")
     settings.save()
     cuinter.fullscreen()
@@ -572,11 +741,17 @@ def quit_game() -> None:
 
 
 def multi_event(*args: EnumObject) -> None:
+    """Process multiple events in sequence.
+    
+    Args:
+        *args: Events to process
+    """
     for event in args:
         add_event(event)
 
 
 def main() -> None:
+    """Main game loop and initialization."""
     settings.load()
 
     cuinter.setup()
@@ -601,7 +776,7 @@ def main() -> None:
 
     while True:
         current_time = time.time()
-        delta_time = current_time - last_time # Time since last frame
+        delta_time = current_time - last_time  # Time since last frame
         last_time = current_time
 
         frame_count += 1
@@ -629,6 +804,7 @@ def main() -> None:
                 event_function()
 
 
+# Event handling mapping
 EVENT_FUNCTIONS = {
     EVENT_TYPES.PRESS_KEY: press_key,
     EVENT_TYPES.MAKE_UI_ELEMENT: make_ui_element,
@@ -655,6 +831,7 @@ EVENT_FUNCTIONS = {
     EVENT_TYPES.MULTI_EVENT: multi_event,
 }
 
+# Initialize manager functions
 (
     get_globals,
     config_globals,
